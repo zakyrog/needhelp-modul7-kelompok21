@@ -1,128 +1,155 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detail Permintaan: Pindahan Kos &amp; Angkat Lemari - NeedHelp</title>
-  <link rel="stylesheet" href="/assets/css/tokens.css">
-  <link rel="stylesheet" href="/assets/css/base.css">
-  <script type="module" src="/assets/js/app.js"></script>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Detail Permintaan: Pindahan Kos &amp; Angkat Lemari - NeedHelp
+    </title>
+    <link rel="stylesheet" href="./assets/css/tokens.css" />
+    <link rel="stylesheet" href="./assets/css/base.css" />
+    <script type="module" src="./assets/js/app.js"></script>
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="brand-logo">
+        <img
+          src="./assets/images/logo.svg"
+          alt="NeedHelp - Beranda"
+          width="160"
+          height="40" />
+      </a>
 
-   <header class="main-header">
-    <a href="index.html" class="brand-logo">
-      <img src="./assets/images/logo.svg" alt="NeedHelp - Beranda" width="160" height="40">
-    </a>
-    
-    <nav aria-label="Navigasi Utama">
-      <ul class="navbar-nav">
-        <li><a href="index.html">beranda</a></li>
-        <li><a href="katalog.html" class="active">Katalog</a></li>
-        <li><a href="aktivitas.html">Aktivitas</a></li>
-        <li><a href="tentang.html">Tentang</a></li>
-      </ul>
-    </nav>
+      <nav aria-label="Navigasi Utama">
+        <ul class="navbar-nav">
+          <li><a href="index.html">beranda</a></li>
+          <li><a href="katalog.html" class="active">Katalog</a></li>
+          <li><a href="aktivitas.html">Aktivitas</a></li>
+          <li><a href="tentang.html">Tentang</a></li>
+        </ul>
+      </nav>
 
-    <div class="navbar-actions">
-      <!-- Kolom Pencarian -->
-      <div class="search-box">
-        <input type="text" placeholder="Cari bantuan...">
-        <span class="search-icon">🔍</span>
+      <div class="navbar-actions">
+        <!-- Kolom Pencarian -->
+        <div class="search-box">
+          <input type="text" placeholder="Cari bantuan..." />
+          <span class="search-icon">🔍</span>
+        </div>
+
+        <a href="chat.html" class="icon-btn" aria-label="Pesan">💬</a>
+        <a href="notifikasi.html" class="icon-btn" aria-label="Notifikasi"
+          >🔔</a
+        >
+        <a href="profil.html" class="profile-avatar">P</a>
       </div>
+    </header>
 
-      <a href="chat.html" class="icon-btn" aria-label="Pesan">💬</a>
-      <a href="notifikasi.html" class="icon-btn" aria-label="Notifikasi">🔔</a>
-      <a href="profil.html" class="profile-avatar">P</a>
-    </div>
-  </header>
+    <main class="detail-main-layout">
+      <nav aria-label="Jejak Navigasi" class="breadcrumb-nav">
+        <p class="breadcrumb-back">
+          <a href="katalog.html">&larr; Kembali ke Feed</a>
+        </p>
+        <div class="breadcrumb-status">
+          <span class="status-title">Detail Permintaan</span>
+          <span class="status-badge">Live &bull; butuh dalam 1 hari</span>
+        </div>
+      </nav>
 
-  <main class="detail-main-layout">
-    <nav aria-label="Jejak Navigasi" class="breadcrumb-nav">
-      <p class="breadcrumb-back"><a href="katalog.html">&larr; Kembali ke Feed</a></p>
-      <div class="breadcrumb-status">
-        <span class="status-title">Detail Permintaan</span>
-        <span class="status-badge">Live &bull; butuh dalam 1 hari</span>
+      <article class="detail-article">
+        <section class="requester-section">
+          <img
+            src="./assets/images/avatar-sari.svg"
+            alt="Foto profil Sari Wijaya"
+            width="48"
+            height="48"
+            class="requester-img" />
+          <div>
+            <h3 class="requester-name">Sari Wijaya</h3>
+            <p class="requester-info">
+              Mahasiswa UNESA &bull; 15 menit lalu &bull; 1,2 km dari lokasimu
+            </p>
+          </div>
+          <div class="requester-rating">&star; 4.9</div>
+        </section>
+
+        <header class="article-header">
+          <h1>Butuh bantuan pindahan kos &amp; angkat lemari</h1>
+          <p>
+            Sedang membutuhkan bantuan membawa beberapa barang dari kos lama ke
+            tempat baru. Barang tidak terlalu besar &mdash; ada 2 kardus, kasur
+            lipat, dan beberapa tas. Jarak kos lama ke baru sekitar 1,5 km.
+          </p>
+        </header>
+
+        <section class="info-grid-section">
+          <div class="info-card">
+            <img
+              src="./assets/images/icon-kurir.svg"
+              alt="Kategori Kurir"
+              width="20"
+              height="20" />
+            <div>
+              <div class="info-label">Kategori</div>
+              <div class="info-value">Kurir / Titip</div>
+            </div>
+          </div>
+          <div class="info-card">
+            <img
+              src="./assets/images/icon-quote.svg"
+              alt="Kompensasi"
+              width="20"
+              height="20" />
+            <div>
+              <div class="info-label">Kompensasi</div>
+              <div class="info-value">Patungan</div>
+            </div>
+          </div>
+          <div class="info-card">
+            <img
+              src="./assets/images/icon-bell.svg"
+              alt="Waktu"
+              width="20"
+              height="20" />
+            <div>
+              <div class="info-label">Waktu</div>
+              <div class="info-value">Sabtu, 10.00</div>
+            </div>
+          </div>
+          <div class="info-card">
+            <img
+              src="./assets/images/icon-search.svg"
+              alt="Lokasi"
+              width="20"
+              height="20" />
+            <div>
+              <div class="info-label">Lokasi</div>
+              <div class="info-value">Sekitar kampus</div>
+            </div>
+          </div>
+        </section>
+      </article>
+
+      <div class="detail-sidebar">
+        <section class="action-box">
+          <h2>Mau bantu Sari?</h2>
+          <p>Isi form singkat agar Sari bisa menghubungimu lewat chat.</p>
+
+          <a href="#form-bantu" class="btn-bantu"> Bantu Permintaan </a>
+
+          <a href="chat.html?target=sari-wijaya" class="btn-chat">
+            💬 Chat langsung
+          </a>
+        </section>
+
+        <!-- Kotak Tips Aman -->
+        <section class="safety-box">
+          <h3>🛡️ Tips aman</h3>
+          <p>
+            Selalu ketemu di tempat ramai pertama kali. Jangan transfer uang
+            muka sebelum ketemu langsung.
+          </p>
+        </section>
       </div>
-    </nav>
-
-    <article class="detail-article">
-      <section class="requester-section">
-        <img src="./assets/images/avatar-sari.svg" alt="Foto profil Sari Wijaya" width="48" height="48" class="requester-img">
-        <div>
-          <h3 class="requester-name">Sari Wijaya</h3>
-          <p class="requester-info">Mahasiswa UNESA &bull; 15 menit lalu &bull; 1,2 km dari lokasimu</p>
-        </div>
-        <div class="requester-rating">
-          &star; 4.9
-        </div>
-      </section>
-
-      <header class="article-header">
-        <h1>Butuh bantuan pindahan kos &amp; angkat lemari</h1>
-        <p>
-          Sedang membutuhkan bantuan membawa beberapa barang dari kos lama ke tempat baru. Barang tidak terlalu besar &mdash; ada 2 kardus, kasur lipat, dan beberapa tas. Jarak kos lama ke baru sekitar 1,5 km.
-        </p>
-      </header>
-
-      <section class="info-grid-section">
-        <div class="info-card">
-          <img src="./assets/images/icon-kurir.svg" alt="Kategori Kurir" width="20" height="20">
-          <div>
-            <div class="info-label">Kategori</div>
-            <div class="info-value">Kurir / Titip</div>
-          </div>
-        </div>
-        <div class="info-card">
-          <img src="./assets/images/icon-quote.svg" alt="Kompensasi" width="20" height="20">
-          <div>
-            <div class="info-label">Kompensasi</div>
-            <div class="info-value">Patungan</div>
-          </div>
-        </div>
-        <div class="info-card">
-          <img src="./assets/images/icon-bell.svg" alt="Waktu" width="20" height="20">
-          <div>
-            <div class="info-label">Waktu</div>
-            <div class="info-value">Sabtu, 10.00</div>
-          </div>
-        </div>
-        <div class="info-card">
-          <img src="./assets/images/icon-search.svg" alt="Lokasi" width="20" height="20">
-          <div>
-            <div class="info-label">Lokasi</div>
-            <div class="info-value">Sekitar kampus</div>
-          </div>
-        </div>
-      </section>
-    </article>
-
-    <div class="detail-sidebar">
-    
-       <section class="action-box">
-        <h2>Mau bantu Sari?</h2>
-        <p>Isi form singkat agar Sari bisa menghubungimu lewat chat.</p>
-        
-        <a href="#form-bantu" class="btn-bantu">
-          Bantu Permintaan
-        </a>
-        
-        <a href="chat.html?target=sari-wijaya" class="btn-chat">
-          💬 Chat langsung
-        </a>
-      </section>
-
-      <!-- Kotak Tips Aman -->
-      <section class="safety-box">
-        <h3>
-          🛡️ Tips aman
-        </h3>
-        <p>
-          Selalu ketemu di tempat ramai pertama kali. Jangan transfer uang muka sebelum ketemu langsung.
-        </p>
-      </section>
-
-    </div>
-  </main>
-</body>
+    </main>
+  </body>
 </html>
