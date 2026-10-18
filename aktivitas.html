@@ -6,10 +6,11 @@
   <title>Aktivitas Saya - NeedHelp</title>
   <link rel="stylesheet" href="/assets/css/tokens.css">
   <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/aktivitas.css">
   <script type="module" src="/assets/js/app.js"></script>
 </head>
-<body>
-  <!-- Header & Navigasi -->
+<body class="activity-page">
+
   <header>
     <a href="index.html">
       <img src="./assets/images/logo.svg" alt="NeedHelp - Beranda" width="160" height="40">
@@ -19,101 +20,136 @@
         <li><a href="index.html">Beranda</a></li>
         <li><a href="katalog.html">Katalog</a></li>
         <li><a href="aktivitas.html" aria-current="page">Aktivitas</a></li>
-        <li><a href="chat.html">Pesan</a></li>
+        <li><a href="chat.html">Tentang</a></li>
       </ul>
     </nav>
+
+     <div class="navbar-actions">
+      <div class="search-box">
+        <input type="text" placeholder="Cari bantuan...">
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <a href="chat.html" class="icon-btn" aria-label="Pesan">💬</a>
+      <a href="notifikasi.html" class="icon-btn" aria-label="Notifikasi">🔔</a>
+      <a href="profil.html" class="profile-avatar">P</a>
+    </div>
   </header>
 
   <main>
-    <header>
+    <header class="page-header-section">
       <h1>Aktivitas Saya</h1>
-      <p>Kelola seluruh permintaan bantuan yang kamu buat dan tawaran bantuan yang sedang kamu jalankan.</p>
+      <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
     </header>
 
-    <!-- Ringkasan Statistik Aktivitas Pengguna (Tabel Semantik) -->
-    <section>
-      <h2>Ringkasan Status Aktivitas</h2>
-      <table>
-        <caption>Rekapitulasi Riwayat Interaksi dan Bantuan</caption>
-        <thead>
-          <tr>
-            <th scope="col">Status Aktivitas</th>
-            <th scope="col">Jumlah</th>
-            <th scope="col">Keterangan</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">Total Aktivitas</th>
-            <td>12</td>
-            <td>Keseluruhan riwayat partisipasi</td>
-          </tr>
-          <tr>
-            <th scope="row">Sedang Berlangsung</th>
-            <td>2</td>
-            <td>Membutuhkan tindak lanjut atau pelaksanaan</td>
-          </tr>
-          <tr>
-            <th scope="row">Selesai</th>
-            <td>8</td>
-            <td>Telah ditutup dan diberi ulasan</td>
-          </tr>
-          <tr>
-            <th scope="row">Dibatalkan</th>
-            <td>2</td>
-            <td>Tidak mencapai kesepakatan</td>
-          </tr>
-        </tbody>
-      </table>
+    <section class="activity-stats-grid">
+      <div class="stat-box">
+        <span class="stat-num">12</span>
+        <span class="stat-desc">Total aktivitas</span>
+      </div>
+      <div class="stat-box tosca-bg-1">
+        <span class="stat-num">3</span>
+        <span class="stat-desc">Menunggu respon</span>
+      </div>
+      <div class="stat-box tosca-bg-2">
+        <span class="stat-num">5</span>
+        <span class="stat-desc">Sedang berjalan</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num">4</span>
+        <span class="stat-desc">Selesai</span>
+      </div>
     </section>
 
-    <!-- Daftar Aktivitas Berjalan & Riwayat -->
-    <section>
-      <h2>Daftar Aktivitas Terkini</h2>
+    <div class="activity-filter-chips">
+      <button class="filter-chip active">Semua</button>
+      <button class="filter-chip">Menunggu</button>
+      <button class="filter-chip">Dikonfirmasi</button>
+      <button class="filter-chip">Selesai</button>
+    </div>
 
-      <!-- Aktivitas 1: Sedang Berlangsung -->
+    <section class="activity-list-container">
       <article>
         <header>
-          <p><mark>Sedang Berlangsung</mark> &bull; Kategori: Bantuan Pindahan</p>
-          <h3><a href="detail-postingan.html">Butuh bantuan pindahan kos &amp; angkat lemari</a></h3>
-          <p>Partner Relawan: <strong>Budi Pratama</strong></p>
+          <div class="article-avatar avatar-tosca">S</div>
+          <div class="article-info">
+            <div class="article-title-row">
+              <h3>Bantuan pindahan kos</h3>
+              <span class="activity-status-tag tag-waiting">&#9679; Menunggu</span>
+            </div>
+            <p><span class="role-label">Pengaju</span> Sari Wijaya &bull; 15 menit lalu</p>
+          </div>
         </header>
-        <p>Jadwal temu telah disepakati untuk Sabtu, 10 Oktober 2026 pukul 09.00 WIB di Pogung Baru.</p>
-        <p>
-          <a href="chat.html">Buka Obrolan Chat</a>
-          <a href="rating.html">Selesaikan &amp; Beri Ulasan</a>
-        </p>
+        <a href="detail-postingan.html" class="btn-detail-outline">Lihat Detail</a>
       </article>
 
-      <!-- Aktivitas 2: Menunggu Penawaran -->
       <article>
         <header>
-          <p><mark>Menunggu Respon</mark> &bull; Kategori: Ditemani Ngopi</p>
-          <h3><a href="detail-postingan.html">Teman ngopi santai di Cosan Palagan</a></h3>
-          <p>Dipasang: <time datetime="2026-10-06T14:00">2 jam yang lalu</time></p>
+          <div class="article-avatar avatar-blue">B</div>
+          <div class="article-info">
+            <div class="article-title-row">
+              <h3>Cari teman belajar matematika</h3>
+              <span class="activity-status-tag tag-confirmed">&#9679; Dikonfirmasi</span>
+            </div>
+            <p><span class="role-label">Pengaju</span> Budi Pratama &bull; 2 jam lalu</p>
+          </div>
         </header>
-        <p>Postingan aktif di katalog publik. Menunggu calon teman pendamping yang cocok.</p>
-        <p>
-          <a href="buat-postingan.html">Ubah Rincian</a>
-          <a href="#batalkan">Batalkan Postingan</a>
-        </p>
+        <a href="detail-postingan.html" class="btn-detail-outline">Lihat Detail</a>
       </article>
 
-      <!-- Aktivitas 3: Telah Selesai -->
       <article>
         <header>
-          <p><mark>Selesai</mark> &bull; Kategori: Pendampingan Belajar</p>
-          <h3>Belajar bersama kalkulus &amp; matriks</h3>
-          <p>Mitra: <strong>Rina Putri</strong> &bull; Selesai pada 4 Oktober 2026</p>
+          <div class="article-avatar avatar-green">R</div>
+          <div class="article-info">
+            <div class="article-title-row">
+              <h3>Bisa bantu antar barang di kampus</h3>
+              <span class="activity-status-tag tag-completed">&#9679; Selesai</span>
+            </div>
+            <p><span class="role-label">Penolong</span> Rina Putri &bull; kemarin</p>
+          </div>
         </header>
-        <p>Ulasan kamu: <em>&ldquo;Sangat ramah, komunikatif, dan penjelasannya mudah dipahami!&rdquo;</em> (5.0 / 5.0 &#9733;)</p>
+        <a href="detail-postingan.html" class="btn-detail-outline">Lihat Detail</a>
       </article>
+
+      <article>
+        <header>
+          <div class="article-avatar avatar-green">A</div>
+          <div class="article-info">
+            <div class="article-title-row">
+              <h3>Mentor matematika SMA &amp; kuliah</h3>
+              <span class="activity-status-tag tag-completed">&#9679; Selesai</span>
+            </div>
+            <p><span class="role-label">Penolong</span> Agus Setiawan &bull; 3 hari lalu</p>
+          </div>
+        </header>
+        <a href="detail-postingan.html" class="btn-detail-outline">Lihat Detail</a>
+      </article>
+
+      <article>
+        <header>
+          <div class="article-avatar avatar-red">D</div>
+          <div class="article-info">
+            <div class="article-title-row">
+              <h3>Perbaikan AC rumah</h3>
+              <span class="activity-status-tag tag-cancelled">&#9679; Dibatalkan</span>
+            </div>
+            <p><span class="role-label">Pengaju</span> Dimas Hartanto &bull; minggu lalu</p>
+          </div>
+        </header>
+        <a href="detail-postingan.html" class="btn-detail-outline">Lihat Detail</a>
+      </article>
+
     </section>
+
+    <div class="activity-back-wrapper">
+      <a href="index.html">&larr; Kembali ke Beranda</a>
+    </div>
+
   </main>
 
-  <!-- Kaki Halaman (Footer) -->
   <footer>
     <p>&copy; 2026 NeedHelp - Need-Based Companion &amp; Help.</p>
   </footer>
+
 </body>
 </html>

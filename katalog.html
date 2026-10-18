@@ -27,77 +27,59 @@
 
   <main>
     <header>
-      <h1>Katalog Feed Bantuan</h1>
-      <p>Temukan permintaan &ldquo;Saya Butuh&rdquo; dan penawaran &ldquo;Saya Bisa&rdquo; terkini di Yogyakarta.</p>
-      <p><a href="buat-postingan.html">Pasang Postingan Baru</a></p>
+      <h1>Feed Bantuan</h1>
+      <p>Temukan orang di sekitar yang sedang membutuhkan bantuan.</p>
+      
+      <!-- Tombol Tab 2 Jalur & Opsi Urutkan -->
+      <div class="catalog-actions-bar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+        <div style="display: flex; gap: 8px;">
+          <a href="katalog.html?type=butuh" class="tab-btn active" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); border: 1px solid var(--color-action-primary); padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 600; text-decoration: none;">Saya Butuh</a>
+          <a href="katalog.html?type=bisa" class="tab-btn" style="background: var(--color-bg-surface, #ffffff); color: var(--color-text-muted, #5e7a80); border: 1px solid var(--color-border-default, #cfdadc); padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 600; text-decoration: none;">Saya Bisa</a>
+        </div>
+        <div style="font-size: 12px; color: var(--color-text-muted);">
+          Urutkan: <strong>Terbaru &or;</strong>
+        </div>
+      </div>
     </header>
 
     <!-- Bilah Samping Penyaring (Sidebar Filter) -->
     <aside aria-label="Penyaring Pencarian">
-      <h2>Filter Kebutuhan</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0; font-size: 15px;">Filter</h2>
+        <a href="#" style="font-size: 12px; color: var(--color-action-primary); text-decoration: none;">Bersihkan</a>
+      </div>
+      
       <form action="#" method="post">
         <fieldset>
-          <legend>Tipe Postingan</legend>
-          <p>
-            <input type="radio" id="type-all" name="post_type" value="all" checked>
-            <label for="type-all">Semua Tipe</label>
-          </p>
-          <p>
-            <input type="radio" id="type-need" name="post_type" value="butuh">
-            <label for="type-need">Saya Butuh (Mencari Bantuan)</label>
-          </p>
-          <p>
-            <input type="radio" id="type-can" name="post_type" value="bisa">
-            <label for="type-can">Saya Bisa (Menawarkan Bantuan)</label>
-          </p>
+          <legend>Kategori</legend>
+          <p><input type="checkbox" id="cat-private" name="category" checked><label for="cat-private">Les Privat</label></p>
+          <p><input type="checkbox" id="cat-clean" name="category"><label for="cat-clean">Jasa Kebersihan</label></p>
+          <p><input type="checkbox" id="cat-delivery" name="category"><label for="cat-delivery">Kurir / Titip</label></p>
+          <p><input type="checkbox" id="cat-tech" name="category"><label for="cat-tech">Teknis</label></p>
+          <p><input type="checkbox" id="cat-other" name="category"><label for="cat-other">Lainnya</label></p>
         </fieldset>
 
         <fieldset>
-          <legend>Kategori Aktivitas</legend>
-          <p>
-            <input type="checkbox" id="cat-companion" name="category" value="ditemani">
-            <label for="cat-companion">Ditemani (Ngopi, Gym, Nonton)</label>
-          </p>
-          <p>
-            <input type="checkbox" id="cat-help" name="category" value="bantuan">
-            <label for="cat-help">Bantuan (Pindahan, Bersih Kos)</label>
-          </p>
-          <p>
-            <input type="checkbox" id="cat-guidance" name="category" value="pendampingan">
-            <label for="cat-guidance">Pendampingan (Belajar, Belanja)</label>
-          </p>
-          <p>
-            <input type="checkbox" id="cat-explore" name="category" value="explore">
-            <label for="cat-explore">Explore (Wisata, Kuliner Murah)</label>
-          </p>
+          <legend>Lokasi</legend>
+          <p><input type="radio" id="loc-1km" name="location" checked><label for="loc-1km">Radius 1 km</label></p>
+          <p><input type="radio" id="loc-5km" name="location"><label for="loc-5km">Radius 5 km</label></p>
+          <p><input type="radio" id="loc-10km" name="location"><label for="loc-10km">Radius 10 km</label></p>
+          <p><input type="radio" id="loc-city" name="location"><label for="loc-city">Sekitar kota</label></p>
         </fieldset>
 
         <fieldset>
-          <legend>Area Lokasi</legend>
-          <p>
-            <label for="filter-location">Pilih Wilayah:</label>
-            <select id="filter-location" name="location">
-              <option value="">Semua Wilayah</option>
-              <option value="sleman">Sleman (Palagan, Jakal, Seturan)</option>
-              <option value="kota">Kota Yogyakarta (Gondokusuman, Umbulharjo)</option>
-              <option value="bantul">Bantul (Kasihan, Sewon)</option>
-            </select>
-          </p>
+          <legend>Waktu</legend>
+          <p><input type="checkbox" id="time-today" name="time" checked><label for="time-today">Hari ini</label></p>
+          <p><input type="checkbox" id="time-week" name="time"><label for="time-week">Minggu ini</label></p>
+          <p><input type="checkbox" id="time-month" name="time"><label for="time-month">Bulan ini</label></p>
         </fieldset>
 
         <fieldset>
-          <legend>Bentuk Kompensasi</legend>
-          <p>
-            <label for="filter-compensation">Model Imbalan:</label>
-            <select id="filter-compensation" name="compensation">
-              <option value="">Semua Kompensasi</option>
-              <option value="tarif">Tarif Pasti (Uang)</option>
-              <option value="nego">Nego di Chat</option>
-              <option value="patungan">Patungan / Split Bill</option>
-              <option value="traktir">Traktir Makanan / Kopi</option>
-              <option value="sukarela">Sukarela / Gratis</option>
-            </select>
-          </p>
+          <legend>Sistem Kompensasi</legend>
+          <p><input type="checkbox" id="comp-fixed" name="compensation" checked><label for="comp-fixed">Tarif Pasti</label></p>
+          <p><input type="checkbox" id="comp-split" name="compensation"><label for="comp-split">Patungan</label></p>
+          <p><input type="checkbox" id="comp-treat" name="compensation"><label for="comp-treat">Traktir</label></p>
+          <p><input type="checkbox" id="comp-free" name="compensation"><label for="comp-free">Sukarela</label></p>
         </fieldset>
 
         <p><button type="submit">Terapkan Filter</button></p>
@@ -108,58 +90,222 @@
     <section>
       <h2>Daftar Permintaan &amp; Penawaran Aktif</h2>
 
-      <!-- Kartu 1 -->
+      <!-- Kartu 1: Saya Butuh -->
+     <!-- Kartu 1: Sari Wijaya -->
       <article>
         <header>
-          <img src="./assets/images/avatar-sari.svg" alt="Foto profil Sari Wijaya" width="40" height="40">
-          <h3>Sari Wijaya</h3>
-          <p><mark>Saya Butuh</mark> &bull; Sleman &bull; <time datetime="2026-10-06T15:50">15 menit lalu</time></p>
+          <img src="./assets/images/avatar-sari.svg" alt="Foto profil Sari Wijaya" width="36" height="36">
+          <div>
+            <h3>Sari Wijaya</h3>
+            <p>15 menit lalu &bull; 1,2 km</p>
+          </div>
         </header>
-        <h4><a href="detail-postingan.html">Butuh bantuan pindahan kos &amp; angkat lemari</a></h4>
-        <p>Butuh bantuan membawa lemari dan kardus pakaian dari Pogung Baru ke kos baru di Palagan.</p>
-        <dl>
-          <dt>Jadwal</dt>
-          <dd>Sabtu, 10 Oktober 2026 - Pukul 09.00 WIB</dd>
-          <dt>Imbalan</dt>
-          <dd>Rp50.000 + Traktir Makan Siang</dd>
-        </dl>
-        <p><a href="detail-postingan.html">Lihat Detail Lengkap</a></p>
+        <h4><a href="detail-postingan.html">Butuh bantuan pindahan kos</a></h4>
+        <p>Butuh bantuan membawa beberapa barang dari kos lama ke tempat baru di sekitar kampus.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Kurir / Titip</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Patungan</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Bantu</a></p>
       </article>
 
-      <!-- Kartu 2 -->
+      <!-- Kartu 2: Budi Pratama -->
       <article>
         <header>
-          <img src="./assets/images/avatar-budi.svg" alt="Foto profil Budi Pratama" width="40" height="40">
-          <h3>Budi Pratama</h3>
-          <p><mark>Saya Bisa</mark> &bull; Sleman &bull; <time datetime="2026-10-06T14:30">2 jam lalu</time></p>
+          <img src="./assets/images/avatar-budi.svg" alt="Foto profil Budi Pratama" width="36" height="36">
+          <div>
+            <h3>Budi Pratama</h3>
+            <p>32 menit lalu &bull; 0,8 km</p>
+          </div>
         </header>
-        <h4><a href="detail-postingan.html">Jasa bersih-bersih kosan &amp; kamar mandi</a></h4>
-        <p>Menawarkan jasa bersih-bersih kamar kos mahasiswa, cuci piring, sapu/pel, dan sikat kamar mandi bersih wangi.</p>
-        <dl>
-          <dt>Ketersediaan</dt>
-          <dd>Setiap Sore (16.00 - 20.00 WIB)</dd>
-          <dt>Tarif</dt>
-          <dd>Rp30.000 / jam (bisa nego di chat)</dd>
-        </dl>
-        <p><a href="detail-postingan.html">Lihat Detail Lengkap</a></p>
+        <h4><a href="detail-postingan.html">Cari teman belajar matematika</a></h4>
+        <p>Mau belajar bareng untuk UTS. Fokus integral & limit, bisa di perpus kampus.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Les Privat</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Sukarela</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Bantu</a></p>
       </article>
 
-      <!-- Kartu 3 -->
+      <!-- Kartu 3: Rina Putri -->
       <article>
         <header>
-          <img src="./assets/images/avatar-rina.svg" alt="Foto profil Rina Putri" width="40" height="40">
-          <h3>Rina Putri</h3>
-          <p><mark>Saya Butuh</mark> &bull; Gondokusuman &bull; <time datetime="2026-10-06T13:10">3 jam lalu</time></p>
+          <img src="./assets/images/avatar-rina.svg" alt="Foto profil Rina Putri" width="36" height="36">
+          <div>
+            <h3>Rina Putri</h3>
+            <p>1 jam lalu &bull; 2,4 km</p>
+          </div>
         </header>
-        <h4><a href="detail-postingan.html">Teman ngopi sore sambil diskusi tugas akhir</a></h4>
-        <p>Lagi buntu ngerjain bab pembahasan. Cari teman ngobrol santai yang paham riset sosial humaniora.</p>
-        <dl>
-          <dt>Jadwal</dt>
-          <dd>Senin, 18.00 WIB di Cosan Palagan</dd>
-          <dt>Imbalan</dt>
-          <dd>Traktir Kopi &amp; Snack</dd>
-        </dl>
-        <p><a href="detail-postingan.html">Lihat Detail Lengkap</a></p>
+        <h4><a href="detail-postingan.html">Butuh bantuan antar barang</a></h4>
+        <p>Perlu bantuan antar paket kecil ke Gubeng. Bisa dibawa pakai motor.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Kurir / Titip</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Tarif Pasti</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Bantu</a></p>
+      </article>
+
+      <!-- Kartu 4: Dimas Hartanto -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-dimas.svg" alt="Foto profil Dimas Hartanto" width="36" height="36">
+          <div>
+            <h3>Dimas Hartanto</h3>
+            <p>2 jam lalu &bull; 3,1 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Perbaikan AC rumah</a></h4>
+        <p>AC kamar bocor, butuh teknisi untuk cek dan isi freon di akhir pekan.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Teknis</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Tarif Pasti</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Bantu</a></p>
+      </article>
+
+      <!-- Kartu 5: Maya Lestari -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-maya.svg" alt="Foto profil Maya Lestari" width="36" height="36">
+          <div>
+            <h3>Maya Lestari</h3>
+            <p>3 jam lalu &bull; 1,9 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Butuh bantuan bersih kos</a></h4>
+        <p>Mau bersih-bersih kos sebelum pulang kampung. Butuh bantuan setengah hari.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Jasa Kebersihan</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Tarif Pasti</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Bantu</a></p>
+      </article>
+
+      <!-- Kartu 6: Fajar Nugraha -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-fajar.svg" alt="Foto profil Fajar Nugraha" width="36" height="36">
+          <div>
+            <h3>Fajar Nugraha</h3>
+            <p>5 jam lalu &bull; 0,5 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Cari partner olahraga lari</a></h4>
+        <p>Mau konsisten lari pagi 2x seminggu, cari partner di sekitar kampus.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Lainnya</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Traktir</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Bantu</a></p>
+      </article>
+
+      <!-- Kartu 2: Saya Bisa (Contoh Penawaran) -->
+      <!-- Kartu 1: Rina Putri (Saya Bisa) -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-rina.svg" alt="Foto profil Rina Putri" width="36" height="36">
+          <div>
+            <h3>Rina Putri</h3>
+            <p>10 menit lalu &bull; 0,7 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Bisa bantu antar barang di sekitar kampus</a></h4>
+        <p>Sedang berada di sekitar kampus dan bisa membantu mengantar barang kecil. Pakai motor.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Kurir / Titip</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Patungan</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Hubungi</a></p>
+      </article>
+
+      <!-- Kartu 2: Agus Setiawan (Saya Bisa) -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-agus.svg" alt="Foto profil Agus Setiawan" width="36" height="36">
+          <div>
+            <h3>Agus Setiawan</h3>
+            <p>25 menit lalu &bull; 1,5 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Mentor matematika SMA &amp; kuliah</a></h4>
+        <p>Mahasiswa semester 7 Pendidikan Matematika, bisa bantu pengerjaan tugas / belajar bareng.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Les Privat</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Tarif Pasti</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Hubungi</a></p>
+      </article>
+
+      <!-- Kartu 3: Dewi Anggraini (Saya Bisa) -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-dewi.svg" alt="Foto profil Dewi Anggraini" width="36" height="36">
+          <div>
+            <h3>Dewi Anggraini</h3>
+            <p>1 jam lalu &bull; 2,2 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Tersedia untuk jasa bersih kos</a></h4>
+        <p>Freelance bersih-bersih, bisa setengah hari atau sehari penuh. Alat bawa sendiri.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Jasa Kebersihan</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Tarif Pasti</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Hubungi</a></p>
+      </article>
+
+      <!-- Kartu 4: Hendra Wibowo (Saya Bisa) -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-hendra.svg" alt="Foto profil Hendra Wibowo" width="36" height="36">
+          <div>
+            <h3>Hendra Wibowo</h3>
+            <p>2 jam lalu &bull; 1,8 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Teknisi listrik &amp; AC panggilan</a></h4>
+        <p>Pengalaman 5 tahun, bisa cek instalasi listrik, pasang kipas, service AC ringan.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Teknis</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Tarif Pasti</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Hubungi</a></p>
+      </article>
+
+      <!-- Kartu 5: Lia Oktaviani (Saya Bisa) -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-lia.svg" alt="Foto profil Lia Oktaviani" width="36" height="36">
+          <div>
+            <h3>Lia Oktaviani</h3>
+            <p>4 jam lalu &bull; 0,9 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Mau nemenin belajar / ngerjain tugas</a></h4>
+        <p>Lagi senggang akhir pekan, cari teman belajar atau diskusi tugas kuliah. Gratis.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Les Privat</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Sukarela</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Hubungi</a></p>
+      </article>
+
+      <!-- Kartu 6: Rizky Ananda (Saya Bisa) -->
+      <article>
+        <header>
+          <img src="./assets/images/avatar-rizky.svg" alt="Foto profil Rizky Ananda" width="36" height="36">
+          <div>
+            <h3>Rizky Ananda</h3>
+            <p>6 jam lalu &bull; 3,0 km</p>
+          </div>
+        </header>
+        <h4><a href="detail-postingan.html">Jasa titip belanja di Delta Plaza</a></h4>
+        <p>Rutin ke Delta Plaza tiap Sabtu, bisa titip belanja atau pickup paket.</p>
+        <div class="tags" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Kurir / Titip</span>
+          <span class="tag" style="background: var(--color-bg-subtle, #e3fdfd); color: var(--color-action-primary, #4a9ba0); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;">Patungan</span>
+        </div>
+        <p><a href="detail-postingan.html" class="btn-action">Hubungi</a></p>
       </article>
 
       <!-- Navigasi Halaman (Pagination) -->

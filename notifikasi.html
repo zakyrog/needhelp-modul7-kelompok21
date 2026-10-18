@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifikasi - NeedHelp</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/notifikasi.css">
+  <script type="module" src="/assets/js/app.js"></script>
+</head>
+<body class="notification-page">
+
+    <!-- Header & Navigasi -->
+   <header class="main-header">
+    <a href="index.html" class="brand-logo">
+      <img src="./assets/images/logo.svg" alt="NeedHelp - Beranda" width="160" height="40">
+    </a>
+    
+    <nav aria-label="Navigasi Utama">
+      <ul class="navbar-nav">
+        <li><a href="index.html">beranda</a></li>
+        <li><a href="katalog.html" class="active">Katalog</a></li>
+        <li><a href="aktivitas.html">Aktivitas</a></li>
+        <li><a href="tentang.html">Tentang</a></li>
+      </ul>
+    </nav>
+
+    <div class="navbar-actions">
+      <!-- Kolom Pencarian -->
+      <div class="search-box">
+        <input type="text" placeholder="Cari bantuan...">
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <!-- Tombol Pesan / Chat -->
+      <a href="chat.html" class="icon-btn" aria-label="Pesan">💬</a>
+
+      <!-- Tombol Notifikasi -->
+      <a href="notifikasi.html" class="icon-btn" aria-label="Notifikasi">🔔</a>
+
+      <!-- Profil Pengguna -->
+      <a href="profil.html" class="profile-avatar">P</a>
+    </div>
+  </header>
+
+
+  <!-- Konten Utama Halaman Notifikasi -->
+  <main class="notification-main">
+    
+    <!-- Bagian Judul dan Tombol Tandai Semua Terbaca -->
+    <div class="notification-top-section">
+      <div class="title-group">
+        <h1>Notifikasi</h1>
+        <p>8 notifikasi baru &bull; 24 total</p>
+      </div>
+      <button class="btn-mark-all">Tandai semua terbaca</button>
+    </div>
+
+    <!-- Tombol Filter Kategori (Chip Menu) -->
+    <div class="notification-filters">
+      <button class="filter-chip active">Semua</button>
+      <button class="filter-chip">Permintaan</button>
+      <button class="filter-chip">Pesan</button>
+      <button class="filter-chip">Sistem</button>
+    </div>
+
+    <!-- Daftar Kartu Notifikasi -->
+    <div class="notification-list">
+      
+      <!-- Notifikasi 1: Pesan Baru (Belum Dibaca - Ada Background Tosca) -->
+      <article class="notification-card unread">
+        <div class="notif-card-left">
+          <div class="notif-icon-box tosca-icon">&#128172;</div>
+          <div class="notif-text-content">
+            <div class="notif-title-row">
+              <h3>Sari Wijaya mengirim pesan baru</h3>
+              <span class="unread-dot-badge"></span>
+            </div>
+            <p>&ldquo;Oke, aku tunggu kabar jam 10 ya 🙏&rdquo;</p>
+          </div>
+        </div>
+        <div class="notif-card-right">
+          <span class="notif-time">2 menit lalu</span>
+        </div>
+      </article>
+
+      <!-- Notifikasi 2: Diterima (Belum Dibaca) -->
+      <article class="notification-card unread">
+        <div class="notif-card-left">
+          <div class="notif-icon-box green-icon">&#9989;</div>
+          <div class="notif-text-content">
+            <div class="notif-title-row">
+              <h3>Budi menerima tawaran bantuanmu</h3>
+              <span class="unread-dot-badge"></span>
+            </div>
+            <p>Permintaan belajar matematika telah dikonfirmasi. Siap bertemu besok.</p>
+          </div>
+        </div>
+        <div class="notif-card-right">
+          <span class="notif-time">15 menit lalu</span>
+        </div>
+      </article>
+
+      <!-- Notifikasi 3: Permintaan Sekitar (Belum Dibaca) -->
+      <article class="notification-card unread">
+        <div class="notif-card-left">
+          <div class="notif-icon-box yellow-icon">&#128591;</div>
+          <div class="notif-text-content">
+            <div class="notif-title-row">
+              <h3>Rina Putri meminta bantuan di sekitarmu</h3>
+              <span class="unread-dot-badge"></span>
+            </div>
+            <p>&ldquo;Butuh bantuan antar barang&rdquo; &mdash; jarak 0,8 km dari kamu.</p>
+          </div>
+        </div>
+        <div class="notif-card-right">
+          <span class="notif-time">32 menit lalu</span>
+        </div>
+      </article>
+
+      <!-- Notifikasi 4: Selesai / Rating (Sudah Dibaca - Background Putih) -->
+      <article class="notification-card">
+        <div class="notif-card-left">
+          <div class="notif-icon-box green-icon">&#9989;</div>
+          <div class="notif-text-content">
+            <div class="notif-title-row">
+              <h3>Agus menyelesaikan sesi mentor matematika</h3>
+            </div>
+            <p>Beri rating untuk pengalaman kamu agar komunitas tetap sehat.</p>
+          </div>
+        </div>
+        <div class="notif-card-right">
+          <span class="notif-time">2 jam lalu</span>
+        </div>
+      </article>
+
+      <!-- Notifikasi 5: Pembatalan (Sudah Dibaca) -->
+      <article class="notification-card">
+        <div class="notif-card-left">
+          <div class="notif-icon-box red-icon">&#9888;</div>
+          <div class="notif-text-content">
+            <div class="notif-title-row">
+              <h3>Dimas membatalkan permintaan AC</h3>
+            </div>
+            <p>Permintaan telah dibatalkan karena waktu tidak cocok.</p>
+          </div>
+        </div>
+        <div class="notif-card-right">
+          <span class="notif-time">kemarin</span>
+        </div>
+      </article>
+
+      <!-- Notifikasi 6: Pesan (Sudah Dibaca) -->
+      <article class="notification-card">
+        <div class="notif-card-left">
+          <div class="notif-icon-box tosca-icon">&#128172;</div>
+          <div class="notif-text-content">
+            <div class="notif-title-row">
+              <h3>Hendra Wibowo mengirim pesan</h3>
+            </div>
+            <p>&ldquo;Terima kasih untuk reviewnya 🙏&rdquo;</p>
+          </div>
+        </div>
+        <div class="notif-card-right">
+          <span class="notif-time">2 hari lalu</span>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- Tautan Kembali ke Beranda -->
+    <div class="notification-back-link">
+      <a href="index.html">&larr; Kembali ke Beranda</a>
+    </div>
+
+  </main>
+
+</body>
+</html>

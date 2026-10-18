@@ -13,7 +13,6 @@
   <meta property="og:type" content="website">
   <meta property="og:locale" content="id_ID">
 
-  <!-- Schema.org Data Terstruktur JSON-LD (Tahap 6 Modul 06) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -28,128 +27,157 @@
   <link rel="stylesheet" href="/assets/css/base.css">
   <script type="module" src="/assets/js/app.js"></script>
 </head>
-<body>
-  <!-- Header & Navigasi Utama -->
-  <header>
-    <a href="index.html">
+<body class="home-page">
+
+  <header class="main-header">
+    <a href="index.html" class="brand-logo">
       <img src="./assets/images/logo.svg" alt="NeedHelp - Beranda" width="160" height="40">
     </a>
+
     <nav aria-label="Navigasi Utama">
       <ul>
-        <li><a href="index.html" aria-current="page">Beranda</a></li>
+        <li><a href="index.html" class="nav-pill active" aria-current="page">Beranda</a></li>
         <li><a href="katalog.html">Katalog</a></li>
         <li><a href="aktivitas.html">Aktivitas</a></li>
-        <li><a href="chat.html">Pesan</a></li>
-        <li><a href="login.html">Masuk</a></li>
+        <li><a href="tentang.html">Tentang</a></li>
       </ul>
     </nav>
-    <form action="#" method="post" role="search">
-      <fieldset>
-        <legend>Pencarian Cepat</legend>
-        <label for="search-input">Cari bantuan atau teman:</label>
+
+    <div class="header-right">
+      <form action="#" method="get" class="search-form" role="search">
+        <img src="./assets/images/icon-search.svg" alt="" class="search-icon" width="16" height="16">
+        <label for="search-input" class="sr-only">Cari bantuan atau teman:</label>
         <input type="search" id="search-input" name="keyword" placeholder="Cari bantuan...">
-        <button type="submit">Cari</button>
-      </fieldset>
-    </form>
+      </form>
+      <button class="icon-btn" aria-label="Notifikasi">
+        <img src="./assets/images/icon-bell.svg" alt="Notifikasi" width="20" height="20">
+      </button>
+      <div class="user-avatar">
+        <img src="./assets/images/avatar-user.svg" alt="Profil Pengguna" width="36" height="36">
+      </div>
+    </div>
   </header>
 
   <main>
-    <!-- Seksi Hero Banner -->
-    <section>
-      <p>128 orang online sedang mencari bantuan</p>
-      <h1>Butuh bantuan atau teman hari ini?</h1>
-      <p>Temukan orang di sekitar yang bisa membantu, atau tawarkan bantuanmu kepada mereka yang membutuhkan.</p>
-      <p>
-        <a href="buat-postingan.html">Buat Permintaan</a>
-        <a href="katalog.html">Tawarkan Bantuan</a>
-      </p>
+    <section class="hero-section">
+      <div class="hero-decorations">
+        <div class="circle-large"></div>
+        <div class="circle-small"></div>
+      </div>
+      
+      <div class="hero-content">
+        <div class="online-badge">
+          <span class="dot"></span>
+          128 orang online sedang mencari bantuan
+        </div>
+        <h1>Butuh bantuan atau teman hari ini?</h1>
+        <p>Temukan orang di sekitar yang bisa membantu, atau tawarkan bantuanmu kepada mereka yang membutuhkan.</p>
+        <div class="hero-actions">
+          <a href="buat-postingan.html" class="button button-primary">Buat Permintaan</a>
+          <a href="katalog.html" class="button button-outline">Tawarkan Bantuan</a>
+        </div>
+      </div>
     </section>
 
-    <!-- Seksi Kategori Populer -->
-    <section>
-      <h2>Kategori Populer</h2>
-      <ul>
-        <li>
-          <img src="./assets/images/icon-les-privat.svg" alt="" width="24" height="24">
-          <h3><a href="katalog.html">Les Privat</a></h3>
+    <section class="container category-section">
+      <h2>Kategori populer</h2>
+      <div class="category-grid">
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-les-privat.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Les Privat</h3>
           <p>48 aktif</p>
-        </li>
-        <li>
-          <img src="./assets/images/icon-kebersihan.svg" alt="" width="24" height="24">
-          <h3><a href="katalog.html">Jasa Kebersihan</a></h3>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-kebersihan.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Jasa Kebersihan</h3>
           <p>22 aktif</p>
-        </li>
-        <li>
-          <img src="./assets/images/icon-kurir.svg" alt="" width="24" height="24">
-          <h3><a href="katalog.html">Kurir / Titip</a></h3>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-kurir.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Kurir / Titip</h3>
           <p>35 aktif</p>
-        </li>
-        <li>
-          <img src="./assets/images/icon-teknis.svg" alt="" width="24" height="24">
-          <h3><a href="katalog.html">Teknis</a></h3>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-teknis.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Teknis</h3>
           <p>18 aktif</p>
-        </li>
-        <li>
-          <img src="./assets/images/icon-lainnya.svg" alt="" width="24" height="24">
-          <h3><a href="katalog.html">Lainnya</a></h3>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-lainnya.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Lainnya</h3>
           <p>15 aktif</p>
-        </li>
-      </ul>
+        </a>
+      </div>
     </section>
 
-    <!-- Seksi Permintaan Terbaru -->
-    <section>
-      <h2>Permintaan Terbaru di Sekitar Kamu</h2>
-      <p><a href="katalog.html">Lihat semua permintaan</a></p>
+    <section class="container request-section">
+      <div class="section-header">
+        <h2>Permintaan terbaru di sekitar kamu</h2>
+        <a href="katalog.html" class="see-all">Lihat semua &rarr;</a>
+      </div>
 
-      <article>
-        <header>
-          <img src="./assets/images/avatar-sari.svg" alt="Foto profil Sari Wijaya" width="40" height="40">
-          <h3>Sari Wijaya</h3>
-          <p><time datetime="2026-10-06T15:50">15 menit lalu</time> &bull; Jarak 1,2 km</p>
-        </header>
-        <h4><a href="detail-postingan.html">Butuh bantuan pindahan kos</a></h4>
-        <p>Butuh bantuan membawa beberapa barang dari kos lama ke tempat baru di sekitar kampus.</p>
-        <ul>
-          <li>Kategori: Kurir / Titip</li>
-          <li>Kompensasi: Patungan</li>
-        </ul>
-        <p><a href="detail-postingan.html">Lihat Rincian &amp; Tawarkan Bantuan</a></p>
-      </article>
+      <div class="cards-grid">
+        <article class="request-card">
+          <header class="card-user">
+            <img src="./assets/images/avatar-sari.svg" alt="Foto profil Sari Wijaya" width="36" height="36" class="avatar-img">
+            <div class="user-info">
+              <h3>Sari Wijaya</h3>
+              <p><time datetime="2026-10-06T15:50">15 menit lalu</time> &bull; 1,2 km</p>
+            </div>
+          </header>
+          <h4><a href="detail-postingan.html">Butuh bantuan pindahan kos</a></h4>
+          <p>Butuh bantuan membawa beberapa barang dari kos lama ke tempat baru di sekitar kampus.</p>
+          <div class="tags">
+            <span class="tag">Kurir / Titip</span>
+            <span class="tag">Patungan</span>
+          </div>
+        </article>
 
-      <article>
-        <header>
-          <img src="./assets/images/avatar-budi.svg" alt="Foto profil Budi Pratama" width="40" height="40">
-          <h3>Budi Pratama</h3>
-          <p><time datetime="2026-10-06T15:33">32 menit lalu</time> &bull; Jarak 0,8 km</p>
-        </header>
-        <h4><a href="detail-postingan.html">Cari teman belajar matematika</a></h4>
-        <p>Mau belajar bareng untuk persiapan UTS. Fokus integral &amp; limit, bisa di perpus kampus.</p>
-        <ul>
-          <li>Kategori: Les Privat</li>
-          <li>Kompensasi: Sukarela</li>
-        </ul>
-        <p><a href="detail-postingan.html">Lihat Rincian &amp; Tawarkan Bantuan</a></p>
-      </article>
+        <article class="request-card highlight-card">
+          <header class="card-user">
+            <img src="./assets/images/avatar-budi.svg" alt="Foto profil Budi Pratama" width="36" height="36" class="avatar-img">
+            <div class="user-info">
+              <h3>Budi Pratama</h3>
+              <p><time datetime="2026-10-06T15:33">32 menit lalu</time> &bull; 0,8 km</p>
+            </div>
+          </header>
+          <h4><a href="detail-postingan.html">Cari teman belajar matematika</a></h4>
+          <p>Mau belajar bareng untuk persiapan UTS. Fokus integral &amp; limit, bisa di perpus kampus.</p>
+          <div class="tags">
+            <span class="tag">Les Privat</span>
+            <span class="tag">Sukarela</span>
+          </div>
+        </article>
 
-      <article>
-        <header>
-          <img src="./assets/images/avatar-rina.svg" alt="Foto profil Rina Putri" width="40" height="40">
-          <h3>Rina Putri</h3>
-          <p><time datetime="2026-10-06T15:05">1 jam lalu</time> &bull; Jarak 2,4 km</p>
-        </header>
-        <h4><a href="detail-postingan.html">Butuh bantuan antar barang</a></h4>
-        <p>Perlu bantuan antar paket kecil ke daerah Gubeng. Bisa dibawa pakai motor.</p>
-        <ul>
-          <li>Kategori: Kurir / Titip</li>
-          <li>Kompensasi: Tarif Pasti</li>
-        </ul>
-        <p><a href="detail-postingan.html">Lihat Rincian &amp; Tawarkan Bantuan</a></p>
-      </article>
+        <article class="request-card">
+          <header class="card-user">
+            <img src="./assets/images/avatar-rina.svg" alt="Foto profil Rina Putri" width="36" height="36" class="avatar-img">
+            <div class="user-info">
+              <h3>Rina Putri</h3>
+              <p><time datetime="2026-10-06T15:05">1 jam lalu</time> &bull; 2,4 km</p>
+            </div>
+          </header>
+          <h4><a href="detail-postingan.html">Butuh bantuan antar barang</a></h4>
+          <p>Perlu bantuan antar paket kecil ke daerah Gubeng. Bisa dibawa pakai motor.</p>
+          <div class="tags">
+            <span class="tag">Kurir / Titip</span>
+            <span class="tag">Tarif Pasti</span>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <!-- Seksi Statistik Komunitas (Elemen Tabel Wajib Sesuai Modul) -->
-    <section>
+    <section class="container table-section" hidden>
       <h2>Statistik Komunitas NeedHelp</h2>
       <table>
         <caption>Ringkasan Capaian dan Aktivitas Komunitas Kota Yogyakarta</caption>
@@ -176,27 +204,10 @@
             <td>4.8 / 5.0</td>
             <td>Tingkat kepuasan interaksi</td>
           </tr>
-          <tr>
-            <th scope="row">Wilayah Utama</th>
-            <td>Sleman &amp; Kota Yogyakarta</td>
-            <td>Fokus area operasional</td>
-          </tr>
         </tbody>
       </table>
     </section>
   </main>
 
-  <!-- Bagian Kaki Halaman (Footer) -->
-  <footer>
-    <p>&copy; 2026 NeedHelp - Need-Based Companion &amp; Help. Kelompok 21 - Kota Yogyakarta.</p>
-    <nav aria-label="Navigasi Footer">
-      <ul>
-        <li><a href="index.html">Beranda</a></li>
-        <li><a href="katalog.html">Katalog Bantuan</a></li>
-        <li><a href="buat-postingan.html">Buat Permintaan</a></li>
-        <li><a href="aktivitas.html">Aktivitas Saya</a></li>
-      </ul>
-    </nav>
-  </footer>
 </body>
 </html>

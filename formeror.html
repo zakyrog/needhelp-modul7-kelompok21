@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Permintaan: Pindahan Kos &amp; Angkat Lemari - NeedHelp</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <script type="module" src="/assets/js/app.js"></script>
+</head>
+<body>
+
+   <header class="main-header">
+    <a href="index.html" class="brand-logo">
+      <img src="./assets/images/logo.svg" alt="NeedHelp - Beranda" width="160" height="40">
+    </a>
+    
+    <nav aria-label="Navigasi Utama">
+      <ul class="navbar-nav">
+        <li><a href="index.html">beranda</a></li>
+        <li><a href="katalog.html" class="active">Katalog</a></li>
+        <li><a href="aktivitas.html">Aktivitas</a></li>
+        <li><a href="tentang.html">Tentang</a></li>
+      </ul>
+    </nav>
+
+    <div class="navbar-actions">
+      <!-- Kolom Pencarian -->
+      <div class="search-box">
+        <input type="text" placeholder="Cari bantuan...">
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <a href="chat.html" class="icon-btn" aria-label="Pesan">💬</a>
+      <a href="notifikasi.html" class="icon-btn" aria-label="Notifikasi">🔔</a>
+      <a href="profil.html" class="profile-avatar">P</a>
+    </div>
+  </header>
+
+  <main class="form-page-wrapper">
+    <div class="form-container-box">
+      <div class="step-indicator">
+        <div class="step-item active">
+          <span class="step-num">1</span>
+          <span>Isi Form</span>
+        </div>
+        <span class="step-line"></span>
+        <div class="step-item">
+          <span class="step-num">2</span>
+          <span>Review</span>
+        </div>
+        <span class="step-line"></span>
+        <div class="step-item">
+          <span class="step-num">3</span>
+          <span>Konfirmasi</span>
+        </div>
+      </div>
+      <div class="target-request-info">
+        <span class="requester-avatar-sm">S</span>
+        <div class="target-text">
+          <small>Membantu permintaan dari</small>
+          <strong>Sari Wijaya &bull; Butuh bantuan pindahan kos</strong>
+        </div>
+      </div>
+
+      <div class="error-summary-box">
+        <span class="error-icon">&#9888;</span> <!-- Ikon Peringatan -->
+        <p>Beberapa field belum diisi dengan benar.</p>
+      </div>
+
+      <form action="review-bantuan.html" method="post" class="bantu-form">
+        <div class="form-group is-error">
+          <label for="helper-name">Nama</label>
+          <input type="text" id="helper-name" name="helper_name" required placeholder="Nama lengkapmu">
+          <span class="error-message-inline">&#9888; Nama wajib diisi.</span>
+        </div>
+
+        <div class="form-group is-error">
+          <label for="helper-whatsapp">Nomor WhatsApp</label>
+          <input type="text" id="helper-whatsapp" name="helper_whatsapp" required placeholder="08xx-xxxx-xxxx">
+          <span class="error-message-inline">&#9888; Nomor kontak wajib diisi.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="helper-message">Pesan untuk Sari</label>
+          <textarea id="helper-message" name="helper_message" rows="3" required>Halo Sari, aku siap bantu.</textarea>
+        </div>
+
+        <div class="form-group is-error">
+          <label for="helper-time">Waktu kamu bisa membantu</label>
+          <input type="text" id="helper-time" name="helper_time" required placeholder="Pilih waktu...">
+          <span class="error-message-inline">&#9888; Waktu bantuan wajib dipilih.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="helper-note">Catatan tambahan (opsional)</label>
+          <input type="text" id="helper-note" name="helper_note" placeholder="Catatan khusus...">
+        </div>
+
+        <div class="form-actions">
+          <a href="detail-postingan.html" class="btn-cancel">Batal</a>
+          <button type="submit" class="btn-submit">Kirim Permintaan Bantuan</button>
+        </div>
+      </form>
+
+    </div>
+  </main>
+
+</body>
+</html>
