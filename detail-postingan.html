@@ -3,82 +3,70 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      Detail Permintaan: Pindahan Kos &amp; Angkat Lemari - NeedHelp
-    </title>
+    <title>Detail Postingan - NeedHelp</title>
     <link rel="stylesheet" href="./assets/css/tokens.css" />
     <link rel="stylesheet" href="./assets/css/base.css" />
     <script type="module" src="./assets/js/app.js"></script>
   </head>
   <body>
-    <header class="main-header">
-      <a href="index.html" class="brand-logo">
-        <img
-          src="./assets/images/logo.svg"
-          alt="NeedHelp - Beranda"
-          width="160"
-          height="40" />
+    <header class="site-header">
+      <a class="site-brand" href="index.html" aria-label="NeedHelp - Beranda">
+        <img src="./assets/images/logo.svg" alt="NeedHelp" width="160" height="40">
       </a>
-
-      <nav aria-label="Navigasi Utama">
-        <ul class="navbar-nav">
-          <li><a href="index.html">beranda</a></li>
-          <li><a href="katalog.html" class="active">Katalog</a></li>
+      <nav class="site-nav" aria-label="Navigasi Utama">
+        <ul>
+          <li><a href="index.html">Beranda</a></li>
+          <li><a href="katalog.html" aria-current="page">Katalog</a></li>
           <li><a href="aktivitas.html">Aktivitas</a></li>
-          <li><a href="tentang.html">Tentang</a></li>
+          <li><a href="chat.html">Pesan</a></li>
         </ul>
       </nav>
-
-      <div class="navbar-actions">
-        <!-- Kolom Pencarian -->
-        <div class="search-box">
-          <input type="text" placeholder="Cari bantuan..." />
-          <span class="search-icon">🔍</span>
-        </div>
-
-        <a href="chat.html" class="icon-btn" aria-label="Pesan">💬</a>
-        <a href="notifikasi.html" class="icon-btn" aria-label="Notifikasi"
-          >🔔</a
-        >
-        <a href="profil.html" class="profile-avatar">P</a>
+      <div class="header-right-actions">
+        <form class="search-box-wrapper" action="katalog.html" method="get" role="search">
+          <img src="./assets/images/icon-search.svg" alt="" class="search-icon" width="16" height="16">
+          <input type="search" name="q" placeholder="Cari bantuan..." aria-label="Cari bantuan">
+        </form>
+        <a href="chat.html" class="icon-action-btn" aria-label="Pesan">
+          <img src="./assets/images/icon-chat.svg" alt="" width="18" height="18">
+        </a>
+        <a href="notifikasi.html" class="icon-action-btn" aria-label="Notifikasi">
+          <img src="./assets/images/icon-bell.svg" alt="" width="18" height="18">
+        </a>
+        <span class="user-profile-badge" role="img" aria-label="Profil pengguna">P</span>
       </div>
     </header>
 
     <main class="detail-main-layout">
       <nav aria-label="Jejak Navigasi" class="breadcrumb-nav">
         <p class="breadcrumb-back">
-          <a href="katalog.html">&larr; Kembali ke Feed</a>
+          <a href="katalog.html" data-detail-back>&larr; Kembali ke Feed</a>
         </p>
         <div class="breadcrumb-status">
-          <span class="status-title">Detail Permintaan</span>
-          <span class="status-badge">Live &bull; butuh dalam 1 hari</span>
+          <span class="status-title" data-detail-crumb>Detail Postingan</span>
+          <span class="status-badge" data-detail-meta>Memuat data...</span>
         </div>
       </nav>
 
       <article class="detail-article">
         <section class="requester-section">
           <img
-            src="./assets/images/avatar-sari.svg"
-            alt="Foto profil Sari Wijaya"
+            src="./assets/images/avatar-user.svg"
+            alt="Foto profil pengguna"
             width="48"
             height="48"
-            class="requester-img" />
+            class="requester-img"
+            data-detail-avatar />
           <div>
-            <h3 class="requester-name">Sari Wijaya</h3>
-            <p class="requester-info">
-              Mahasiswa UNESA &bull; 15 menit lalu &bull; 1,2 km dari lokasimu
-            </p>
+            <h3 class="requester-name" data-detail-author>Memuat...</h3>
+            <p class="requester-info" data-detail-bio></p>
           </div>
-          <div class="requester-rating">&star; 4.9</div>
+          <div class="requester-rating">&star; <span data-detail-rating>-</span></div>
         </section>
 
         <header class="article-header">
-          <h1>Butuh bantuan pindahan kos &amp; angkat lemari</h1>
-          <p>
-            Sedang membutuhkan bantuan membawa beberapa barang dari kos lama ke
-            tempat baru. Barang tidak terlalu besar &mdash; ada 2 kardus, kasur
-            lipat, dan beberapa tas. Jarak kos lama ke baru sekitar 1,5 km.
-          </p>
+          <h1 data-detail-title>Memuat postingan...</h1>
+          <p data-detail-published></p>
+          <div data-detail-description></div>
         </header>
 
         <section class="info-grid-section">
@@ -90,7 +78,7 @@
               height="20" />
             <div>
               <div class="info-label">Kategori</div>
-              <div class="info-value">Kurir / Titip</div>
+              <div class="info-value" data-detail-category>-</div>
             </div>
           </div>
           <div class="info-card">
@@ -101,7 +89,7 @@
               height="20" />
             <div>
               <div class="info-label">Kompensasi</div>
-              <div class="info-value">Patungan</div>
+              <div class="info-value" data-detail-compensation>-</div>
             </div>
           </div>
           <div class="info-card">
@@ -112,7 +100,7 @@
               height="20" />
             <div>
               <div class="info-label">Waktu</div>
-              <div class="info-value">Sabtu, 10.00</div>
+              <div class="info-value" data-detail-time>-</div>
             </div>
           </div>
           <div class="info-card">
@@ -123,7 +111,7 @@
               height="20" />
             <div>
               <div class="info-label">Lokasi</div>
-              <div class="info-value">Sekitar kampus</div>
+              <div class="info-value" data-detail-location>-</div>
             </div>
           </div>
         </section>
@@ -131,19 +119,19 @@
 
       <div class="detail-sidebar">
         <section class="action-box">
-          <h2>Mau bantu Sari?</h2>
-          <p>Isi form singkat agar Sari bisa menghubungimu lewat chat.</p>
+          <h2 data-detail-sidebar-title>Memuat...</h2>
+          <p data-detail-sidebar-text></p>
 
-          <a href="#form-bantu" class="btn-bantu"> Bantu Permintaan </a>
+          <a href="chat.html" class="btn-bantu" data-detail-chat data-detail-chat-link>Bantu Permintaan</a>
 
-          <a href="chat.html?target=sari-wijaya" class="btn-chat">
-            💬 Chat langsung
+          <a href="chat.html" class="btn-chat" data-detail-chat-secondary data-detail-chat-link>
+            &#128172; Chat langsung
           </a>
         </section>
 
         <!-- Kotak Tips Aman -->
         <section class="safety-box">
-          <h3>🛡️ Tips aman</h3>
+          <h3>&#128737;&#65039; Tips aman</h3>
           <p>
             Selalu ketemu di tempat ramai pertama kali. Jangan transfer uang
             muka sebelum ketemu langsung.
@@ -151,5 +139,9 @@
         </section>
       </div>
     </main>
+
+    <footer>
+      <p>&copy; 2026 NeedHelp - Need-Based Companion &amp; Help.</p>
+    </footer>
   </body>
 </html>
