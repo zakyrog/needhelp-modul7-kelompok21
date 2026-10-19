@@ -1,5 +1,7 @@
-# NeedHelp — Paket Awal Ketua Modul 7
+# NeedHelp — Tugas Modul 7 Kelompok 21
+## PRD Final
 
+[Buka PRD Final NeedHelp](https://drive.google.com/file/d/1SuC0Wx6kJNWk4dfgUdfk4fdsHmkRSTOr/view?usp=sharing)
 Kelompok 21. Status: fondasi untuk dilanjutkan 3 anggota, **belum aplikasi final**.
 
 Figma: https://www.figma.com/design/iP8nJj7pgr2LxL1nvtuTAa/Need-Based-Companion---Help-FIX?node-id=85-60
