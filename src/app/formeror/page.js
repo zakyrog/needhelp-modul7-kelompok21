@@ -79,22 +79,8 @@ export default function FormErrorPage() {
           </div>
         </div>
 
-        <div
-          style={{
-            background: "#fff8e6",
-            border: "1px solid #ffeeba",
-            color: "#856404",
-            padding: "8px 14px",
-            fontSize: "12px",
-            borderRadius: "6px",
-            marginBottom: "16px",
-          }}
-        >
-          ℹ Halaman ini merupakan acuan tampilan keadaan error formulir (Modul 7 screen 08_FormError &amp; Modul 8 Target 2).
-        </div>
-
         {hasErrors && (
-          <div className="error-summary-box" role="alert" style={{ marginBottom: "20px" }}>
+          <div className="error-summary-box" role="alert">
             <span className="error-icon">⚠</span>
             <p>Beberapa field belum diisi dengan benar.</p>
           </div>
@@ -180,11 +166,11 @@ export default function FormErrorPage() {
             />
           </FormField>
 
-          <div className="form-actions" style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-            <Link href="/detail-postingan?id=post-pindahan" className="button button-outline">
+          <div className="form-actions">
+            <Link href="/detail-postingan?id=post-pindahan" className="btn-cancel">
               Batal
             </Link>
-            <button type="submit" className="button button-primary">
+            <button type="submit" className="btn-submit">
               Kirim Permintaan Bantuan
             </button>
           </div>

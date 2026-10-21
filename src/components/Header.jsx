@@ -69,6 +69,10 @@ export function Header() {
 
   const closeMenu = () => setMenuOpen(false);
 
+  if (pathname === "/login") {
+    return null;
+  }
+
   return (
     <header className="site-header">
       <Link href="/" className="site-brand" aria-label="NeedHelp - Beranda" onClick={closeMenu}>

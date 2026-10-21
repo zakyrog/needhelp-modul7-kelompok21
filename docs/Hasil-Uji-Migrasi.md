@@ -115,4 +115,39 @@ Pengujian verifikasi terhadap kunci penyimpanan browser:
 Sesuai batasan proyek:
 - Autentikasi demo bukan layanan server OAuth/JWT riil, melainkan simulasi frontend di browser.
 - Chat bukan WebSocket *multi-user* antarperangkat yang berbeda, melainkan persistensi percakapan lokal untuk pengujian alur interaksi.
-- Seluruh batasan tersebut telah diberi label visual yang jelas menggunakan komponen `<SimulationBanner />` di halaman terkait.
+- Keterbatasan ini dicatat transparan untuk persiapan integrasi backend tim Modul 8.
+
+---
+
+## 3. Optimasi Performa & Penyelarasan Desain Figma
+
+Menindaklanjuti evaluasi estetika dan performa, telah dilakukan perbaikan mendalam pada lapisan styling dan arsitektur rendering:
+
+### A. Penyelarasan Presisi Tampilan (Figma Alignment)
+1. **Dynamic Body Class Synchronization (`BodyClassManager`):**
+   - CSS orisinal (`base.css`) memanfaatkan selektor spesifik berbasis body class (contoh: `body.home-page`, `body.catalog-page`, `body.activity-page`, `body.chat-page`, `body.login-page`).
+   - Komponen `BodyClassManager` memastikan class body diperbarui secara reaktif saat navigasi rute terjadi, memulihkan grid 2-kolom pada katalog, hero banner lebar beranda, dan split-screen pada form login.
+2. **Selektor Layout Tangguh (Resilient CSS Selectors):**
+   - Menambahkan selektor turunan paralel (`body.catalog-page > main, body.catalog-page main`) agar styling layout tidak rentan terhadap wrapper bawaan React/Next.js.
+3. **Restorasi Class Komponen Orisinal:**
+   - Menghilangkan *inline styles* yang tidak rapi dan mengembalikan class CSS orisinal Figma: `.btn-primary-custom`, `.btn-secondary-custom`, `.btn-cancel`, `.btn-submit`, `.article-avatar`, `.notif-icon-box`.
+   - Menghilangkan banner kuning simulasi yang memenuhi ruang kerja form dan obrolan, mengembalikan kerapian tampilan sesuai acuan Figma.
+
+### B. Optimasi Performa & Rendering Instan
+1. **Zero Artificial Latency:**
+   - Menghapus seluruh `setTimeout` buatan dan layar antara `checkingAuth` ("Memeriksa sesi...") yang sebelumnya menyebabkan kedipan (*flashing*) saat navigasi.
+   - Sesi demo dan data lokal diinisialisasi secara sinkron; perpindahan halaman berlangsung instan tanpa jeda.
+2. **Optimasi Font & Bundle Web:**
+   - Tipografi menggunakan `next/font/google` (`Inter`), yang di-preload secara otomatis pada level server tanpa request eksternal tambahan.
+   - Ukuran *First Load JS* seluruh rute berada pada kisaran optimal **108 – 116 kB** (sangat ringan).
+
+---
+
+## 4. Evaluasi Kendala yang Ditemukan dan Solusi
+
+| Kendala Awal | Solusi yang Diterapkan | Status |
+|---|---|---|
+| CSS selektor `body.page-name > main` tidak cocok karena Next.js merender di dalam body dinamis | Dibuatkan `BodyClassManager` + fallback selektor di `base.css` | **Terselesaikan** |
+| Halaman terasa lambat karena skeleton timeout buatan | Menghapus timer buatan, menggunakan inisialisasi state sinkron | **Terselesaikan** |
+| Kedipan "Memeriksa sesi..." saat klik menu navigasi | Memperbolehkan rendering demo langsung tanpa layar loading artifisial | **Terselesaikan** |
+| Tampilan form dan tombol tidak seragam dengan Figma | Mengembalikan class orisinal `.btn-primary-custom`, `.btn-cancel`, `.btn-submit` | **Terselesaikan** |

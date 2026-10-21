@@ -10,24 +10,13 @@ function SuksesPostinganContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
 
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState(() => (id ? getPost(id) : null));
 
   useEffect(() => {
     if (id) {
-      const found = getPost(id);
-      setPost(found);
+      setPost(getPost(id));
     }
-    setLoading(false);
   }, [id]);
-
-  if (loading) {
-    return (
-      <main className="form-page-wrapper">
-        <p style={{ textAlign: "center", padding: "40px" }}>Memuat konfirmasi...</p>
-      </main>
-    );
-  }
 
   if (!post) {
     return (
@@ -65,7 +54,7 @@ function SuksesPostinganContent() {
           Postingan kamu telah aktif dan dapat ditemukan oleh pengguna lain di katalog.
         </p>
 
-        <div className="success-summary-card" style={{ textAlign: "left" }}>
+        <div className="success-summary-card">
           <div className="summary-row">
             <span className="summary-label">ID Postingan</span>
             <strong className="summary-value">#{post.id}</strong>
@@ -96,16 +85,16 @@ function SuksesPostinganContent() {
           </div>
         </div>
 
-        <div className="success-actions" style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "24px" }}>
-          <Link href={`/detail-postingan?id=${encodeURIComponent(post.id)}`} className="button button-primary">
+        <div className="success-actions">
+          <Link href={`/detail-postingan?id=${encodeURIComponent(post.id)}`} className="btn-primary-custom">
             Lihat Detail Postingan
           </Link>
-          <Link href="/aktivitas" className="button button-outline">
-            Buka Daftar Aktivitas
+          <Link href="/aktivitas" className="btn-secondary-custom">
+            Lihat Aktivitas
           </Link>
         </div>
 
-        <div className="success-footer-link" style={{ marginTop: "20px" }}>
+        <div className="success-footer-link">
           <Link href="/katalog">&larr; Kembali ke Katalog Feed</Link>
         </div>
       </div>

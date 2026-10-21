@@ -8,12 +8,11 @@ import {
   getPost,
   saveRating,
   formatDate,
-} from "../../lib/data";
-import { readSession } from "../../lib/auth";
-import { validateRating } from "../../lib/validation";
+} from "../../lib/data.js";
+import { readSession } from "../../lib/auth.js";
+import { validateRating } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
-import { FormField } from "../../components/FormField";
 
 function RatingContent() {
   const router = useRouter();
@@ -22,7 +21,6 @@ function RatingContent() {
 
   const id = searchParams.get("id");
 
-  const [checkingAuth, setCheckingAuth] = useState(true);
   const [activity, setActivity] = useState(null);
   const [unrateableReason, setUnrateableReason] = useState(null);
 
@@ -34,14 +32,6 @@ function RatingContent() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const session = readSession();
-    if (!session) {
-      showToast("Silakan masuk untuk memberi penilaian.", "info");
-      router.replace(`/login?next=${encodeURIComponent(`/rating?id=${id || ""}`)}`);
-      return;
-    }
-    setCheckingAuth(false);
-
     const { activity: foundActivity, reason } = getRateableActivity(id);
     if (!foundActivity) {
       setUnrateableReason(reason);
@@ -55,7 +45,7 @@ function RatingContent() {
         }
       }
     }
-  }, [id, router, showToast]);
+  }, [id]);
 
   const handleBadgeToggle = (badgeKey) => {
     setBadges((prev) =>
@@ -97,14 +87,6 @@ function RatingContent() {
     }
   };
 
-  if (checkingAuth) {
-    return (
-      <main style={{ padding: "40px", textAlign: "center" }}>
-        <p>Memeriksa sesi...</p>
-      </main>
-    );
-  }
-
   if (unrateableReason) {
     const errorMessages = {
       missing: "Pilih aktivitas dari halaman Aktivitas sebelum memberi ulasan.",
@@ -144,46 +126,28 @@ function RatingContent() {
       </header>
 
       {/* Ringkasan Kegiatan */}
-      <article
-        style={{
-          background: "var(--color-bg-surface)",
-          border: "1px solid var(--color-border-default)",
-          borderRadius: "12px",
-          padding: "20px",
-          marginBottom: "24px",
-        }}
-      >
+      <article>
         <header>
-          <h2 style={{ fontSize: "16px", margin: "0 0 8px 0" }}>
-            Ringkasan Aktivitas
-          </h2>
-          <p style={{ margin: "4px 0" }}>
+          <h2>Ringkasan Aktivitas</h2>
+          <p>
             Aktivitas: <strong>{post?.title || "Aktivitas NeedHelp"}</strong>
           </p>
-          <p style={{ margin: "4px 0" }}>
+          <p>
             Rekan Bantuan: <strong>{partnerName}</strong>
           </p>
         </header>
-        <dl style={{ margin: "12px 0 0 0" }}>
-          <dt style={{ fontWeight: 600, color: "var(--color-text-muted)" }}>
-            Tanggal Pelaksanaan
-          </dt>
-          <dd style={{ margin: "0 0 8px 0" }}>
-            {post ? formatDate(post.date) : activity.note}
-          </dd>
-          <dt style={{ fontWeight: 600, color: "var(--color-text-muted)" }}>
-            Lokasi
-          </dt>
-          <dd style={{ margin: "0 0 8px 0" }}>
+        <dl>
+          <dt>Tanggal Pelaksanaan</dt>
+          <dd>{post ? formatDate(post.date) : activity.note}</dd>
+          <dt>Lokasi</dt>
+          <dd>
             {post
               ? `${post.address}${post.destination ? ` ke ${post.destination}` : ""}`
               : "Sesuai kesepakatan"}
           </dd>
-          <dt style={{ fontWeight: 600, color: "var(--color-text-muted)" }}>
-            Status
-          </dt>
-          <dd style={{ margin: 0 }}>
-            <mark style={{ background: "var(--color-bg-subtle)", padding: "2px 8px", borderRadius: "4px" }}>
+          <dt>Status</dt>
+          <dd>
+            <mark>
               {activity.status === "selesai" ? "Aktivitas Selesai" : "Aktivitas Berlangsung"}
             </mark>
           </dd>
@@ -191,9 +155,9 @@ function RatingContent() {
       </article>
 
       {errors.general && (
-        <div className="error-banner" role="alert" style={{ marginBottom: "20px" }}>
-          ⚠ {errors.general}
-        </div>
+        <p className="error-banner" role="alert">
+          {errors.general}
+        </p>
       )}
 
       {/* Formulir Evaluasi & Rating */}
@@ -222,7 +186,7 @@ function RatingContent() {
           ))}
           {errors.rating && (
             <small className="field-error" role="alert">
-              ⚠ {errors.rating}
+              {errors.rating}
             </small>
           )}
         </fieldset>
@@ -253,16 +217,13 @@ function RatingContent() {
         {/* 3. Ulasan Terbuka */}
         <fieldset>
           <legend>3. Catatan &amp; Testimoni</legend>
-          <FormField
-            id="review-comment"
-            label="Ceritakan pengalamanmu:"
-            required
-            error={errors.comment}
-          >
+          <p>
+            <label htmlFor="review-comment">Ceritakan pengalamanmu:</label>
             <textarea
               id="review-comment"
               name="review"
               rows={4}
+              cols={50}
               value={comment}
               onChange={(e) => {
                 setComment(e.target.value);
@@ -270,10 +231,15 @@ function RatingContent() {
                   setErrors((prev) => ({ ...prev, comment: undefined }));
                 }
               }}
-              placeholder="Tulis ulasan tentang keandalan rekan bantuan untuk ditampilkan di profilnya (minimal 10 karakter)..."
+              placeholder="Tulis ulasan tentang keandalan rekan bantuan untuk ditampilkan di profilnya..."
               aria-invalid={Boolean(errors.comment)}
             />
-          </FormField>
+            {errors.comment && (
+              <small className="field-error" role="alert">
+                {errors.comment}
+              </small>
+            )}
+          </p>
 
           <p>
             <label htmlFor="recommend-user">
@@ -284,7 +250,6 @@ function RatingContent() {
               name="recommend"
               value={recommend}
               onChange={(e) => setRecommend(e.target.value)}
-              style={{ display: "block", marginTop: "6px", width: "100%", maxWidth: "320px" }}
             >
               <option value="yes">Sangat Merekomendasikan</option>
               <option value="neutral">Netral</option>
@@ -296,7 +261,7 @@ function RatingContent() {
         {/* 4. Konfirmasi Akhir */}
         <fieldset>
           <legend>4. Konfirmasi Akhir</legend>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <p style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <button
               type="submit"
               className="button button-primary"
@@ -307,7 +272,7 @@ function RatingContent() {
             <Link href="/aktivitas" className="button button-outline">
               Kembali ke Aktivitas
             </Link>
-          </div>
+          </p>
         </fieldset>
       </form>
     </main>

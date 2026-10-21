@@ -2,23 +2,21 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPublicPosts, filterPosts } from "../../lib/data";
+import { getPublicPosts, filterPosts } from "../../lib/data.js";
 import { CatalogCard } from "../../components/CatalogCard";
-import { SkeletonList } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 
 function CatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Read initial params
+  // Read initial params from URL
   const initialQ = searchParams.get("q") || "";
   const initialType = searchParams.get("type") || "all";
   const initialLocation = searchParams.get("location") || "";
   const initialCompensation = searchParams.get("compensation") || "";
   const initialSort = searchParams.get("sort") || "terbaru";
   const initialPage = Math.max(1, Number(searchParams.get("page")) || 1);
-
   const initialCategories = searchParams.getAll("category");
 
   const [query, setQuery] = useState(initialQ);
@@ -28,7 +26,6 @@ function CatalogContent() {
   const [compensation, setCompensation] = useState(initialCompensation);
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
-  const [loading, setLoading] = useState(true);
 
   // Sync state if URL query params change externally
   useEffect(() => {
@@ -40,14 +37,6 @@ function CatalogContent() {
     setSort(searchParams.get("sort") || "terbaru");
     setPage(Math.max(1, Number(searchParams.get("page")) || 1));
   }, [searchParams]);
-
-  // Initial load simulation
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 150);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleCategoryToggle = (cat) => {
     setCategories((prev) =>
@@ -77,7 +66,7 @@ function CatalogContent() {
     setPage(1);
   };
 
-  // Filter & sort posts dynamically
+  // Instant filter & sort with no artificial latency
   const filteredAndSortedPosts = useMemo(() => {
     const allPublic = getPublicPosts();
     const filtered = filterPosts(allPublic, {
@@ -116,23 +105,13 @@ function CatalogContent() {
   );
 
   return (
-    <main className="catalog-page">
+    <main>
       <header>
         <h1>Feed Bantuan</h1>
         <p>Temukan orang di sekitar yang sedang membutuhkan bantuan.</p>
 
         {/* Tombol Tab 2 Jalur & Opsi Urutkan */}
-        <div
-          className="catalog-actions-bar"
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "8px",
-            marginTop: "12px",
-          }}
-        >
+        <div className="catalog-actions-bar">
           <div style={{ display: "flex", gap: "8px" }}>
             <button
               type="button"
@@ -141,25 +120,6 @@ function CatalogContent() {
                 handleTypeSelect(postType === "butuh" ? "all" : "butuh")
               }
               aria-current={postType === "butuh" ? "page" : undefined}
-              style={{
-                background:
-                  postType === "butuh"
-                    ? "var(--color-bg-subtle, #e3fdfd)"
-                    : "var(--color-bg-surface, #ffffff)",
-                color:
-                  postType === "butuh"
-                    ? "var(--color-action-primary, #4a9ba0)"
-                    : "var(--color-text-muted, #5e7a80)",
-                border:
-                  postType === "butuh"
-                    ? "1px solid var(--color-action-primary, #4a9ba0)"
-                    : "1px solid var(--color-border-default, #cfdadc)",
-                padding: "6px 16px",
-                borderRadius: "999px",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
             >
               Saya Butuh
             </button>
@@ -171,25 +131,6 @@ function CatalogContent() {
                 handleTypeSelect(postType === "bisa" ? "all" : "bisa")
               }
               aria-current={postType === "bisa" ? "page" : undefined}
-              style={{
-                background:
-                  postType === "bisa"
-                    ? "var(--color-bg-subtle, #e3fdfd)"
-                    : "var(--color-bg-surface, #ffffff)",
-                color:
-                  postType === "bisa"
-                    ? "var(--color-action-primary, #4a9ba0)"
-                    : "var(--color-text-muted, #5e7a80)",
-                border:
-                  postType === "bisa"
-                    ? "1px solid var(--color-action-primary, #4a9ba0)"
-                    : "1px solid var(--color-border-default, #cfdadc)",
-                padding: "6px 16px",
-                borderRadius: "999px",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
             >
               Saya Bisa
             </button>
@@ -207,19 +148,11 @@ function CatalogContent() {
             <label htmlFor="catalog-sort">Urutkan:</label>
             <select
               id="catalog-sort"
+              data-catalog-sort
               value={sort}
               onChange={(e) => {
                 setSort(e.target.value);
                 setPage(1);
-              }}
-              style={{
-                padding: "4px 8px",
-                border: "1px solid var(--color-border-default, #cfdadc)",
-                borderRadius: "8px",
-                background: "var(--color-bg-surface, #ffffff)",
-                color: "var(--color-text-primary)",
-                fontSize: "12px",
-                cursor: "pointer",
               }}
             >
               <option value="terbaru">Terbaru</option>
@@ -242,6 +175,7 @@ function CatalogContent() {
           <h2 style={{ margin: 0, fontSize: "15px" }}>Filter</h2>
           <button
             type="button"
+            data-filter-reset
             onClick={handleReset}
             style={{
               fontSize: "12px",
@@ -414,14 +348,12 @@ function CatalogContent() {
       <section>
         <h2>Daftar Permintaan &amp; Penawaran Aktif</h2>
 
-        <p aria-live="polite" style={{ fontSize: "14px", color: "var(--color-text-muted)" }}>
+        <p data-catalog-count aria-live="polite">
           {filteredAndSortedPosts.length} postingan ditemukan
         </p>
 
-        <div className="catalog-feed-list">
-          {loading ? (
-            <SkeletonList count={4} />
-          ) : visiblePosts.length > 0 ? (
+        <div data-catalog-list>
+          {visiblePosts.length > 0 ? (
             visiblePosts.map((post) => (
               <CatalogCard key={post.id} post={post} backUrl="/katalog" />
             ))
@@ -437,39 +369,26 @@ function CatalogContent() {
         </div>
 
         {pageCount > 1 && (
-          <nav aria-label="Navigasi Halaman Katalog" style={{ marginTop: "24px" }}>
-            <ol style={{ display: "flex", gap: "8px", listStyle: "none", padding: 0 }}>
+          <nav data-catalog-pagination aria-label="Navigasi Halaman Katalog">
+            <ol>
               {Array.from({ length: pageCount }).map((_, index) => {
                 const pageNumber = index + 1;
                 const isCurrent = pageNumber === activePage;
                 return (
                   <li key={pageNumber}>
                     {isCurrent ? (
-                      <span
-                        aria-current="page"
-                        style={{
-                          display: "inline-block",
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          background: "var(--color-action-primary, #4a9ba0)",
-                          color: "#fff",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {pageNumber}
-                      </span>
+                      <span aria-current="page">{pageNumber}</span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setPage(pageNumber)}
                         style={{
-                          display: "inline-block",
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          background: "var(--color-bg-surface, #fff)",
-                          border: "1px solid var(--color-border-default, #cfdadc)",
-                          color: "var(--color-text-primary)",
+                          background: "none",
+                          border: "none",
                           cursor: "pointer",
+                          color: "inherit",
+                          font: "inherit",
+                          padding: 0,
                         }}
                       >
                         {pageNumber}
@@ -488,7 +407,7 @@ function CatalogContent() {
 
 export default function CatalogPage() {
   return (
-    <Suspense fallback={<div className="catalog-page"><p>Memuat katalog bantuan...</p></div>}>
+    <Suspense fallback={<div className="catalog-loading"><p>Memuat katalog...</p></div>}>
       <CatalogContent />
     </Suspense>
   );

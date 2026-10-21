@@ -22,5 +22,5 @@
   --radius-sm: 6px;
   --radius-lg: 12px;
   --radius-pill: 999px;
-  --font-family: "Inter", Arial, sans-serif;
+  --font-family: var(--font-inter), "Inter", Arial, sans-serif;
 }

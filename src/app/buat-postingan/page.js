@@ -3,19 +3,16 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createPost } from "../../lib/data";
-import { readSession } from "../../lib/auth";
-import { validatePost } from "../../lib/validation";
-import { FormField } from "../../components/FormField";
+import { createPost } from "../../lib/data.js";
+import { readSession } from "../../lib/auth.js";
+import { validatePost } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
-import { SimulationBanner } from "../../components/SimulationBanner";
 
 export default function BuatPostinganPage() {
   const router = useRouter();
   const { showToast } = useToast();
 
   const [session, setSession] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [formData, setFormData] = useState({
     nature: "butuh",
@@ -42,7 +39,6 @@ export default function BuatPostinganPage() {
       router.replace("/login?next=/buat-postingan");
     } else {
       setSession(currentSession);
-      setCheckingAuth(false);
     }
   }, [router, showToast]);
 
@@ -86,16 +82,8 @@ export default function BuatPostinganPage() {
     }
   };
 
-  if (checkingAuth) {
-    return (
-      <main style={{ padding: "40px", textAlign: "center" }}>
-        <p>Memeriksa sesi demo...</p>
-      </main>
-    );
-  }
-
   return (
-    <main className="form-page">
+    <main>
       <header>
         <h1>Formulir Pasang Postingan Baru</h1>
         <p>
@@ -104,12 +92,10 @@ export default function BuatPostinganPage() {
         </p>
       </header>
 
-      <SimulationBanner text="Postingan yang kamu buat akan tersimpan di penyimpanan browser lokal dan langsung muncul di Katalog & Aktivitas." />
-
       {errors.general && (
-        <div className="error-banner" role="alert" style={{ marginBottom: "20px" }}>
-          ⚠ {errors.general}
-        </div>
+        <p className="error-banner" role="alert">
+          {errors.general}
+        </p>
       )}
 
       <form onSubmit={handleSubmit} noValidate>
@@ -146,7 +132,7 @@ export default function BuatPostinganPage() {
           </p>
           {errors.nature && (
             <small className="field-error" role="alert">
-              ⚠ {errors.nature}
+              {errors.nature}
             </small>
           )}
         </fieldset>
@@ -154,13 +140,8 @@ export default function BuatPostinganPage() {
         {/* 2. Informasi Utama Kebutuhan */}
         <fieldset>
           <legend>2. Detail Informasi Aktivitas</legend>
-
-          <FormField
-            id="post-title"
-            label="Judul Singkat Postingan"
-            required
-            error={errors.title}
-          >
+          <p>
+            <label htmlFor="post-title">Judul Singkat Postingan:</label>
             <input
               type="text"
               id="post-title"
@@ -171,14 +152,15 @@ export default function BuatPostinganPage() {
               maxLength={100}
               aria-invalid={Boolean(errors.title)}
             />
-          </FormField>
+            {errors.title && (
+              <small className="field-error" role="alert">
+                {errors.title}
+              </small>
+            )}
+          </p>
 
-          <FormField
-            id="post-category"
-            label="Kategori Aktivitas"
-            required
-            error={errors.category}
-          >
+          <p>
+            <label htmlFor="post-category">Kategori Aktivitas:</label>
             <select
               id="post-category"
               name="category"
@@ -200,36 +182,39 @@ export default function BuatPostinganPage() {
                 Explore (Wisata, Kuliner murah, Hidden gem)
               </option>
             </select>
-          </FormField>
+            {errors.category && (
+              <small className="field-error" role="alert">
+                {errors.category}
+              </small>
+            )}
+          </p>
 
-          <FormField
-            id="post-description"
-            label="Deskripsi Lengkap Kebutuhan / Keahlian"
-            required
-            error={errors.description}
-          >
+          <p>
+            <label htmlFor="post-description">
+              Deskripsi Lengkap Kebutuhan / Keahlian:
+            </label>
             <textarea
               id="post-description"
               name="description"
               rows={5}
               value={formData.description}
               onChange={handleChange}
-              placeholder="Jelaskan kebutuhan secara spesifik, barang yang dibawa, titik temu, atau keahlian yang kamu tawarkan (minimal 20 karakter)..."
+              placeholder="Jelaskan kebutuhan secara spesifik, barang yang dibawa, titik temu, atau keahlian yang kamu tawarkan..."
               aria-invalid={Boolean(errors.description)}
             />
-          </FormField>
+            {errors.description && (
+              <small className="field-error" role="alert">
+                {errors.description}
+              </small>
+            )}
+          </p>
         </fieldset>
 
         {/* 3. Waktu & Lokasi Pelaksanaan */}
         <fieldset>
           <legend>3. Waktu &amp; Lokasi Pelaksanaan</legend>
-
-          <FormField
-            id="post-date"
-            label="Tanggal Rencana"
-            required
-            error={errors.date}
-          >
+          <p>
+            <label htmlFor="post-date">Tanggal Rencana:</label>
             <input
               type="date"
               id="post-date"
@@ -238,14 +223,15 @@ export default function BuatPostinganPage() {
               onChange={handleChange}
               aria-invalid={Boolean(errors.date)}
             />
-          </FormField>
+            {errors.date && (
+              <small className="field-error" role="alert">
+                {errors.date}
+              </small>
+            )}
+          </p>
 
-          <FormField
-            id="post-time"
-            label="Waktu / Jam Mulai"
-            required
-            error={errors.time}
-          >
+          <p>
+            <label htmlFor="post-time">Waktu / Jam Mulai:</label>
             <input
               type="time"
               id="post-time"
@@ -254,14 +240,15 @@ export default function BuatPostinganPage() {
               onChange={handleChange}
               aria-invalid={Boolean(errors.time)}
             />
-          </FormField>
+            {errors.time && (
+              <small className="field-error" role="alert">
+                {errors.time}
+              </small>
+            )}
+          </p>
 
-          <FormField
-            id="post-region"
-            label="Wilayah Kabupaten/Kota"
-            required
-            error={errors.region}
-          >
+          <p>
+            <label htmlFor="post-region">Wilayah Kabupaten/Kota:</label>
             <select
               id="post-region"
               name="region"
@@ -276,14 +263,15 @@ export default function BuatPostinganPage() {
               <option value="kulonprogo">Kabupaten Kulon Progo</option>
               <option value="gunungkidul">Kabupaten Gunungkidul</option>
             </select>
-          </FormField>
+            {errors.region && (
+              <small className="field-error" role="alert">
+                {errors.region}
+              </small>
+            )}
+          </p>
 
-          <FormField
-            id="post-address"
-            label="Titik Lokasi / Tempat Bertemu"
-            required
-            error={errors.address}
-          >
+          <p>
+            <label htmlFor="post-address">Titik Lokasi / Tempat Bertemu:</label>
             <input
               type="text"
               id="post-address"
@@ -293,12 +281,15 @@ export default function BuatPostinganPage() {
               placeholder="Contoh: Cosan Palagan / Pogung Baru Blok D"
               aria-invalid={Boolean(errors.address)}
             />
-          </FormField>
+            {errors.address && (
+              <small className="field-error" role="alert">
+                {errors.address}
+              </small>
+            )}
+          </p>
 
-          <FormField
-            id="post-destination"
-            label="Titik Tujuan (Opsional, untuk pindahan / antar barang)"
-          >
+          <p>
+            <label htmlFor="post-destination">Titik Tujuan (Opsional):</label>
             <input
               type="text"
               id="post-destination"
@@ -307,7 +298,7 @@ export default function BuatPostinganPage() {
               onChange={handleChange}
               placeholder="Contoh: Kos Baru di Jl. Palagan KM 8"
             />
-          </FormField>
+          </p>
         </fieldset>
 
         {/* 4. Sistem Kompensasi / Imbalan */}
@@ -326,12 +317,8 @@ export default function BuatPostinganPage() {
           </p>
 
           {formData.compensation === "tarif" && (
-            <FormField
-              id="comp-amount"
-              label="Nominal Tarif (Rp)"
-              required
-              error={errors.amount}
-            >
+            <p>
+              <label htmlFor="comp-amount">Nominal Tarif (Rp):</label>
               <input
                 type="number"
                 id="comp-amount"
@@ -343,7 +330,12 @@ export default function BuatPostinganPage() {
                 placeholder="50000"
                 aria-invalid={Boolean(errors.amount)}
               />
-            </FormField>
+              {errors.amount && (
+                <small className="field-error" role="alert">
+                  {errors.amount}
+                </small>
+              )}
+            </p>
           )}
 
           <p>
@@ -394,7 +386,7 @@ export default function BuatPostinganPage() {
           </p>
           {errors.compensation && (
             <small className="field-error" role="alert">
-              ⚠ {errors.compensation}
+              {errors.compensation}
             </small>
           )}
         </fieldset>
@@ -417,11 +409,11 @@ export default function BuatPostinganPage() {
           </p>
           {errors.terms && (
             <small className="field-error" role="alert">
-              ⚠ {errors.terms}
+              {errors.terms}
             </small>
           )}
 
-          <div style={{ marginTop: "24px", display: "flex", gap: "12px", alignItems: "center" }}>
+          <p style={{ marginTop: "24px", display: "flex", gap: "12px", alignItems: "center" }}>
             <button
               type="submit"
               className="button button-primary"
@@ -432,7 +424,7 @@ export default function BuatPostinganPage() {
             <Link href="/katalog" className="button button-outline">
               Batal
             </Link>
-          </div>
+          </p>
         </fieldset>
       </form>
     </main>

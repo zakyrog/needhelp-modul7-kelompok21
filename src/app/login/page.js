@@ -3,11 +3,10 @@
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { writeSession, CURRENT_USER } from "../../lib/auth";
-import { validateLogin } from "../../lib/validation";
+import { writeSession, CURRENT_USER } from "../../lib/auth.js";
+import { validateLogin } from "../../lib/validation.js";
 import { Modal } from "../../components/Modal";
 import { useToast } from "../../components/Toast";
-import { SimulationBanner } from "../../components/SimulationBanner";
 
 function LoginForm() {
   const router = useRouter();
@@ -61,7 +60,6 @@ function LoginForm() {
         at: new Date().toISOString(),
       });
       showToast("Berhasil masuk ke akun demo!", "success");
-      // Safe next redirect
       const destination =
         nextParam.startsWith("/") && !nextParam.startsWith("//")
           ? nextParam
@@ -84,7 +82,6 @@ function LoginForm() {
               alt="NeedHelp - Beranda"
               width="160"
               height="40"
-              style={{ height: "auto" }}
             />
           </Link>
           <div className="quote-icon">“</div>
@@ -121,17 +118,15 @@ function LoginForm() {
           <p>Masuk untuk mulai meminta atau menawarkan bantuan.</p>
         </header>
 
-        <SimulationBanner text="Autentikasi ini adalah simulasi browser. Gunakan kredensial demo yang tertera." />
-
         {errors.general && (
           <p className="error-banner" role="alert">
-            ⚠ {errors.general}
+            {errors.general}
           </p>
         )}
 
         <form id="login-form" onSubmit={handleSubmit} noValidate>
           <div className="fields">
-            <div className={`field${errors.email ? " is-error" : ""}`}>
+            <div className="field">
               <label htmlFor="user-email">Email</label>
               <input
                 id="user-email"
@@ -151,12 +146,12 @@ function LoginForm() {
               />
               {errors.email && (
                 <small id="user-email-error" className="field-error" role="alert">
-                  ⚠ {errors.email}
+                  {errors.email}
                 </small>
               )}
             </div>
 
-            <div className={`field${errors.password ? " is-error" : ""}`}>
+            <div className="field">
               <label htmlFor="user-password">Password</label>
               <input
                 id="user-password"
@@ -182,7 +177,7 @@ function LoginForm() {
                   className="field-error"
                   role="alert"
                 >
-                  ⚠ {errors.password}
+                  {errors.password}
                 </small>
               )}
             </div>
@@ -232,6 +227,10 @@ function LoginForm() {
             >
               Daftar sekarang
             </button>
+          </p>
+
+          <p style={{ marginTop: "16px", fontSize: "11px", color: "var(--color-text-muted)", textAlign: "center" }}>
+            💡 Mode Demo: Gunakan akun <code>demo@needhelp.test</code> / <code>NeedHelp123!</code>
           </p>
         </form>
       </section>

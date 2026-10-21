@@ -5,7 +5,7 @@ import {
   CATEGORY_LABELS,
   REGION_LABELS,
   COMPENSATION_LABELS,
-} from "../lib/data";
+} from "../lib/data.js";
 
 export function PostCard({ post, index }) {
   const author = getPostAuthor(post);
@@ -14,9 +14,13 @@ export function PostCard({ post, index }) {
   return (
     <article className={`request-card${isHighlight ? " highlight-card" : ""}`}>
       <header className="card-user">
-        <div className={`avatar ${author.avatarClass || "avatar-blue"}`}>
-          {author.initial}
-        </div>
+        <img
+          src={author.avatar || "/assets/images/avatar-user.svg"}
+          alt={`Foto profil ${author.name}`}
+          width={36}
+          height={36}
+          className="avatar-img"
+        />
         <div className="user-info">
           <h3>{author.name}</h3>
           <p>

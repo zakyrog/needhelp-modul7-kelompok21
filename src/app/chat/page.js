@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   getConversations,
   ensureConversation,
@@ -10,35 +10,25 @@ import {
   getPerson,
   getActivities,
   formatMessageTime,
-} from "../../lib/data";
-import { readSession } from "../../lib/auth";
+} from "../../lib/data.js";
 import { useToast } from "../../components/Toast";
-import { SimulationBanner } from "../../components/SimulationBanner";
 
 function ChatContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
 
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [conversations, setConversations] = useState({});
-  const [activeUserId, setActiveUserId] = useState("budi-pratama");
+  const [conversations, setConversations] = useState(() => getConversations());
+  const [activeUserId, setActiveUserId] = useState(() => {
+    const convs = getConversations();
+    return Object.keys(convs)[0] || "budi-pratama";
+  });
   const [topic, setTopic] = useState("Diskusi bantuan");
   const [inputText, setInputText] = useState("");
   const [searchContact, setSearchContact] = useState("");
 
   const messagesEndRef = useRef(null);
 
-  // Load conversations and query params
   useEffect(() => {
-    const currentSession = readSession();
-    if (!currentSession) {
-      showToast("Silakan masuk untuk mengakses fitur pesan.", "info");
-      router.replace("/login?next=/chat");
-      return;
-    }
-    setCheckingAuth(false);
-
     const convs = getConversations();
     const queryUser = searchParams.get("user");
     const queryTopic = searchParams.get("topic");
@@ -56,7 +46,7 @@ function ChatContent() {
     } else if (updatedConvs[targetUser]?.topic) {
       setTopic(updatedConvs[targetUser].topic);
     }
-  }, [router, searchParams, showToast]);
+  }, [searchParams]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,7 +64,6 @@ function ChatContent() {
 
   const activePerson = getPerson(activeUserId);
 
-  // Check if there is an unrated activity with this partner
   const rateableActivity = getActivities().find(
     (item) =>
       item.partnerId === activeUserId &&
@@ -91,19 +80,10 @@ function ChatContent() {
       saveMessage(activeUserId, trimmed, topic);
       setConversations(getConversations());
       setInputText("");
-      showToast("Pesan terkirim!", "success", 2000);
     } catch {
       showToast("Gagal menyimpan pesan ke penyimpanan lokal.", "error");
     }
   };
-
-  if (checkingAuth) {
-    return (
-      <main style={{ padding: "40px", textAlign: "center" }}>
-        <p>Memeriksa sesi...</p>
-      </main>
-    );
-  }
 
   const contactList = Object.keys(conversations).filter((id) => {
     const person = getPerson(id);
@@ -126,8 +106,8 @@ function ChatContent() {
             src="/assets/images/icon-search.svg"
             alt=""
             className="search-sm-icon"
-            width="14"
-            height="14"
+            width={14}
+            height={14}
           />
           <input
             type="text"
@@ -154,7 +134,9 @@ function ChatContent() {
                 }}
                 style={{ cursor: "pointer" }}
               >
-                <div className={`contact-avatar ${person.avatarClass || "tosca-bg"}`}>
+                <div
+                  className={`contact-avatar ${person.avatarClass || "tosca-bg"}`}
+                >
                   {person.initial}
                 </div>
                 <div className="contact-info">
@@ -198,16 +180,14 @@ function ChatContent() {
             {rateableActivity && (
               <Link
                 href={`/rating?id=${encodeURIComponent(rateableActivity.id)}`}
-                className="button button-outline"
-                style={{ fontSize: "12px", padding: "6px 12px" }}
+                className="btn-detail-outline"
+                style={{ fontSize: "12px", padding: "6px 14px" }}
               >
                 ⭐ Beri Ulasan
               </Link>
             )}
           </div>
         </div>
-
-        <SimulationBanner text="Simulasi Ruang Obrolan: Pesan disimpan pada browser dan disimulasikan secara lokal." />
 
         {/* Banner Terkait Permintaan */}
         <div className="request-info-banner">
@@ -226,7 +206,7 @@ function ChatContent() {
         </div>
 
         {/* Area Riwayat Pesan */}
-        <div className="messages-container" style={{ overflowY: "auto", flex: 1, padding: "16px" }}>
+        <div className="messages-container">
           <div className="date-separator">
             <span>Hari ini</span>
           </div>

@@ -1,6 +1,4 @@
-import "@fontsource/inter/400.css";
-import "@fontsource/inter/600.css";
-import "@fontsource/inter/700.css";
+import { Inter } from "next/font/google";
 import "../styles/tokens.css";
 import "../styles/base.css";
 import "../styles/ux-states.css";
@@ -8,6 +6,14 @@ import "../styles/ux-states.css";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { ToastProvider } from "../components/Toast";
+import { BodyClassManager } from "../components/BodyClassManager";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata = {
   metadataBase: new URL("https://needhelp-modul8.local"),
@@ -34,11 +40,12 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id">
+    <html lang="id" className={inter.variable}>
       <body>
+        <BodyClassManager />
         <ToastProvider>
           <Header />
-          <div className="site-wrapper">{children}</div>
+          {children}
           <Footer />
         </ToastProvider>
       </body>

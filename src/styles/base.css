@@ -505,7 +505,8 @@ body.home-page {
   background-color: var(--color-bg-default);
 }
 
-body.home-page > main {
+body.home-page > main,
+body.home-page main {
   max-width: 100% !important;
   width: 100% !important;
   margin: 0 !important;
@@ -1796,7 +1797,8 @@ body.activity-page {
   color: #0f2925;
 }
 
-body.activity-page > main {
+body.activity-page > main,
+body.activity-page main {
   max-width: 1140px;
   margin: 0 auto;
   padding: 40px 20px 80px 20px;
@@ -1804,7 +1806,8 @@ body.activity-page > main {
   background: transparent;
 }
 
-body.activity-page > main > header {
+body.activity-page > main > header,
+body.activity-page main > header {
   border: none;
   background: transparent;
   padding: 0;
@@ -2845,7 +2848,8 @@ body.notification-page {
 }
 
 /* FIX FINAL: layout katalog hasil simulasi Codex */
-body.catalog-page > main {
+body.catalog-page > main,
+body.catalog-page main {
   display: grid !important;
   grid-template-columns: 280px minmax(0, 1fr) !important;
   gap: 24px !important;
@@ -2855,19 +2859,22 @@ body.catalog-page > main {
   align-items: start !important;
 }
 
-body.catalog-page > main > header {
+body.catalog-page > main > header,
+body.catalog-page main > header {
   grid-column: 1 / -1 !important;
   margin: 0 !important;
   padding: 24px !important;
 }
 
-body.catalog-page > main > aside {
+body.catalog-page > main > aside,
+body.catalog-page main > aside {
   width: 100% !important;
   min-width: 0 !important;
   float: none !important;
 }
 
-body.catalog-page > main > section {
+body.catalog-page > main > section,
+body.catalog-page main > section {
   display: block !important;
   min-width: 0 !important;
   width: 100% !important;
@@ -2942,7 +2949,8 @@ body.catalog-page [data-catalog-list] > article dd {
 }
 
 @media (max-width: 900px) {
-  body.catalog-page > main {
+  body.catalog-page > main,
+  body.catalog-page main {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
@@ -2970,7 +2978,8 @@ body.catalog-page > header.site-header {
   box-sizing: border-box;
 }
 
-body.catalog-page > main {
+body.catalog-page > main,
+body.catalog-page main {
   flex: 0 0 auto !important;
   height: auto !important;
   min-height: 0 !important;

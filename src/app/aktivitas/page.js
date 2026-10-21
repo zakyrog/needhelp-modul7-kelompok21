@@ -2,38 +2,24 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   getActivities,
   getActivityStats,
   getPost,
   cancelActivity,
-  CATEGORY_LABELS,
-  formatDateTime,
-} from "../../lib/data";
-import { readSession } from "../../lib/auth";
+} from "../../lib/data.js";
+import { readSession } from "../../lib/auth.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
-import { SkeletonCard } from "../../components/Skeleton";
-import { SimulationBanner } from "../../components/SimulationBanner";
-
-const ACTIVITY_LABELS = {
-  berlangsung: "Sedang Berlangsung",
-  menunggu: "Menunggu Respon",
-  selesai: "Selesai",
-  batal: "Dibatalkan",
-};
 
 function ActivityContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
 
   const [session, setSession] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [activities, setActivities] = useState([]);
+  const [activities, setActivities] = useState(() => getActivities());
   const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
 
   const loadActivities = () => {
     setActivities(getActivities());
@@ -41,20 +27,13 @@ function ActivityContent() {
 
   useEffect(() => {
     const currentSession = readSession();
-    if (!currentSession) {
-      showToast("Silakan masuk untuk mengakses halaman aktivitas.", "info");
-      router.replace("/login?next=/aktivitas");
-    } else {
-      setSession(currentSession);
-      setCheckingAuth(false);
-      loadActivities();
-      setLoading(false);
+    setSession(currentSession);
+    loadActivities();
 
-      if (searchParams.get("rated") === "1") {
-        showToast("Terima kasih! Ulasanmu berhasil disimpan.", "success");
-      }
+    if (searchParams.get("rated") === "1") {
+      showToast("Terima kasih! Ulasanmu berhasil disimpan.", "success");
     }
-  }, [router, searchParams, showToast]);
+  }, [searchParams, showToast]);
 
   const stats = useMemo(() => {
     return getActivityStats(activities);
@@ -77,22 +56,27 @@ function ActivityContent() {
     }
   };
 
-  if (checkingAuth) {
-    return (
-      <main style={{ padding: "40px", textAlign: "center" }}>
-        <p>Memeriksa sesi pengguna...</p>
-      </main>
-    );
-  }
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "menunggu":
+        return <span className="activity-status-tag tag-waiting">&#9679; Menunggu</span>;
+      case "berlangsung":
+        return <span className="activity-status-tag tag-confirmed">&#9679; Sedang Berjalan</span>;
+      case "selesai":
+        return <span className="activity-status-tag tag-completed">&#9679; Selesai</span>;
+      case "batal":
+        return <span className="activity-status-tag tag-cancelled">&#9679; Dibatalkan</span>;
+      default:
+        return <span className="activity-status-tag">{status}</span>;
+    }
+  };
 
   return (
-    <main className="activity-page">
+    <main>
       <header className="page-header-section">
         <h1>Aktivitas Saya</h1>
         <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
       </header>
-
-      <SimulationBanner text="Daftar aktivitas mencakup postingan yang Anda buat dan aktivitas demo terhubung." />
 
       <section className="activity-stats-grid">
         <div className="stat-box">
@@ -128,78 +112,43 @@ function ActivityContent() {
             type="button"
             className={`filter-chip${filter === tab.key ? " active" : ""}`}
             onClick={() => setFilter(tab.key)}
-            style={{ cursor: "pointer" }}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      <section className="activity-list-container" style={{ marginTop: "24px" }}>
-        {loading ? (
-          <>
-            <SkeletonCard />
-            <SkeletonCard />
-          </>
-        ) : visibleActivities.length > 0 ? (
+      <section className="activity-list-container">
+        {visibleActivities.length > 0 ? (
           visibleActivities.map((activity) => {
             const post = getPost(activity.postId);
-            const statusLabel =
-              ACTIVITY_LABELS[activity.status] || activity.status;
-            const category = post
-              ? CATEGORY_LABELS[post.category] || post.category
-              : "Aktivitas";
             const canOpenPost = Boolean(
               post && (post.owned || activity.status !== "batal"),
             );
+            const avatarInitial = activity.partner
+              ? activity.partner.charAt(0).toUpperCase()
+              : post
+                ? post.title.charAt(0).toUpperCase()
+                : "A";
+
+            const avatarClass =
+              activity.status === "berlangsung"
+                ? "avatar-blue"
+                : activity.status === "selesai"
+                  ? "avatar-green"
+                  : activity.status === "batal"
+                    ? "avatar-red"
+                    : "avatar-tosca";
 
             return (
-              <article
-                key={activity.id}
-                className="activity-card-item"
-                style={{
-                  background: "var(--color-bg-surface, #fff)",
-                  border: "1px solid var(--color-border-default, #cfdadc)",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  marginBottom: "16px",
-                }}
-              >
+              <article key={activity.id}>
                 <header>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                    }}
-                  >
-                    <div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          margin: "0 0 4px 0",
-                          color: "var(--color-text-muted)",
-                        }}
-                      >
-                        <mark
-                          style={{
-                            background:
-                              activity.status === "selesai"
-                                ? "#d4edda"
-                                : activity.status === "batal"
-                                  ? "#f8d7da"
-                                  : "var(--color-bg-subtle)",
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          {statusLabel}
-                        </mark>{" "}
-                        &bull; Kategori: {category}
-                      </p>
-                      <h3 style={{ margin: "4px 0", fontSize: "16px" }}>
+                  <div className={`article-avatar ${avatarClass}`}>
+                    {avatarInitial}
+                  </div>
+                  <div className="article-info">
+                    <div className="article-title-row">
+                      <h3>
                         {canOpenPost ? (
                           <Link
                             href={`/detail-postingan?id=${encodeURIComponent(post.id)}`}
@@ -212,65 +161,30 @@ function ActivityContent() {
                           "Aktivitas NeedHelp"
                         )}
                       </h3>
-                      {activity.partner && (
-                        <p style={{ margin: "4px 0", fontSize: "13px" }}>
-                          Partner Relawan: <strong>{activity.partner}</strong>
-                        </p>
-                      )}
-                      {post && post.createdAt && (
-                        <p
-                          style={{
-                            margin: "4px 0",
-                            fontSize: "12px",
-                            color: "var(--color-text-muted)",
-                          }}
-                        >
-                          Dipasang: {formatDateTime(post.createdAt)}
-                        </p>
-                      )}
+                      {getStatusBadge(activity.status)}
                     </div>
+                    <p>
+                      {activity.partner && (
+                        <>
+                          <span className="role-label">Partner</span>{" "}
+                          <strong>{activity.partner}</strong> &bull;{" "}
+                        </>
+                      )}
+                      {activity.note}
+                    </p>
+                    {activity.review && (
+                      <p style={{ marginTop: "4px", color: "var(--color-text-primary)" }}>
+                        Ulasan: <em>&ldquo;{activity.review.comment}&rdquo;</em> ({activity.review.rating}.0 ★)
+                      </p>
+                    )}
                   </div>
                 </header>
 
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "var(--color-text-secondary)",
-                    margin: "12px 0",
-                  }}
-                >
-                  {activity.note}
-                </p>
-
-                {activity.review && (
-                  <div
-                    style={{
-                      background: "var(--color-bg-default)",
-                      padding: "10px 14px",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    Ulasan kamu: <em>&ldquo;{activity.review.comment}&rdquo;</em>{" "}
-                    (<strong>{activity.review.rating}.0 / 5.0 ★</strong>)
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "10px",
-                    alignItems: "center",
-                    marginTop: "12px",
-                  }}
-                >
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   {canOpenPost && (
                     <Link
                       href={`/detail-postingan?id=${encodeURIComponent(post.id)}`}
-                      className="button button-outline"
-                      style={{ fontSize: "12px", padding: "6px 12px" }}
+                      className="btn-detail-outline"
                     >
                       Lihat Detail
                     </Link>
@@ -280,17 +194,16 @@ function ActivityContent() {
                     <>
                       <Link
                         href={`/chat?user=${encodeURIComponent(activity.partnerId)}`}
-                        className="button button-primary"
-                        style={{ fontSize: "12px", padding: "6px 12px" }}
+                        className="btn-detail-outline"
+                        style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
                       >
-                        Buka Obrolan Chat
+                        Obrolan
                       </Link>
                       <Link
                         href={`/rating?id=${encodeURIComponent(activity.id)}`}
-                        className="button button-outline"
-                        style={{ fontSize: "12px", padding: "6px 12px" }}
+                        className="btn-detail-outline"
                       >
-                        Selesaikan &amp; Beri Ulasan
+                        Selesaikan
                       </Link>
                     </>
                   )}
@@ -298,8 +211,8 @@ function ActivityContent() {
                   {activity.status === "selesai" && !activity.review && (
                     <Link
                       href={`/rating?id=${encodeURIComponent(activity.id)}`}
-                      className="button button-primary"
-                      style={{ fontSize: "12px", padding: "6px 12px" }}
+                      className="btn-detail-outline"
+                      style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
                     >
                       Beri Ulasan
                     </Link>
@@ -308,30 +221,12 @@ function ActivityContent() {
                   {activity.status === "menunggu" && (
                     <button
                       type="button"
+                      className="btn-detail-outline"
                       onClick={() => handleCancel(activity.id)}
-                      style={{
-                        background: "transparent",
-                        color: "var(--color-error, #a52626)",
-                        border: "1px solid var(--color-error, #a52626)",
-                        borderRadius: "6px",
-                        padding: "6px 12px",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
+                      style={{ color: "var(--color-error)", borderColor: "var(--color-error)" }}
                     >
-                      Batalkan Postingan
+                      Batalkan
                     </button>
-                  )}
-
-                  {activity.status === "batal" && (
-                    <span
-                      style={{
-                        fontSize: "13px",
-                        color: "var(--color-text-muted)",
-                      }}
-                    >
-                      Postingan telah dibatalkan.
-                    </span>
                   )}
                 </div>
               </article>

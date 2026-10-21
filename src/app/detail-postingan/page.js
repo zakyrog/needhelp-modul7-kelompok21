@@ -12,47 +12,25 @@ import {
   formatTimeRange,
   formatCompensation,
   formatDateTime,
-  saveMessage,
-} from "../../lib/data";
-import { readSession } from "../../lib/auth";
-import { useToast } from "../../components/Toast";
+} from "../../lib/data.js";
 import { EmptyState } from "../../components/EmptyState";
-import { SkeletonCard } from "../../components/Skeleton";
 
 function DetailPostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { showToast } = useToast();
 
   const id = searchParams.get("id");
   const backUrl = searchParams.get("back") || "/katalog";
 
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [noteMessage, setNoteMessage] = useState("");
-  const [noteError, setNoteError] = useState("");
+  const [post, setPost] = useState(() => (id ? getPost(id) || getPublicPost(id) : null));
 
   useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
+    if (id) {
+      setPost(getPost(id) || getPublicPost(id));
     }
-    const found = getPost(id) || getPublicPost(id);
-    setPost(found);
-    setLoading(false);
   }, [id]);
 
-  if (loading) {
-    return (
-      <main className="detail-main-layout">
-        <div style={{ maxWidth: "800px", margin: "40px auto", width: "100%" }}>
-          <SkeletonCard />
-        </div>
-      </main>
-    );
-  }
-
-  if (!post) {
+  if (!id || !post) {
     return (
       <main className="detail-main-layout">
         <div style={{ maxWidth: "600px", margin: "40px auto", textAlign: "center" }}>
@@ -73,31 +51,6 @@ function DetailPostContent() {
   const typeLabel = isNeed ? "Saya Butuh" : "Saya Bisa";
   const categoryLabel = CATEGORY_LABELS[post.category] || post.category;
   const chatUrl = `/chat?user=${encodeURIComponent(author.id)}&topic=${encodeURIComponent(post.title)}`;
-  const formBantuanUrl = `/formbantuan?id=${encodeURIComponent(post.id)}`;
-
-  const handleSendNote = (e) => {
-    e.preventDefault();
-    const session = readSession();
-    if (!session) {
-      showToast("Silakan masuk terlebih dahulu untuk mengirim pesan.", "info");
-      router.push(`/login?next=${encodeURIComponent(`/detail-postingan?id=${post.id}`)}`);
-      return;
-    }
-
-    const trimmed = noteMessage.trim();
-    if (!trimmed) {
-      setNoteError("Tulis catatan atau penawaran terlebih dahulu.");
-      return;
-    }
-
-    try {
-      saveMessage(author.id, trimmed, post.title);
-      showToast("Pesan berhasil dikirim ke obrolan!", "success");
-      router.push(chatUrl);
-    } catch {
-      setNoteError("Gagal menyimpan pesan ke penyimpanan lokal.");
-    }
-  };
 
   return (
     <main className="detail-main-layout">
@@ -120,8 +73,8 @@ function DetailPostContent() {
           <img
             src={author.avatar || "/assets/images/avatar-user.svg"}
             alt={`Foto profil ${author.name}`}
-            width="48"
-            height="48"
+            width={48}
+            height={48}
             className="requester-img"
           />
           <div>
@@ -135,11 +88,11 @@ function DetailPostContent() {
 
         <header className="article-header">
           <h1>{post.title}</h1>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "14px" }}>
+          <p style={{ color: "var(--color-text-muted)", fontSize: "14px", margin: "8px 0 16px 0" }}>
             Dipublikasikan oleh <strong>{author.name}</strong> pada{" "}
             <time dateTime={post.createdAt}>{formatDateTime(post.createdAt)}</time>
           </p>
-          <div style={{ marginTop: "16px", lineHeight: "1.7" }}>
+          <div style={{ lineHeight: "1.7" }}>
             <h2>{isNeed ? "Deskripsi Kebutuhan" : "Deskripsi Penawaran"}</h2>
             {post.description.split(/\n{2,}/).map((p, idx) => (
               <p key={idx}>{p}</p>
@@ -152,8 +105,8 @@ function DetailPostContent() {
             <img
               src="/assets/images/icon-kurir.svg"
               alt="Kategori"
-              width="20"
-              height="20"
+              width={20}
+              height={20}
             />
             <div>
               <div className="info-label">Kategori</div>
@@ -165,8 +118,8 @@ function DetailPostContent() {
             <img
               src="/assets/images/icon-quote.svg"
               alt="Kompensasi"
-              width="20"
-              height="20"
+              width={20}
+              height={20}
             />
             <div>
               <div className="info-label">Kompensasi</div>
@@ -178,11 +131,11 @@ function DetailPostContent() {
             <img
               src="/assets/images/icon-bell.svg"
               alt="Waktu"
-              width="20"
-              height="20"
+              width={20}
+              height={20}
             />
             <div>
-              <div className="info-label">Waktu Rencana</div>
+              <div className="info-label">Waktu</div>
               <div className="info-value">
                 {formatDate(post.date)} ({formatTimeRange(post)})
               </div>
@@ -193,8 +146,8 @@ function DetailPostContent() {
             <img
               src="/assets/images/icon-search.svg"
               alt="Lokasi"
-              width="20"
-              height="20"
+              width={20}
+              height={20}
             />
             <div>
               <div className="info-label">Lokasi</div>
@@ -203,50 +156,6 @@ function DetailPostContent() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* Quick Note Form */}
-        <section
-          style={{
-            marginTop: "32px",
-            padding: "20px",
-            background: "var(--color-bg-subtle, #e3fdfd)",
-            borderRadius: "12px",
-          }}
-        >
-          <h3 style={{ margin: "0 0 8px 0", fontSize: "16px" }}>
-            Kirim Catatan Cepat ke {author.name}
-          </h3>
-          <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "var(--color-text-secondary)" }}>
-            Tertarik dengan bantuan ini? Kirim pesan pembuka yang langsung masuk ke ruang obrolan.
-          </p>
-          <form onSubmit={handleSendNote}>
-            <textarea
-              rows="3"
-              value={noteMessage}
-              onChange={(e) => {
-                setNoteMessage(e.target.value);
-                setNoteError("");
-              }}
-              placeholder={`Halo ${author.name}, saya tertarik membantu terkait "${post.title}"...`}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "8px",
-                border: "1px solid var(--color-border-default)",
-                marginBottom: "8px",
-                fontFamily: "inherit",
-              }}
-            />
-            {noteError && (
-              <p style={{ color: "var(--color-error)", fontSize: "13px", margin: "4px 0" }}>
-                ⚠ {noteError}
-              </p>
-            )}
-            <button type="submit" className="button button-primary">
-              Kirim Catatan &amp; Buka Chat
-            </button>
-          </form>
         </section>
       </article>
 
@@ -265,8 +174,8 @@ function DetailPostContent() {
             {isNeed ? "Mulai Chat & Tawarkan Bantuan" : "Mulai Chat & Tanyakan Detail"}
           </Link>
 
-          <Link href={formBantuanUrl} className="btn-chat" style={{ textAlign: "center" }}>
-            📝 Ajukan Form Bantuan
+          <Link href={`/formbantuan?id=${encodeURIComponent(post.id)}`} className="btn-chat">
+            &#128221; Form Pengajuan Bantuan
           </Link>
         </section>
 

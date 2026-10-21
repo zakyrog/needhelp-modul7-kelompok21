@@ -97,8 +97,6 @@ function FormBantuanContent() {
           </div>
         </div>
 
-        <SimulationBanner text="Formulir bantuan ini terhubung dengan alur obrolan dan pencatatan aktivitas." />
-
         {/* STEP 1: FORM INPUT */}
         {step === 1 && (
           <form onSubmit={handleNextToReview} className="bantu-form" noValidate>
@@ -184,14 +182,14 @@ function FormBantuanContent() {
               />
             </FormField>
 
-            <div className="form-actions" style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+            <div className="form-actions">
               <Link
                 href={`/detail-postingan?id=${encodeURIComponent(postId)}`}
-                className="button button-outline"
+                className="btn-cancel"
               >
                 Batal
               </Link>
-              <button type="submit" className="button button-primary">
+              <button type="submit" className="btn-submit">
                 Lanjut ke Review &rarr;
               </button>
             </div>
@@ -201,14 +199,14 @@ function FormBantuanContent() {
         {/* STEP 2: REVIEW */}
         {step === 2 && (
           <div className="review-section" style={{ padding: "16px 0" }}>
-            <h2 style={{ fontSize: "18px", margin: "0 0 16px 0" }}>
+            <h2 style={{ fontSize: "18px", margin: "0 0 16px 0", fontWeight: 700 }}>
               Tinjau Pengajuan Bantuan
             </h2>
             <div
               style={{
                 background: "var(--color-bg-default)",
                 padding: "20px",
-                borderRadius: "10px",
+                borderRadius: "12px",
                 lineHeight: "1.8",
                 fontSize: "14px",
               }}
@@ -232,17 +230,17 @@ function FormBantuanContent() {
               )}
             </div>
 
-            <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+            <div className="form-actions" style={{ marginTop: "24px" }}>
               <button
                 type="button"
-                className="button button-outline"
+                className="btn-cancel"
                 onClick={() => setStep(1)}
               >
                 &larr; Ubah Isian
               </button>
               <button
                 type="button"
-                className="button button-primary"
+                className="btn-submit"
                 onClick={handleFinalSubmit}
               >
                 Kirim Pengajuan Sekarang ✓
@@ -253,37 +251,24 @@ function FormBantuanContent() {
 
         {/* STEP 3: SUCCESS CONFIRMATION */}
         {step === 3 && (
-          <div style={{ textAlign: "center", padding: "32px 16px" }}>
-            <div
-              style={{
-                width: "56px",
-                height: "56px",
-                borderRadius: "50%",
-                background: "var(--color-bg-subtle)",
-                color: "var(--color-action-primary)",
-                fontSize: "28px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 16px auto",
-              }}
-            >
-              ✓
+          <div className="success-box text-center" style={{ padding: "24px 0" }}>
+            <div className="success-icon-wrapper">
+              <span className="success-icon">&#10003;</span>
             </div>
-            <h2 style={{ fontSize: "20px", margin: "0 0 8px 0" }}>
+            <h2 className="success-title">
               Tawaran Bantuan Terkirim!
             </h2>
-            <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", maxWidth: "420px", margin: "0 auto 24px auto" }}>
+            <p className="success-desc">
               {author.name} akan menerima tawaran bantuanmu. Kamu dapat melanjutkan obrolan langsung untuk menyepakati titik kumpul.
             </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+            <div className="success-actions">
               <Link
                 href={`/chat?user=${encodeURIComponent(post?.authorId || "sari-wijaya")}&topic=${encodeURIComponent(post?.title || "")}`}
-                className="button button-primary"
+                className="btn-primary-custom"
               >
                 Buka Obrolan dengan {author.name}
               </Link>
-              <Link href="/katalog" className="button button-outline">
+              <Link href="/katalog" className="btn-secondary-custom">
                 Kembali ke Katalog
               </Link>
             </div>

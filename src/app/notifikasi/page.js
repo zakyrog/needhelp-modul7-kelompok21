@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
-} from "../../lib/data";
+} from "../../lib/data.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
 import { SimulationBanner } from "../../components/SimulationBanner";
@@ -16,7 +15,7 @@ export default function NotifikasiPage() {
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(() => getNotifications());
   const [filter, setFilter] = useState("all");
 
   const refreshNotifications = () => {
@@ -56,6 +55,19 @@ export default function NotifikasiPage() {
     }
   };
 
+  const getIconData = (type) => {
+    switch (type) {
+      case "chat":
+        return { icon: "💬", className: "tosca-icon" };
+      case "rating":
+        return { icon: "⭐", className: "yellow-icon" };
+      case "post":
+        return { icon: "📦", className: "green-icon" };
+      default:
+        return { icon: "🔔", className: "tosca-icon" };
+    }
+  };
+
   return (
     <main className="notification-main">
       <div className="notification-top-section">
@@ -70,7 +82,6 @@ export default function NotifikasiPage() {
             type="button"
             className="btn-mark-all"
             onClick={handleMarkAll}
-            style={{ cursor: "pointer" }}
           >
             Tandai semua terbaca
           </button>
@@ -91,90 +102,41 @@ export default function NotifikasiPage() {
             type="button"
             className={`filter-chip${filter === tab.key ? " active" : ""}`}
             onClick={() => setFilter(tab.key)}
-            style={{ cursor: "pointer" }}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      <div className="notification-list" style={{ marginTop: "20px" }}>
+      <div className="notification-list">
         {visibleNotifications.length > 0 ? (
-          visibleNotifications.map((item) => (
-            <article
-              key={item.id}
-              className={`notification-card${item.read ? "" : " unread"}`}
-              onClick={() => handleClickItem(item)}
-              style={{
-                cursor: "pointer",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px 20px",
-                borderBottom: "1px solid var(--color-border-default)",
-                background: item.read ? "#fff" : "var(--color-bg-subtle, #e3fdfd)",
-                borderRadius: "10px",
-                marginBottom: "8px",
-              }}
-            >
-              <div
-                className="notif-card-left"
-                style={{ display: "flex", alignItems: "center", gap: "16px" }}
+          visibleNotifications.map((item) => {
+            const iconData = getIconData(item.type);
+            return (
+              <article
+                key={item.id}
+                className={`notification-card${item.read ? "" : " unread"}`}
+                onClick={() => handleClickItem(item)}
+                style={{ cursor: "pointer" }}
               >
-                <div
-                  className="notif-icon-box"
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#fff",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <img
-                    src={item.icon || "/assets/images/icon-bell.svg"}
-                    alt=""
-                    width="20"
-                    height="20"
-                  />
-                </div>
-                <div className="notif-text-content">
-                  <div
-                    className="notif-title-row"
-                    style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                  >
-                    <h3 style={{ margin: 0, fontSize: "15px" }}>{item.title}</h3>
-                    {!item.read && (
-                      <span
-                        className="unread-dot-badge"
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          background: "var(--color-action-primary, #4a9ba0)",
-                          display: "inline-block",
-                        }}
-                      />
-                    )}
+                <div className="notif-card-left">
+                  <div className={`notif-icon-box ${iconData.className}`}>
+                    {iconData.icon}
                   </div>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "var(--color-text-secondary)" }}>
-                    {item.message}
-                  </p>
+                  <div className="notif-text-content">
+                    <div className="notif-title-row">
+                      <h3>{item.title}</h3>
+                      {!item.read && <span className="unread-dot-badge" />}
+                    </div>
+                    <p>{item.message}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="notif-card-right">
-                <span
-                  className="notif-time"
-                  style={{ fontSize: "12px", color: "var(--color-text-muted)" }}
-                >
-                  {item.timeLabel}
-                </span>
-              </div>
-            </article>
-          ))
+                <div className="notif-card-right">
+                  <span className="notif-time">{item.timeLabel}</span>
+                </div>
+              </article>
+            );
+          })
         ) : (
           <EmptyState
             icon="🔔"

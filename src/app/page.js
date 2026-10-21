@@ -2,22 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPublicPosts } from "../lib/data";
+import { getPublicPosts } from "../lib/data.js";
 import { PostCard } from "../components/PostCard";
-import { SkeletonCard } from "../components/Skeleton";
 
 export default function HomePage() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState(() => getPublicPosts().slice(0, 3));
 
   useEffect(() => {
-    // Read dynamic public posts from local data / storage
     setPosts(getPublicPosts().slice(0, 3));
-    setLoading(false);
   }, []);
 
   return (
-    <main className="home-page">
+    <main>
       <section className="hero-section">
         <div className="hero-decorations">
           <div className="circle-large" />
@@ -124,13 +120,7 @@ export default function HomePage() {
         </div>
 
         <div className="cards-grid">
-          {loading ? (
-            <>
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </>
-          ) : posts.length > 0 ? (
+          {posts.length > 0 ? (
             posts.map((post, idx) => (
               <PostCard key={post.id} post={post} index={idx} />
             ))
@@ -140,7 +130,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container table-section">
+      <section className="container table-section" hidden>
         <h2>Statistik Komunitas NeedHelp</h2>
         <table>
           <caption>
