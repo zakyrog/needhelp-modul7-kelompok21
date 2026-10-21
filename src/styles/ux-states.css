@@ -1,0 +1,207 @@
+/* UX States: Skeleton, Toast, Empty, Error, and Modal styles for Modul 8 */
+
+/* --- Skeleton Loading --- */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #e9f0f2 25%,
+    #f4f8f9 50%,
+    #e9f0f2 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+  border-radius: var(--radius-sm, 6px);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.skeleton-text.short {
+  width: 40%;
+}
+
+.skeleton-text.medium {
+  width: 70%;
+}
+
+.skeleton-text.long {
+  width: 90%;
+}
+
+.skeleton-card {
+  background: var(--color-bg-surface, #fff);
+  border: 1px solid var(--color-border-default, #cfdadc);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--spacing-lg, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 12px);
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill, 999px);
+  flex-shrink: 0;
+}
+
+/* --- Toast Notifications (Fulfilling Modul 8 Target 3) --- */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+  width: calc(100% - 32px);
+  pointer-events: none;
+}
+
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: var(--radius-lg, 10px);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(15, 46, 51, 0.15);
+  animation: toast-in 0.25s ease-out forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-item.toast-success {
+  background-color: #eaf8f4;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.toast-item.toast-error {
+  background-color: #fdf2f2;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.toast-item.toast-info {
+  background-color: #e8f4f8;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  padding: 0 4px;
+}
+
+.toast-close-btn:hover {
+  opacity: 1;
+}
+
+/* --- Empty State Enhancement --- */
+.empty-state-card {
+  background: var(--color-bg-surface, #fff);
+  border: 1px dashed var(--color-border-default, #cfdadc);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--spacing-2xl, 48px) var(--spacing-lg, 24px);
+  text-align: center;
+  margin: var(--spacing-lg, 24px) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md, 16px);
+}
+
+.empty-state-icon {
+  font-size: 40px;
+}
+
+.empty-state-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #0f2e33);
+  margin: 0;
+}
+
+.empty-state-text {
+  font-size: 14px;
+  color: var(--color-text-muted, #5e7a80);
+  margin: 0;
+  max-width: 380px;
+}
+
+/* --- Error State Box & Retry --- */
+.error-state-card {
+  background: var(--color-error-bg, #fff1f1);
+  border: 1px solid var(--color-error, #a52626);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--spacing-lg, 24px);
+  text-align: center;
+  margin: var(--spacing-lg, 24px) 0;
+}
+
+.error-state-card h3 {
+  color: var(--color-error, #a52626);
+  margin-top: 0;
+}
+
+.retry-button {
+  display: inline-block;
+  margin-top: var(--spacing-sm, 12px);
+  padding: 8px 16px;
+  background-color: var(--color-action-primary, #4a9ba0);
+  color: #fff;
+  border-radius: var(--radius-sm, 6px);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.retry-button:hover {
+  background-color: #3b8287;
+}
+
+/* --- Simulation Badge --- */
+.simulation-banner {
+  background: #fff8e6;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 8px 16px;
+  font-size: 12px;
+  border-radius: var(--radius-sm, 6px);
+  margin-bottom: var(--spacing-md, 16px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
