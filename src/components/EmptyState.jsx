@@ -1,3 +1,6 @@
+
+"use client";
+
 import React from "react";
 
 export function EmptyState({
@@ -8,13 +11,20 @@ export function EmptyState({
   onAction,
 }) {
   return (
-    <div className="empty-state-card" role="status">
+    <section
+      className="empty-state-card"
+      role="status"
+      aria-label={title}
+    >
       <span className="empty-state-icon" aria-hidden="true">
         {icon}
       </span>
+
       <h3 className="empty-state-title">{title}</h3>
+
       <p className="empty-state-text">{description}</p>
-      {actionText && onAction && (
+
+      {actionText && typeof onAction === "function" && (
         <button
           type="button"
           className="button button-outline"
@@ -24,6 +34,6 @@ export function EmptyState({
           {actionText}
         </button>
       )}
-    </div>
+    </section>
   );
 }

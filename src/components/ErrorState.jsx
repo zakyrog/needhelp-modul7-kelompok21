@@ -1,3 +1,6 @@
+
+"use client";
+
 import React from "react";
 
 export function ErrorState({
@@ -6,14 +9,28 @@ export function ErrorState({
   onRetry,
 }) {
   return (
-    <div className="error-state-card" role="alert">
-      <h3>⚠ {title}</h3>
-      <p>{message}</p>
-      {onRetry && (
-        <button type="button" className="retry-button" onClick={onRetry}>
-          Coba Lagi ↻
+    <section
+      className="error-state-card"
+      role="alert"
+      aria-live="assertive"
+    >
+      <span className="error-state-icon" aria-hidden="true">
+        ⚠
+      </span>
+
+      <h3 className="error-state-title">{title}</h3>
+
+      <p className="error-state-message">{message}</p>
+
+      {typeof onRetry === "function" && (
+        <button
+          type="button"
+          className="retry-button"
+          onClick={onRetry}
+        >
+          Coba Lagi
         </button>
       )}
-    </div>
+    </section>
   );
 }
