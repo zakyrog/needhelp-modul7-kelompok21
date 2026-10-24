@@ -3270,3 +3270,855 @@ body > header.site-header {
     height: 32px;
   }
 }
+
+
+/* Perbaikan responsivitas bagian atas katalog */
+.catalog-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 20px;
+}
+
+.catalog-actions-bar > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.catalog-actions-bar button,
+.catalog-actions-bar select {
+  box-sizing: border-box;
+  min-height: 44px;
+}
+
+.catalog-actions-bar select {
+  width: 190px;
+  max-width: 100%;
+}
+
+.catalog-actions-bar label {
+  white-space: nowrap;
+}
+
+/* Mencegah judul dan deskripsi katalog melebar */
+main > header {
+  min-width: 0;
+  max-width: 100%;
+}
+
+main > header h1,
+main > header > p {
+  overflow-wrap: anywhere;
+}
+
+main > header > p {
+  max-width: 100%;
+  line-height: 1.6;
+}
+
+/* Tampilan ponsel */
+@media (max-width: 480px) {
+  .catalog-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .catalog-actions-bar > div {
+    width: 100%;
+  }
+
+  .catalog-actions-bar > div:first-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .catalog-actions-bar > div:first-child button {
+    flex: 1 1 130px;
+    min-width: 0;
+  }
+
+  .catalog-actions-bar > div:last-child {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .catalog-actions-bar select {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  main > header h1 {
+    font-size: clamp(24px, 7vw, 32px);
+    line-height: 1.25;
+  }
+
+  main > header > p {
+    overflow-wrap: break-word;
+  }
+}
+
+/* Layout utama katalog */
+body:has(aside[aria-label="Penyaring Pencarian"]) main {
+  width: 100%;
+  max-width: 1240px;
+  margin: 24px auto 60px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+/* Header katalog */
+body:has(aside[aria-label="Penyaring Pencarian"]) main > header {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 8px;
+  background: transparent;
+  border: 0;
+}
+
+/* Judul dan deskripsi katalog */
+body:has(aside[aria-label="Penyaring Pencarian"]) main > header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(22px, 2vw, 28px);
+  line-height: 1.3;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"])
+  main > header > p:first-of-type {
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+/* Tombol kategori dan pengurutan */
+body:has(aside[aria-label="Penyaring Pencarian"]) main > header {
+  overflow-wrap: anywhere;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"])
+  main > header .tab-btn {
+  min-height: 42px;
+  max-width: 100%;
+}
+
+/* Panel filter */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside[aria-label="Penyaring Pencarian"] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 24px;
+  position: sticky;
+  top: 24px;
+  border: 1px solid var(--color-border-default, #cfdadc);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--color-bg-surface, #ffffff);
+}
+
+/* Judul filter */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside h2 {
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Label dan teks di panel filter */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside label {
+  max-width: 100%;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside legend {
+  display: block;
+  margin: 0 0 10px;
+  padding: 0;
+  line-height: 1.5;
+}
+
+/* Input pencarian, dropdown, dan textarea */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input:not([type="checkbox"]):not([type="radio"]),
+body:has(aside[aria-label="Penyaring Pencarian"]) aside select,
+body:has(aside[aria-label="Penyaring Pencarian"]) aside textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-default, #cfdadc);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--color-text-primary, #0f2e33);
+}
+
+/* Fokus input */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input:focus-visible,
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside select:focus-visible,
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside textarea:focus-visible {
+  outline: 3px solid var(--color-action-primary, #4a9ba0);
+  outline-offset: 2px;
+}
+
+/* Jarak antarfilter */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside fieldset {
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 0 0 16px;
+  border: 0;
+  border-bottom: 1px solid #eef2f1;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Checkbox dan radio */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input[type="checkbox"],
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input[type="radio"] {
+  flex-shrink: 0;
+  accent-color: var(--color-action-primary, #4a9ba0);
+}
+
+/* Tombol filter */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* Area daftar postingan */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  main > section:last-of-type {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-content: start;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Judul jumlah postingan */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  main > section:last-of-type > h2 {
+  grid-column: 1 / -1;
+}
+
+/* Kartu postingan */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  main > section:last-of-type > article {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"])
+  main > section:last-of-type > article img {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Pagination */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  main > section:last-of-type > nav[aria-label="Navigasi Halaman Katalog"] {
+  grid-column: 1 / -1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  body:has(aside[aria-label="Penyaring Pencarian"]) main {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding-inline: 20px;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"])
+    aside[aria-label="Penyaring Pencarian"] {
+    position: static;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"])
+    main > section:last-of-type {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  body:has(aside[aria-label="Penyaring Pencarian"]) main {
+    margin-top: 20px;
+    padding-inline: 16px;
+    gap: 20px;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"])
+    main > header {
+    padding-bottom: 0;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"])
+    main > header .tab-btn {
+    margin-bottom: 8px;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"])
+    aside[aria-label="Penyaring Pencarian"] {
+    padding: 16px;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"])
+    main > section:last-of-type {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"])
+    main > section:last-of-type > article {
+    padding: 16px;
+  }
+}
+
+
+/* FIX: Jarak input pencarian dan label Jenis Postingan */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input:not([type="checkbox"]):not([type="radio"]) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 14px;
+}
+
+/* Beri jarak sebelum judul kelompok filter */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside legend {
+  clear: both;
+  margin-top: 8px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* Jarak antara label pencarian dan input */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside label {
+  margin-bottom: 8px;
+}
+
+/* Jangan biarkan fokus input mengubah ukuran layout */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input:focus,
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input:focus-visible {
+  box-sizing: border-box;
+  outline-offset: 1px;
+}
+
+/* Jarak bawah untuk input pencarian utama */
+body:has(aside[aria-label="Penyaring Pencarian"])
+  aside input[placeholder*="judul atau deskripsi"] {
+  margin-bottom: 18px;
+}
+
+/* ==========================================================
+   PERBAIKAN RESPONSIVITAS TINI
+   Tambahkan di akhir base.css; tidak mengubah logika aplikasi.
+   ========================================================== */
+
+/* Cegah elemen flex/grid memaksa halaman melebar */
+html,
+body {
+  max-width: 100%;
+}
+
+body {
+  overflow-wrap: break-word;
+}
+
+main,
+section,
+article,
+aside,
+header,
+footer,
+form,
+fieldset {
+  min-width: 0;
+}
+
+img,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+/* Katalog: satu aturan responsif yang konsisten */
+body:has(aside[aria-label="Penyaring Pencarian"]) main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1240px;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"]) main > header,
+body:has(aside[aria-label="Penyaring Pencarian"]) main > aside,
+body:has(aside[aria-label="Penyaring Pencarian"]) main > section {
+  min-width: 0;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > article {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"]) aside input:not([type="checkbox"]):not([type="radio"]),
+body:has(aside[aria-label="Penyaring Pencarian"]) aside select,
+body:has(aside[aria-label="Penyaring Pencarian"]) aside textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"]) aside label {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+body:has(aside[aria-label="Penyaring Pencarian"]) aside legend {
+  display: block;
+  float: none;
+  width: 100%;
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+/* Detail postingan */
+.detail-main-layout,
+.detail-inner-wrapper {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.detail-inner-wrapper {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+}
+
+.detail-article,
+.detail-sidebar,
+.action-box {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-article img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Form bantuan */
+.form-page-wrapper {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.form-container-box {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 600px;
+}
+
+.bantu-form,
+.bantu-form .form-group {
+  width: 100%;
+  min-width: 0;
+}
+
+.bantu-form input[type="text"],
+.bantu-form input[type="email"],
+.bantu-form input[type="tel"],
+.bantu-form select,
+.bantu-form textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.5;
+}
+
+.bantu-form textarea {
+  resize: vertical;
+}
+
+.form-group.is-error input,
+.form-group.is-error select,
+.form-group.is-error textarea {
+  border-color: #b84a4a;
+}
+
+.error-message-inline {
+  display: block;
+  max-width: 100%;
+  margin-top: 4px;
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.form-actions > * {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+/* Chat dan daftar aktivitas */
+.chat-main-container {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.chat-sidebar,
+.chat-room-pane,
+.notification-main,
+.activity-stats-grid {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  body:has(aside[aria-label="Penyaring Pencarian"]) main {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"]) aside[aria-label="Penyaring Pencarian"] {
+    position: static;
+  }
+
+  .detail-main-layout,
+  .detail-inner-wrapper {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 20px;
+  }
+
+  .detail-sidebar {
+    width: 100%;
+  }
+
+  .chat-main-container {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  body:has(aside[aria-label="Penyaring Pencarian"]) main {
+    padding: 16px;
+    gap: 18px;
+  }
+
+  body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .form-page-wrapper {
+    padding: 20px 12px;
+  }
+
+  .form-container-box {
+    padding: 24px 16px;
+    border-radius: 12px;
+  }
+
+  .step-indicator {
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+
+  .step-item {
+    gap: 4px;
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+
+  .step-line {
+    width: 10px;
+  }
+
+  .target-request-info {
+    align-items: flex-start;
+  }
+
+  .target-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .form-actions .btn-cancel,
+  .form-actions .btn-submit {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .success-actions {
+    flex-direction: column;
+  }
+
+  .success-actions > a {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .activity-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .stat-box {
+    padding: 14px;
+  }
+
+  .chat-main-container {
+    padding-inline: 12px;
+  }
+
+  .messages-container {
+    height: min(55vh, 380px);
+  }
+
+  .msg-bubble {
+    max-width: 85%;
+    overflow-wrap: anywhere;
+  }
+
+  .notification-main {
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .form-container-box {
+    padding: 20px 12px;
+  }
+
+  .form-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .step-item {
+    padding-inline: 5px;
+    font-size: 10px;
+  }
+
+  .step-line {
+    width: 6px;
+  }
+
+  .activity-stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Kurangi animasi jika pengguna mengaturnya di perangkat */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* Perbaikan susunan form buat-postingan */
+body:has(.bantu-form) .bantu-form .form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+body:has(.bantu-form) .bantu-form .form-group label {
+  display: block;
+  width: 100%;
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+body:has(.bantu-form) .bantu-form .form-group input,
+body:has(.bantu-form) .bantu-form .form-group select,
+body:has(.bantu-form) .bantu-form .form-group textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+body:has(.bantu-form) .bantu-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+body:has(.bantu-form) .bantu-form fieldset {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  body:has(.bantu-form) .bantu-form .form-group {
+    gap: 6px;
+  }
+}
+
+
+/* Geser kolom form sedikit ke kanan agar tidak menabrak label */
+body:has(main > form) main > form > fieldset > p:has(> label + input),
+body:has(main > form) main > form > fieldset > p:has(> label + select),
+body:has(main > form) main > form > fieldset > p:has(> label + textarea) {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 16px;
+  row-gap: 8px;
+}
+
+body:has(main > form) main > form > fieldset > p:has(> label + input) > label,
+body:has(main > form) main > form > fieldset > p:has(> label + select) > label,
+body:has(main > form) main > form > fieldset > p:has(> label + textarea) > label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+body:has(main > form) main > form > fieldset > p:has(> label + input) > input,
+body:has(main > form) main > form > fieldset > p:has(> label + select) > select,
+body:has(main > form) main > form > fieldset > p:has(> label + textarea) > textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  body:has(main > form) main > form > fieldset > p:has(> label + input),
+  body:has(main > form) main > form > fieldset > p:has(> label + select),
+  body:has(main > form) main > form > fieldset > p:has(> label + textarea) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* Samakan posisi kolom input pada form buat-postingan */
+body:has(main > form) main > form > fieldset > p:has(> label + input),
+body:has(main > form) main > form > fieldset > p:has(> label + select),
+body:has(main > form) main > form > fieldset > p:has(> label + textarea) {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 16px;
+  row-gap: 8px;
+}
+
+body:has(main > form) main > form > fieldset > p:has(> label + input) > label,
+body:has(main > form) main > form > fieldset > p:has(> label + select) > label,
+body:has(main > form) main > form > fieldset > p:has(> label + textarea) > label {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+body:has(main > form) main > form > fieldset > p:has(> label + input) > input,
+body:has(main > form) main > form > fieldset > p:has(> label + select) > select,
+body:has(main > form) main > form > fieldset > p:has(> label + textarea) > textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  body:has(main > form) main > form > fieldset > p:has(> label + input),
+  body:has(main > form) main > form > fieldset > p:has(> label + select),
+  body:has(main > form) main > form > fieldset > p:has(> label + textarea) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

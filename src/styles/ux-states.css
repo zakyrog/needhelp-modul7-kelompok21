@@ -1,6 +1,9 @@
+
 /* UX States: Skeleton, Toast, Empty, Error, and Modal styles for Modul 8 */
 
-/* --- Skeleton Loading --- */
+/* =========================
+   SKELETON LOADING
+========================= */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -17,9 +20,18 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
 }
 
 .skeleton-text {
@@ -41,58 +53,111 @@
 }
 
 .skeleton-card {
-  background: var(--color-bg-surface, #fff);
-  border: 1px solid var(--color-border-default, #cfdadc);
-  border-radius: var(--radius-lg, 12px);
-  padding: var(--spacing-lg, 24px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm, 12px);
+
+  width: 100%;
+  min-width: 0;
+  padding: var(--spacing-lg, 24px);
+
+  background: var(--color-bg-surface, #fff);
+  border: 1px solid var(--color-border-default, #cfdadc);
+  border-radius: var(--radius-lg, 12px);
 }
 
 .skeleton-avatar {
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   border-radius: var(--radius-pill, 999px);
+}
+
+/* Skeleton card layout */
+.skeleton-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.skeleton-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.skeleton-tag {
+  height: 24px;
+  border-radius: 999px;
   flex-shrink: 0;
 }
 
-/* --- Toast Notifications (Fulfilling Modul 8 Target 3) --- */
+/* =========================
+   TOAST NOTIFICATIONS
+========================= */
 .toast-container {
   position: fixed;
-  bottom: 24px;
+  top: auto;
   right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: auto;
   z-index: 9999;
+
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 10px;
-  max-width: 380px;
-  width: calc(100% - 32px);
+
+  width: min(380px, calc(100% - 48px));
+  max-height: 40vh;
+  overflow-y: auto;
+
   pointer-events: none;
 }
 
 .toast-item {
-  pointer-events: auto;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 18px;
+
+  flex-shrink: 0;
+  padding: 12px 16px;
+  pointer-events: auto;
+
   border-radius: var(--radius-lg, 10px);
+  box-shadow: 0 4px 16px rgba(15, 46, 51, 0.15);
+
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 4px 16px rgba(15, 46, 51, 0.15);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+
   animation: toast-in 0.25s ease-out forwards;
+}
+
+.toast-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.96);
+    transform: translateY(12px);
   }
+
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -115,32 +180,49 @@
 }
 
 .toast-close-btn {
+  flex-shrink: 0;
+  padding: 6px;
+
   background: transparent;
   border: none;
+  color: inherit;
+
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  color: inherit;
   opacity: 0.7;
-  padding: 0 4px;
 }
 
 .toast-close-btn:hover {
   opacity: 1;
 }
 
-/* --- Empty State Enhancement --- */
+.toast-close-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+/* =========================
+   EMPTY STATE
+========================= */
 .empty-state-card {
-  background: var(--color-bg-surface, #fff);
-  border: 1px dashed var(--color-border-default, #cfdadc);
-  border-radius: var(--radius-lg, 12px);
-  padding: var(--spacing-2xl, 48px) var(--spacing-lg, 24px);
-  text-align: center;
-  margin: var(--spacing-lg, 24px) 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-md, 16px);
+
+  width: 100%;
+  min-width: 0;
+  margin: var(--spacing-lg, 24px) 0;
+  padding: var(--spacing-2xl, 48px) var(--spacing-lg, 24px);
+
+  background: var(--color-bg-surface, #fff);
+  border: 1px dashed var(--color-border-default, #cfdadc);
+  border-radius: var(--radius-lg, 12px);
+
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .empty-state-icon {
@@ -148,60 +230,382 @@
 }
 
 .empty-state-title {
+  margin: 0;
+
+  color: var(--color-text-primary, #0f2e33);
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary, #0f2e33);
-  margin: 0;
+  line-height: 1.4;
 }
 
 .empty-state-text {
-  font-size: 14px;
-  color: var(--color-text-muted, #5e7a80);
-  margin: 0;
   max-width: 380px;
+  margin: 0;
+
+  color: var(--color-text-muted, #5e7a80);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-/* --- Error State Box & Retry --- */
+/* =========================
+   ERROR STATE
+========================= */
 .error-state-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  min-width: 0;
+  margin: var(--spacing-lg, 24px) 0;
+  padding: var(--spacing-lg, 24px);
+
   background: var(--color-error-bg, #fff1f1);
   border: 1px solid var(--color-error, #a52626);
   border-radius: var(--radius-lg, 12px);
-  padding: var(--spacing-lg, 24px);
+
   text-align: center;
-  margin: var(--spacing-lg, 24px) 0;
+  overflow-wrap: anywhere;
 }
 
+.error-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+
+  background: #fef2f2;
+  color: #b91c1c;
+  border-radius: 50%;
+  font-size: 22px;
+}
+
+.error-state-title,
 .error-state-card h3 {
+  margin: 0;
+
   color: var(--color-error, #a52626);
-  margin-top: 0;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.error-state-message,
+.error-state-card p {
+  max-width: 520px;
+  margin: 0;
+
+  color: var(--color-text-muted, #5e7a80);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .retry-button {
-  display: inline-block;
-  margin-top: var(--spacing-sm, 12px);
-  padding: 8px 16px;
-  background-color: var(--color-action-primary, #4a9ba0);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 44px;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 10px 18px;
+
+  background: var(--color-action-primary, #4a9ba0);
   color: #fff;
-  border-radius: var(--radius-sm, 6px);
   border: none;
-  cursor: pointer;
+  border-radius: var(--radius-sm, 6px);
+
+  font: inherit;
   font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  cursor: pointer;
 }
 
 .retry-button:hover {
-  background-color: #3b8287;
+  background: #3b8287;
 }
 
-/* --- Simulation Badge --- */
+.retry-button:focus-visible {
+  outline: 3px solid var(--color-action-primary, #2563eb);
+  outline-offset: 3px;
+}
+
+/* =========================
+   FORM FIELD & VALIDATION
+========================= */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  width: 100%;
+  min-width: 0;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.required-indicator {
+  color: #b91c1c;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.field-help,
+.field-error {
+  display: block;
+  max-width: 100%;
+
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.field-help {
+  color: var(--color-text-muted, #5e7a80);
+}
+
+.field-error {
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+.form-group.is-error input,
+.form-group.is-error select,
+.form-group.is-error textarea {
+  border-color: #b91c1c;
+}
+
+.form-group.is-error input:focus-visible,
+.form-group.is-error select:focus-visible,
+.form-group.is-error textarea:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
+/* =========================
+   SIMULATION BANNER
+========================= */
 .simulation-banner {
-  background: #fff8e6;
-  border: 1px solid #ffeeba;
-  color: #856404;
-  padding: 8px 16px;
-  font-size: 12px;
-  border-radius: var(--radius-sm, 6px);
-  margin-bottom: var(--spacing-md, 16px);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
+
+  width: 100%;
+  margin-bottom: var(--spacing-md, 16px);
+  padding: 8px 16px;
+
+  background: #fff8e6;
+  border: 1px solid #ffeeba;
+  border-radius: var(--radius-sm, 6px);
+  color: #856404;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================
+   SCREEN READER ONLY
+========================= */
+.sr-only {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =========================
+   RESPONSIVE: MOBILE
+   Toast tampil di atas
+========================= */
+@media (max-width: 480px) {
+  .skeleton-card {
+    padding: 16px;
+  }
+
+  .empty-state-card {
+    padding: 32px 16px;
+  }
+
+  .error-state-card {
+    padding: 20px 14px;
+  }
+
+  .error-state-title,
+  .error-state-card h3 {
+    font-size: 16px;
+  }
+
+  .error-state-message,
+  .error-state-card p {
+    font-size: 14px;
+  }
+
+  .retry-button {
+    width: 100%;
+  }
+
+  .toast-container {
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    right: 12px;
+    bottom: auto;
+    left: 12px;
+
+    width: auto;
+    max-width: none;
+    max-height: 40vh;
+  }
+
+  .toast-item {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .simulation-banner {
+    align-items: flex-start;
+    padding: 10px 12px;
+  }
+
+  .field-help,
+  .field-error {
+    font-size: 13px;
+  }
+}
+
+/* =========================
+   RESPONSIVE: TABLET
+   Toast tampil di bawah
+========================= */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .toast-container {
+    top: auto;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: auto;
+
+    width: min(360px, calc(100% - 32px));
+    max-height: 40vh;
+  }
+}
+
+/* =========================
+   RESPONSIVE: DESKTOP
+   Toast tampil di bawah
+========================= */
+@media (min-width: 1025px) {
+  .toast-container {
+    top: auto;
+    right: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    left: auto;
+
+    width: min(380px, calc(100% - 48px));
+    max-height: 40vh;
+  }
+}
+
+/* =========================
+   REDUCED MOTION
+========================= */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .toast-item {
+    animation: none;
+  }
+}
+
+
+/* =========================
+   SKELETON RESPONSIVE
+========================= */
+
+/* Default: daftar skeleton satu kolom */
+.skeleton-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Katalog: dua kolom pada desktop */
+@media (min-width: 901px) {
+  .skeleton-list.skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tablet dan mobile: satu kolom */
+@media (max-width: 900px) {
+  .skeleton-list.skeleton-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.skeleton-card {
+  min-width: 0;
+  height: 100%;
+}
+
+@media (max-width: 480px) {
+  .skeleton-card {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* Perbaikan layout Skeleton agar kartu tidak bertabrakan */
+.skeleton-list.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.skeleton-list .skeleton-card {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 180px;
+  height: auto;
+  margin: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .skeleton-list.skeleton-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
@@ -5,12 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getPublicPosts, filterPosts } from "../../lib/data.js";
 import { CatalogCard } from "../../components/CatalogCard";
 import { EmptyState } from "../../components/EmptyState";
+import { SkeletonList } from "../../components/Skeleton";
 
 function CatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Read initial params from URL
+  // Membaca parameter awal dari URL
   const initialQ = searchParams.get("q") || "";
   const initialType = searchParams.get("type") || "all";
   const initialLocation = searchParams.get("location") || "";
@@ -27,7 +29,14 @@ function CatalogContent() {
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
 
-  // Sync state if URL query params change externally
+  // Mencegah pembacaan localStorage sebelum hydration selesai
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Menyinkronkan state ketika parameter URL berubah
   useEffect(() => {
     setQuery(searchParams.get("q") || "");
     setPostType(searchParams.get("type") || "all");
@@ -40,7 +49,9 @@ function CatalogContent() {
 
   const handleCategoryToggle = (cat) => {
     setCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+      prev.includes(cat)
+        ? prev.filter((c) => c !== cat)
+        : [...prev, cat]
     );
     setPage(1);
   };
@@ -50,6 +61,7 @@ function CatalogContent() {
     setPage(1);
   };
 
+  // Mengembalikan semua filter ke kondisi awal
   const handleReset = () => {
     setQuery("");
     setPostType("all");
@@ -66,9 +78,12 @@ function CatalogContent() {
     setPage(1);
   };
 
-  // Instant filter & sort with no artificial latency
+  // Data baru dibaca setelah komponen selesai di-mount
   const filteredAndSortedPosts = useMemo(() => {
+    if (!isMounted) return [];
+
     const allPublic = getPublicPosts();
+
     const filtered = filterPosts(allPublic, {
       query,
       type: postType,
@@ -78,39 +93,55 @@ function CatalogContent() {
     });
 
     const sorted = [...filtered];
+
     if (sort === "jadwal") {
       sorted.sort((a, b) =>
         `${a.date || "9999-12-31"}T${a.time || "23:59"}`.localeCompare(
-          `${b.date || "9999-12-31"}T${b.time || "23:59"}`,
-        ),
+          `${b.date || "9999-12-31"}T${b.time || "23:59"}`
+        )
       );
     } else {
       sorted.sort((a, b) =>
-        (b.createdAt || "").localeCompare(a.createdAt || ""),
+        (b.createdAt || "").localeCompare(a.createdAt || "")
       );
     }
-    return sorted;
-  }, [query, postType, categories, location, compensation, sort]);
 
+    return sorted;
+  }, [
+    isMounted,
+    query,
+    postType,
+    categories,
+    location,
+    compensation,
+    sort,
+  ]);
+
+  // Pagination
   const pageSize = 4;
+
   const pageCount = Math.max(
     1,
-    Math.ceil(filteredAndSortedPosts.length / pageSize),
+    Math.ceil(filteredAndSortedPosts.length / pageSize)
   );
+
   const activePage = Math.min(page, pageCount);
   const startIndex = (activePage - 1) * pageSize;
+
   const visiblePosts = filteredAndSortedPosts.slice(
     startIndex,
-    startIndex + pageSize,
+    startIndex + pageSize
   );
 
   return (
     <main>
       <header>
         <h1>Feed Bantuan</h1>
-        <p>Temukan orang di sekitar yang sedang membutuhkan bantuan.</p>
+        <p>
+          Temukan orang di sekitar yang sedang membutuhkan bantuan.
+        </p>
 
-        {/* Tombol Tab 2 Jalur & Opsi Urutkan */}
+        {/* Tab jenis postingan dan opsi pengurutan */}
         <div className="catalog-actions-bar">
           <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -146,6 +177,7 @@ function CatalogContent() {
             }}
           >
             <label htmlFor="catalog-sort">Urutkan:</label>
+
             <select
               id="catalog-sort"
               data-catalog-sort
@@ -162,7 +194,7 @@ function CatalogContent() {
         </div>
       </header>
 
-      {/* Bilah Samping Penyaring (Sidebar Filter) */}
+      {/* Panel filter */}
       <aside aria-label="Penyaring Pencarian">
         <div
           style={{
@@ -173,6 +205,7 @@ function CatalogContent() {
           }}
         >
           <h2 style={{ margin: 0, fontSize: "15px" }}>Filter</h2>
+
           <button
             type="button"
             data-filter-reset
@@ -193,6 +226,7 @@ function CatalogContent() {
           {/* Pencarian */}
           <div>
             <label htmlFor="catalog-search">Cari bantuan</label>
+
             <input
               type="search"
               id="catalog-search"
@@ -206,7 +240,7 @@ function CatalogContent() {
             />
           </div>
 
-          {/* Jenis Postingan */}
+          {/* Jenis postingan */}
           <fieldset>
             <legend>Jenis Postingan</legend>
 
@@ -303,6 +337,7 @@ function CatalogContent() {
           {/* Lokasi */}
           <div>
             <label htmlFor="catalog-location">Lokasi</label>
+
             <select
               id="catalog-location"
               name="location"
@@ -323,7 +358,10 @@ function CatalogContent() {
 
           {/* Kompensasi */}
           <div>
-            <label htmlFor="catalog-compensation">Sistem Kompensasi</label>
+            <label htmlFor="catalog-compensation">
+              Sistem Kompensasi
+            </label>
+
             <select
               id="catalog-compensation"
               name="compensation"
@@ -344,18 +382,26 @@ function CatalogContent() {
         </form>
       </aside>
 
-      {/* Daftar Postingan (Feed Cards) */}
+      {/* Daftar postingan */}
       <section>
         <h2>Daftar Permintaan &amp; Penawaran Aktif</h2>
 
         <p data-catalog-count aria-live="polite">
-          {filteredAndSortedPosts.length} postingan ditemukan
+          {!isMounted
+            ? "Memuat postingan..."
+            : `${filteredAndSortedPosts.length} postingan ditemukan`}
         </p>
 
         <div data-catalog-list>
-          {visiblePosts.length > 0 ? (
+          {!isMounted ? (
+            <SkeletonList count={3} />
+          ) : visiblePosts.length > 0 ? (
             visiblePosts.map((post) => (
-              <CatalogCard key={post.id} post={post} backUrl="/katalog" />
+              <CatalogCard
+                key={post.id}
+                post={post}
+                backUrl="/katalog"
+              />
             ))
           ) : (
             <EmptyState
@@ -368,12 +414,17 @@ function CatalogContent() {
           )}
         </div>
 
-        {pageCount > 1 && (
-          <nav data-catalog-pagination aria-label="Navigasi Halaman Katalog">
+        {/* Navigasi halaman */}
+        {isMounted && pageCount > 1 && (
+          <nav
+            data-catalog-pagination
+            aria-label="Navigasi Halaman Katalog"
+          >
             <ol>
               {Array.from({ length: pageCount }).map((_, index) => {
                 const pageNumber = index + 1;
                 const isCurrent = pageNumber === activePage;
+
                 return (
                   <li key={pageNumber}>
                     {isCurrent ? (
@@ -407,7 +458,15 @@ function CatalogContent() {
 
 export default function CatalogPage() {
   return (
-    <Suspense fallback={<div className="catalog-loading"><p>Memuat katalog...</p></div>}>
+    <Suspense
+      fallback={
+        <main className="catalog-loading" aria-busy="true">
+          <h1>Feed Bantuan</h1>
+          <p className="sr-only">Memuat katalog...</p>
+          <SkeletonList count={3} />
+        </main>
+      }
+    >
       <CatalogContent />
     </Suspense>
   );
