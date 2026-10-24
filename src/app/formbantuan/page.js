@@ -29,6 +29,8 @@ function FormBantuanContent() {
 
   const [errors, setErrors] = useState({});
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -49,18 +51,24 @@ function FormBantuanContent() {
     setStep(2);
   };
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+
     try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
       if (post && post.authorId) {
         saveMessage(
           post.authorId,
-          `[Penawaran Bantuan Baru] ${formData.helper_message} (Kontak: ${formData.helper_whatsapp}, Waktu: ${formData.helper_time})`,
+          `[Penawaran Bantuan Baru] ${formData.helper_message.trim()} (Kontak: ${formData.helper_whatsapp.trim()}, Waktu: ${formData.helper_time.trim()})`,
           post.title,
         );
       }
+      setSubmitting(false);
       setStep(3);
       showToast("Tawaran bantuan berhasil dikirimkan!", "success");
     } catch {
+      setSubmitting(false);
       showToast("Gagal menyimpan tawaran bantuan.", "error");
     }
   };
@@ -235,6 +243,7 @@ function FormBantuanContent() {
                 type="button"
                 className="btn-cancel"
                 onClick={() => setStep(1)}
+                disabled={submitting}
               >
                 &larr; Ubah Isian
               </button>
@@ -242,8 +251,9 @@ function FormBantuanContent() {
                 type="button"
                 className="btn-submit"
                 onClick={handleFinalSubmit}
+                disabled={submitting}
               >
-                Kirim Pengajuan Sekarang ✓
+                {submitting ? "Mengirimkan Tawaran..." : "Kirim Pengajuan Sekarang ✓"}
               </button>
             </div>
           </div>

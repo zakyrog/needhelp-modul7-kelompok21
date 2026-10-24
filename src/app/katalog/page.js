@@ -1,11 +1,11 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPublicPosts, filterPosts } from "../../lib/data.js";
+import { fetchPublicPosts, filterPosts } from "../../lib/data.js";
 import { CatalogCard } from "../../components/CatalogCard";
 import { EmptyState } from "../../components/EmptyState";
+import { ErrorState } from "../../components/ErrorState";
 import { SkeletonList } from "../../components/Skeleton";
 
 function CatalogContent() {
@@ -29,14 +29,41 @@ function CatalogContent() {
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
 
-  // Mencegah pembacaan localStorage sebelum hydration selesai
-  const [isMounted, setIsMounted] = useState(false);
+  // Status pemuatan data dinamis
+  const [allPosts, setAllPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
+  // Mengambil data secara dinamis dari sumber JSON / API dan localStorage
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    let isCancelled = false;
+    setLoading(true);
+    setError(null);
 
-  // Menyinkronkan state ketika parameter URL berubah
+    fetchPublicPosts()
+      .then((data) => {
+        if (!isCancelled) {
+          setAllPosts(data);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!isCancelled) {
+          setError(
+            err.message ||
+              "Gagal memuat data dari sumber JSON/API. Silakan periksa koneksi atau coba lagi.",
+          );
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [retryTrigger, searchParams]);
+
+  // Sinkronisasi state ketika URL query params berubah
   useEffect(() => {
     setQuery(searchParams.get("q") || "");
     setPostType(searchParams.get("type") || "all");
@@ -47,11 +74,23 @@ function CatalogContent() {
     setPage(Math.max(1, Number(searchParams.get("page")) || 1));
   }, [searchParams]);
 
+  // Handler retry jika terjadi error saat memuat data
+  const handleRetry = () => {
+    if (typeof window !== "undefined") {
+      window.__SIMULATE_FETCH_ERROR__ = false;
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("simulate_error") || url.searchParams.has("error")) {
+        url.searchParams.delete("simulate_error");
+        url.searchParams.delete("error");
+        router.replace(url.pathname + (url.search ? url.search : ""));
+      }
+    }
+    setRetryTrigger((prev) => prev + 1);
+  };
+
   const handleCategoryToggle = (cat) => {
     setCategories((prev) =>
-      prev.includes(cat)
-        ? prev.filter((c) => c !== cat)
-        : [...prev, cat]
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
     );
     setPage(1);
   };
@@ -78,13 +117,11 @@ function CatalogContent() {
     setPage(1);
   };
 
-  // Data baru dibaca setelah komponen selesai di-mount
+  // Filter dan pengurutan postingan
   const filteredAndSortedPosts = useMemo(() => {
-    if (!isMounted) return [];
+    if (loading || error) return [];
 
-    const allPublic = getPublicPosts();
-
-    const filtered = filterPosts(allPublic, {
+    const filtered = filterPosts(allPosts, {
       query,
       type: postType,
       categories,
@@ -97,18 +134,20 @@ function CatalogContent() {
     if (sort === "jadwal") {
       sorted.sort((a, b) =>
         `${a.date || "9999-12-31"}T${a.time || "23:59"}`.localeCompare(
-          `${b.date || "9999-12-31"}T${b.time || "23:59"}`
-        )
+          `${b.date || "9999-12-31"}T${b.time || "23:59"}`,
+        ),
       );
     } else {
       sorted.sort((a, b) =>
-        (b.createdAt || "").localeCompare(a.createdAt || "")
+        (b.createdAt || "").localeCompare(a.createdAt || ""),
       );
     }
 
     return sorted;
   }, [
-    isMounted,
+    loading,
+    error,
+    allPosts,
     query,
     postType,
     categories,
@@ -119,18 +158,17 @@ function CatalogContent() {
 
   // Pagination
   const pageSize = 4;
-
   const pageCount = Math.max(
     1,
-    Math.ceil(filteredAndSortedPosts.length / pageSize)
+    Math.ceil(filteredAndSortedPosts.length / pageSize),
   );
 
+  // Mencegah halaman kosong jika filter mengubah jumlah total halaman
   const activePage = Math.min(page, pageCount);
   const startIndex = (activePage - 1) * pageSize;
-
   const visiblePosts = filteredAndSortedPosts.slice(
     startIndex,
-    startIndex + pageSize
+    startIndex + pageSize,
   );
 
   return (
@@ -138,7 +176,7 @@ function CatalogContent() {
       <header>
         <h1>Feed Bantuan</h1>
         <p>
-          Temukan orang di sekitar yang sedang membutuhkan bantuan.
+          Temukan orang di sekitar yang sedang membutuhkan bantuan atau menawarkan keahlian.
         </p>
 
         {/* Tab jenis postingan dan opsi pengurutan */}
@@ -358,9 +396,7 @@ function CatalogContent() {
 
           {/* Kompensasi */}
           <div>
-            <label htmlFor="catalog-compensation">
-              Sistem Kompensasi
-            </label>
+            <label htmlFor="catalog-compensation">Sistem Kompensasi</label>
 
             <select
               id="catalog-compensation"
@@ -387,21 +423,25 @@ function CatalogContent() {
         <h2>Daftar Permintaan &amp; Penawaran Aktif</h2>
 
         <p data-catalog-count aria-live="polite">
-          {!isMounted
-            ? "Memuat postingan..."
-            : `${filteredAndSortedPosts.length} postingan ditemukan`}
+          {loading
+            ? "Memuat postingan dari sumber data..."
+            : error
+              ? "Gagal memuat data postingan"
+              : `${filteredAndSortedPosts.length} postingan ditemukan`}
         </p>
 
         <div data-catalog-list>
-          {!isMounted ? (
+          {loading ? (
             <SkeletonList count={3} />
+          ) : error ? (
+            <ErrorState
+              title="Gagal Memuat Data Postingan"
+              message={error}
+              onRetry={handleRetry}
+            />
           ) : visiblePosts.length > 0 ? (
             visiblePosts.map((post) => (
-              <CatalogCard
-                key={post.id}
-                post={post}
-                backUrl="/katalog"
-              />
+              <CatalogCard key={post.id} post={post} backUrl="/katalog" />
             ))
           ) : (
             <EmptyState
@@ -415,11 +455,8 @@ function CatalogContent() {
         </div>
 
         {/* Navigasi halaman */}
-        {isMounted && pageCount > 1 && (
-          <nav
-            data-catalog-pagination
-            aria-label="Navigasi Halaman Katalog"
-          >
+        {!loading && !error && pageCount > 1 && (
+          <nav data-catalog-pagination aria-label="Navigasi Halaman Katalog">
             <ol>
               {Array.from({ length: pageCount }).map((_, index) => {
                 const pageNumber = index + 1;

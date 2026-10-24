@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPost } from "../../lib/data.js";
 import { readSession } from "../../lib/auth.js";
-import { validatePost } from "../../lib/validation.js";
+import { validatePost, sanitizeString } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
 
 export default function BuatPostinganPage() {
@@ -35,7 +35,10 @@ export default function BuatPostinganPage() {
   useEffect(() => {
     const currentSession = readSession();
     if (!currentSession) {
-      showToast("Silakan masuk dengan akun demo untuk membuat postingan.", "info");
+      showToast(
+        "Silakan masuk dengan akun demo untuk membuat postingan.",
+        "info",
+      );
       router.replace("/login?next=/buat-postingan");
     } else {
       setSession(currentSession);
@@ -53,13 +56,37 @@ export default function BuatPostinganPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validatePost(formData);
+
+    // Pencegahan kirim ganda (double-submit prevention)
+    if (submitting) return;
+
+    // Bersihkan nilai isian dengan .trim() sebelum validasi
+    const sanitizedData = {
+      ...formData,
+      title: sanitizeString(formData.title),
+      description: formData.description.trim(),
+      address: sanitizeString(formData.address),
+      destination: sanitizeString(formData.destination),
+      amount: String(formData.amount).trim(),
+    };
+
+    const validationErrors = validatePost(sanitizedData);
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      showToast("Terdapat kesalahan isian formulir. Mohon periksa kembali.", "error");
+      showToast(
+        "Terdapat kesalahan isian formulir. Mohon periksa kembali kolom yang ditandai merah.",
+        "error",
+      );
+
+      // Fokuskan peramban ke field pertama yang bermasalah
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const targetElement = document.querySelector(`[name="${firstErrorField}"]`);
+      if (targetElement) {
+        targetElement.focus();
+      }
       return;
     }
 
@@ -67,18 +94,25 @@ export default function BuatPostinganPage() {
     setErrors({});
 
     try {
-      const newPost = createPost(formData, session);
+      // Simulasi delay pengiriman network/penyimpanan terstruktur (500ms)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const newPost = createPost(sanitizedData, session);
       if (!newPost || !newPost.id) {
         throw new Error("Gagal menyimpan postingan ke penyimpanan lokal.");
       }
+
       showToast("Postingan berhasil diterbitkan!", "success");
       router.push(`/sukses-postingan?id=${encodeURIComponent(newPost.id)}`);
     } catch (err) {
+      // Saat gagal simpan: buka kunci submit dan tampilkan pesan error yang jelas (QA-06)
       setSubmitting(false);
+      const errorMessage =
+        err.message || "Gagal menyimpan postingan ke penyimpanan browser.";
       setErrors({
-        general: err.message || "Gagal menyimpan postingan ke penyimpanan browser.",
+        general: errorMessage,
       });
-      showToast("Gagal menyimpan postingan.", "error");
+      showToast(errorMessage, "error");
     }
   };
 
@@ -93,9 +127,21 @@ export default function BuatPostinganPage() {
       </header>
 
       {errors.general && (
-        <p className="error-banner" role="alert">
-          {errors.general}
-        </p>
+        <div
+          className="error-banner"
+          role="alert"
+          style={{
+            background: "#fee2e2",
+            border: "1px solid #ef4444",
+            color: "#b91c1c",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+            fontWeight: "500",
+          }}
+        >
+          ⚠ {errors.general}
+        </div>
       )}
 
       <form onSubmit={handleSubmit} noValidate>
@@ -110,6 +156,7 @@ export default function BuatPostinganPage() {
               value="butuh"
               checked={formData.nature === "butuh"}
               onChange={handleChange}
+              disabled={submitting}
             />
             <label htmlFor="post-need">
               <strong>Saya Butuh</strong> &mdash; Saya membutuhkan bantuan atau
@@ -124,6 +171,7 @@ export default function BuatPostinganPage() {
               value="bisa"
               checked={formData.nature === "bisa"}
               onChange={handleChange}
+              disabled={submitting}
             />
             <label htmlFor="post-can">
               <strong>Saya Bisa</strong> &mdash; Saya memiliki keahlian atau
@@ -131,7 +179,7 @@ export default function BuatPostinganPage() {
             </label>
           </p>
           {errors.nature && (
-            <small className="field-error" role="alert">
+            <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
               {errors.nature}
             </small>
           )}
@@ -141,19 +189,20 @@ export default function BuatPostinganPage() {
         <fieldset>
           <legend>2. Detail Informasi Aktivitas</legend>
           <p>
-            <label htmlFor="post-title">Judul Singkat Postingan:</label>
+            <label htmlFor="post-title">Judul Singkat Postingan (5-100 karakter):</label>
             <input
               type="text"
               id="post-title"
               name="title"
               value={formData.title}
               onChange={handleChange}
+              disabled={submitting}
               placeholder="Contoh: Butuh teman ngopi santai di Palagan"
               maxLength={100}
               aria-invalid={Boolean(errors.title)}
             />
             {errors.title && (
-              <small className="field-error" role="alert">
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                 {errors.title}
               </small>
             )}
@@ -166,6 +215,7 @@ export default function BuatPostinganPage() {
               name="category"
               value={formData.category}
               onChange={handleChange}
+              disabled={submitting}
               aria-invalid={Boolean(errors.category)}
             >
               <option value="">-- Pilih Kategori --</option>
@@ -183,7 +233,7 @@ export default function BuatPostinganPage() {
               </option>
             </select>
             {errors.category && (
-              <small className="field-error" role="alert">
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                 {errors.category}
               </small>
             )}
@@ -191,7 +241,7 @@ export default function BuatPostinganPage() {
 
           <p>
             <label htmlFor="post-description">
-              Deskripsi Lengkap Kebutuhan / Keahlian:
+              Deskripsi Lengkap Kebutuhan / Keahlian (minimal 20 karakter):
             </label>
             <textarea
               id="post-description"
@@ -199,11 +249,12 @@ export default function BuatPostinganPage() {
               rows={5}
               value={formData.description}
               onChange={handleChange}
+              disabled={submitting}
               placeholder="Jelaskan kebutuhan secara spesifik, barang yang dibawa, titik temu, atau keahlian yang kamu tawarkan..."
               aria-invalid={Boolean(errors.description)}
             />
             {errors.description && (
-              <small className="field-error" role="alert">
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                 {errors.description}
               </small>
             )}
@@ -214,17 +265,18 @@ export default function BuatPostinganPage() {
         <fieldset>
           <legend>3. Waktu &amp; Lokasi Pelaksanaan</legend>
           <p>
-            <label htmlFor="post-date">Tanggal Rencana:</label>
+            <label htmlFor="post-date">Tanggal Rencana (tidak boleh masa lalu):</label>
             <input
               type="date"
               id="post-date"
               name="date"
               value={formData.date}
               onChange={handleChange}
+              disabled={submitting}
               aria-invalid={Boolean(errors.date)}
             />
             {errors.date && (
-              <small className="field-error" role="alert">
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                 {errors.date}
               </small>
             )}
@@ -238,22 +290,24 @@ export default function BuatPostinganPage() {
               name="time"
               value={formData.time}
               onChange={handleChange}
+              disabled={submitting}
               aria-invalid={Boolean(errors.time)}
             />
             {errors.time && (
-              <small className="field-error" role="alert">
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                 {errors.time}
               </small>
             )}
           </p>
 
           <p>
-            <label htmlFor="post-region">Wilayah Kabupaten/Kota:</label>
+            <label htmlFor="post-region">Wilayah Kabupaten/Kota di Yogyakarta:</label>
             <select
               id="post-region"
               name="region"
               value={formData.region}
               onChange={handleChange}
+              disabled={submitting}
               aria-invalid={Boolean(errors.region)}
             >
               <option value="">-- Pilih Wilayah --</option>
@@ -264,25 +318,26 @@ export default function BuatPostinganPage() {
               <option value="gunungkidul">Kabupaten Gunungkidul</option>
             </select>
             {errors.region && (
-              <small className="field-error" role="alert">
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                 {errors.region}
               </small>
             )}
           </p>
 
           <p>
-            <label htmlFor="post-address">Titik Lokasi / Tempat Bertemu:</label>
+            <label htmlFor="post-address">Titik Lokasi / Tempat Bertemu (minimal 5 karakter):</label>
             <input
               type="text"
               id="post-address"
               name="address"
               value={formData.address}
               onChange={handleChange}
+              disabled={submitting}
               placeholder="Contoh: Cosan Palagan / Pogung Baru Blok D"
               aria-invalid={Boolean(errors.address)}
             />
             {errors.address && (
-              <small className="field-error" role="alert">
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                 {errors.address}
               </small>
             )}
@@ -296,8 +351,14 @@ export default function BuatPostinganPage() {
               name="destination"
               value={formData.destination}
               onChange={handleChange}
+              disabled={submitting}
               placeholder="Contoh: Kos Baru di Jl. Palagan KM 8"
             />
+            {errors.destination && (
+              <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
+                {errors.destination}
+              </small>
+            )}
           </p>
         </fieldset>
 
@@ -312,26 +373,28 @@ export default function BuatPostinganPage() {
               value="tarif"
               checked={formData.compensation === "tarif"}
               onChange={handleChange}
+              disabled={submitting}
             />
             <label htmlFor="comp-fixed">Tarif Pasti (Nominal Uang)</label>
           </p>
 
           {formData.compensation === "tarif" && (
             <p>
-              <label htmlFor="comp-amount">Nominal Tarif (Rp):</label>
+              <label htmlFor="comp-amount">Nominal Tarif (Rp &gt; 0):</label>
               <input
                 type="number"
                 id="comp-amount"
                 name="amount"
                 value={formData.amount}
                 onChange={handleChange}
-                min="0"
+                disabled={submitting}
+                min="1000"
                 step="5000"
                 placeholder="50000"
                 aria-invalid={Boolean(errors.amount)}
               />
               {errors.amount && (
-                <small className="field-error" role="alert">
+                <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
                   {errors.amount}
                 </small>
               )}
@@ -346,6 +409,7 @@ export default function BuatPostinganPage() {
               value="nego"
               checked={formData.compensation === "nego"}
               onChange={handleChange}
+              disabled={submitting}
             />
             <label htmlFor="comp-nego">Nego di Chat (Saling berdiskusi)</label>
           </p>
@@ -357,6 +421,7 @@ export default function BuatPostinganPage() {
               value="patungan"
               checked={formData.compensation === "patungan"}
               onChange={handleChange}
+              disabled={submitting}
             />
             <label htmlFor="comp-split">
               Patungan Transport / Tiket (Split-Bill)
@@ -370,6 +435,7 @@ export default function BuatPostinganPage() {
               value="traktir"
               checked={formData.compensation === "traktir"}
               onChange={handleChange}
+              disabled={submitting}
             />
             <label htmlFor="comp-treat">Traktir Makan / Minum Ngopi</label>
           </p>
@@ -381,11 +447,12 @@ export default function BuatPostinganPage() {
               value="sukarela"
               checked={formData.compensation === "sukarela"}
               onChange={handleChange}
+              disabled={submitting}
             />
             <label htmlFor="comp-free">Sukarela / Gratis</label>
           </p>
           {errors.compensation && (
-            <small className="field-error" role="alert">
+            <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
               {errors.compensation}
             </small>
           )}
@@ -401,6 +468,7 @@ export default function BuatPostinganPage() {
               name="terms"
               checked={formData.terms}
               onChange={handleChange}
+              disabled={submitting}
               aria-invalid={Boolean(errors.terms)}
             />
             <label htmlFor="terms-agree">
@@ -408,12 +476,19 @@ export default function BuatPostinganPage() {
             </label>
           </p>
           {errors.terms && (
-            <small className="field-error" role="alert">
+            <small className="field-error" role="alert" style={{ color: "#ef4444", display: "block" }}>
               {errors.terms}
             </small>
           )}
 
-          <p style={{ marginTop: "24px", display: "flex", gap: "12px", alignItems: "center" }}>
+          <p
+            style={{
+              marginTop: "24px",
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+            }}
+          >
             <button
               type="submit"
               className="button button-primary"

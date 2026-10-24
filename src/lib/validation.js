@@ -1,55 +1,119 @@
-import { CATEGORY_LABELS, REGION_LABELS, COMPENSATION_LABELS, CURRENT_USER } from "./data.js";
+import {
+  CATEGORY_LABELS,
+  REGION_LABELS,
+  COMPENSATION_LABELS,
+  CURRENT_USER,
+} from "./data.js";
 
-export function validatePost(values, today = new Date().toISOString().slice(0, 10)) {
+/**
+ * Sanitasi string sederhana untuk mencegah injeksi tag/skrip (XSS)
+ */
+export function sanitizeString(value) {
+  if (typeof value !== "string") return "";
+  return value
+    .trim()
+    .replace(/[<>]/g, ""); // Hapus tanda < dan > berbahaya
+}
+
+/**
+ * Validasi form /buat-postingan
+ * Memastikan trim, kelengkapan, rentang karakter, tanggal masa depan, dan syarat terpenuhi.
+ */
+export function validatePost(values) {
   const errors = {};
-  const title = (values.title || "").trim();
-  const description = (values.description || "").trim();
-  const address = (values.address || "").trim();
+  const localToday = new Date().toLocaleDateString("en-CA"); // Format YYYY-MM-DD zona waktu lokal
 
-  if (!["butuh", "bisa"].includes(values.nature)) {
-    errors.nature = "Pilih jenis postingan.";
+  const nature = (values?.nature || "").trim();
+  const title = (values?.title || "").trim();
+  const category = (values?.category || "").trim();
+  const description = (values?.description || "").trim();
+  const date = (values?.date || "").trim();
+  const time = (values?.time || "").trim();
+  const region = (values?.region || "").trim();
+  const address = (values?.address || "").trim();
+  const destination = (values?.destination || "").trim();
+  const compensation = (values?.compensation || "").trim();
+
+  // 1. Jenis Postingan (butuh / bisa)
+  if (!["butuh", "bisa"].includes(nature)) {
+    errors.nature = "Pilih jenis postingan (Saya Butuh atau Saya Bisa).";
   }
-  if (title.length < 5) {
+
+  // 2. Judul
+  if (!title) {
+    errors.title = "Judul singkat postingan wajib diisi.";
+  } else if (title.length < 5) {
     errors.title = "Judul minimal 5 karakter.";
   } else if (title.length > 100) {
     errors.title = "Judul maksimal 100 karakter.";
   }
-  if (!CATEGORY_LABELS[values.category]) {
-    errors.category = "Pilih kategori aktivitas.";
+
+  // 3. Kategori Aktivitas
+  if (!category || !CATEGORY_LABELS[category]) {
+    errors.category = "Pilih kategori aktivitas yang sesuai.";
   }
-  if (description.length < 20) {
-    errors.description = "Deskripsi minimal 20 karakter.";
+
+  // 4. Deskripsi
+  if (!description) {
+    errors.description = "Deskripsi kebutuhan atau keahlian wajib diisi.";
+  } else if (description.length < 20) {
+    errors.description = "Deskripsi minimal 20 karakter agar jelas bagi calon partner.";
+  } else if (description.length > 1000) {
+    errors.description = "Deskripsi maksimal 1000 karakter.";
   }
-  if (!values.date) {
+
+  // 5. Tanggal Rencana
+  if (!date) {
     errors.date = "Tanggal rencana wajib diisi.";
-  } else if (values.date < today) {
+  } else if (date < localToday) {
     errors.date = "Tanggal rencana tidak boleh di masa lalu.";
   }
-  if (!values.time) {
-    errors.time = "Waktu mulai wajib diisi.";
+
+  // 6. Waktu / Jam
+  if (!time) {
+    errors.time = "Waktu mulai aktivitas wajib diisi.";
   }
-  if (!REGION_LABELS[values.region]) {
-    errors.region = "Pilih wilayah pelaksanaan.";
+
+  // 7. Wilayah
+  if (!region || !REGION_LABELS[region]) {
+    errors.region = "Pilih wilayah pelaksanaan di Daerah Istimewa Yogyakarta.";
   }
-  if (address.length < 5) {
+
+  // 8. Titik Lokasi
+  if (!address) {
+    errors.address = "Titik lokasi atau tempat bertemu wajib diisi.";
+  } else if (address.length < 5) {
     errors.address = "Titik lokasi minimal 5 karakter.";
+  } else if (address.length > 150) {
+    errors.address = "Titik lokasi maksimal 150 karakter.";
   }
-  if (!COMPENSATION_LABELS[values.compensation]) {
-    errors.compensation = "Pilih model kompensasi.";
+
+  if (destination && destination.length > 150) {
+    errors.destination = "Titik tujuan maksimal 150 karakter.";
   }
-  if (values.compensation === "tarif") {
-    const amount = Number(values.amount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      errors.amount = "Nominal tarif harus lebih dari 0.";
+
+  // 9. Kompensasi
+  if (!compensation || !COMPENSATION_LABELS[compensation]) {
+    errors.compensation = "Pilih sistem kompensasi atau imbalan.";
+  } else if (compensation === "tarif") {
+    const rawAmount = String(values.amount ?? "").trim();
+    const amount = Number(rawAmount);
+    if (!rawAmount || !Number.isFinite(amount) || amount <= 0) {
+      errors.amount = "Nominal tarif harus berupa angka lebih dari 0.";
     }
   }
+
+  // 10. Persetujuan Syarat Komunitas
   if (!values.terms) {
-    errors.terms = "Setujui pedoman komunitas untuk melanjutkan.";
+    errors.terms = "Kamu harus menyetujui pedoman keamanan dan kesopanan komunitas NeedHelp.";
   }
 
   return errors;
 }
 
+/**
+ * Validasi form Login Demo
+ */
 export function validateLogin(email, password) {
   const errors = {};
   const emailValue = (email || "").trim().toLowerCase();
@@ -58,7 +122,7 @@ export function validateLogin(email, password) {
   if (!emailValue) {
     errors.email = "Email wajib diisi.";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-    errors.email = "Format email tidak valid.";
+    errors.email = "Format email tidak valid (contoh: nama@domain.com).";
   }
 
   if (!passwordValue) {
@@ -69,13 +133,16 @@ export function validateLogin(email, password) {
 
   if (Object.keys(errors).length === 0) {
     if (emailValue !== CURRENT_USER.email || passwordValue !== "NeedHelp123!") {
-      errors.general = "Email atau password salah. Gunakan akun demo yang tersedia.";
+      errors.general = "Email atau password salah. Gunakan akun demo: demo@needhelp.test / NeedHelp123!";
     }
   }
 
   return errors;
 }
 
+/**
+ * Validasi form Rating & Ulasan
+ */
 export function validateRating(stars, comment) {
   const errors = {};
   const numStars = Number(stars);
@@ -84,31 +151,53 @@ export function validateRating(stars, comment) {
   if (!Number.isInteger(numStars) || numStars < 1 || numStars > 5) {
     errors.rating = "Pilih rating 1 sampai 5 bintang.";
   }
-  if (cleanComment.length < 10) {
+  if (!cleanComment) {
+    errors.comment = "Ulasan wajib diisi minimal 10 karakter.";
+  } else if (cleanComment.length < 10) {
     errors.comment = "Ulasan minimal 10 karakter.";
+  } else if (cleanComment.length > 500) {
+    errors.comment = "Ulasan maksimal 500 karakter.";
   }
 
   return errors;
 }
 
+/**
+ * Validasi form Penawaran Bantuan (/formbantuan)
+ */
 export function validateHelpProposal(values) {
   const errors = {};
-  const name = (values.helper_name || "").trim();
-  const phone = (values.helper_whatsapp || "").trim();
-  const message = (values.helper_message || "").trim();
-  const time = (values.helper_time || "").trim();
+  const name = (values?.helper_name || "").trim();
+  const phone = (values?.helper_whatsapp || "").trim();
+  const message = (values?.helper_message || "").trim();
+  const time = (values?.helper_time || "").trim();
 
-  if (name.length < 3) {
+  if (!name) {
+    errors.helper_name = "Nama lengkap wajib diisi.";
+  } else if (name.length < 3) {
     errors.helper_name = "Nama wajib diisi minimal 3 karakter.";
+  } else if (name.length > 60) {
+    errors.helper_name = "Nama maksimal 60 karakter.";
   }
-  if (phone.length < 9) {
-    errors.helper_whatsapp = "Nomor kontak wajib diisi (minimal 9 digit).";
+
+  const cleanPhone = phone.replace(/[-\s()]/g, "");
+  if (!phone) {
+    errors.helper_whatsapp = "Nomor kontak WhatsApp wajib diisi.";
+  } else if (!/^(?:\+62|62|08)[0-9]{8,13}$/.test(cleanPhone)) {
+    errors.helper_whatsapp =
+      "Format nomor kontak tidak valid (contoh: 081234567890 atau +6281234567890).";
   }
-  if (message.length < 10) {
+
+  if (!message) {
+    errors.helper_message = "Pesan bantuan wajib diisi.";
+  } else if (message.length < 10) {
     errors.helper_message = "Pesan bantuan minimal 10 karakter.";
+  } else if (message.length > 500) {
+    errors.helper_message = "Pesan bantuan maksimal 500 karakter.";
   }
+
   if (!time) {
-    errors.helper_time = "Waktu bantuan wajib diisi.";
+    errors.helper_time = "Waktu kesiapan bantuan wajib diisi.";
   }
 
   return errors;

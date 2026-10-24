@@ -1,3 +1,5 @@
+import INITIAL_POSTS from "../data/posts.js";
+
 export const CURRENT_USER = {
   id: "demo-user",
   name: "Pengguna Demo",
@@ -60,140 +62,10 @@ export const PEOPLE = {
   },
 };
 
-export const DEMO_POSTS = [
-  {
-    id: "post-pindahan",
-    nature: "butuh",
-    title: "Butuh bantuan pindahan kos & angkat lemari",
-    summary:
-      "Butuh bantuan membawa lemari dan kardus pakaian dari Pogung Baru ke kos baru di Palagan.",
-    description:
-      "Halo teman-teman! Saya butuh bantuan tenaga 1 orang untuk bantu angkut barang pindahan kos dari kos lama di Pogung Baru ke kos baru di Jalan Palagan Tentara Pelajar.\n\nBarang-barang utama yang perlu dipindahkan antara lain:\n- 1 unit lemari pakaian kayu ringan (bisa dibongkar-pasang)\n- 1 meja lipat & kursi belajar\n- 3 kardus ukuran sedang berisi buku dan pakaian",
-    category: "bantuan",
-    region: "sleman",
-    address: "Pogung Baru Blok D, Mlati, Sleman",
-    destination: "Jl. Palagan KM 8, Sariharjo, Ngaglik, Sleman",
-    date: "2026-10-24",
-    time: "09:00",
-    endTime: "12:00",
-    compensation: "tarif",
-    amount: 50000,
-    compensationNote: "Traktir makan siang",
-    authorId: "sari-wijaya",
-    createdAt: "2026-10-18T09:15:00+07:00",
-    timeLabel: "15 menit lalu",
-  },
-  {
-    id: "post-bersih",
-    nature: "bisa",
-    title: "Jasa bersih-bersih kosan & kamar mandi",
-    summary:
-      "Menawarkan jasa bersih-bersih kamar kos mahasiswa, cuci piring, sapu/pel, dan sikat kamar mandi.",
-    description:
-      "Saya menawarkan jasa bersih-bersih kos mahasiswa di area Sleman. Pekerjaan meliputi menyapu, mengepel, membersihkan kamar mandi, dan merapikan area bersama.\n\nWaktu fleksibel setiap sore. Peralatan kebersihan dasar sudah saya bawa; pemilik kos cukup menyediakan air dan tempat pembuangan sampah.",
-    category: "bantuan",
-    region: "sleman",
-    address: "Area Jakal dan Seturan, Sleman",
-    destination: "",
-    date: "2026-10-20",
-    time: "16:00",
-    endTime: "20:00",
-    compensation: "tarif",
-    amount: 30000,
-    compensationNote: "Bisa nego di chat",
-    authorId: "budi-pratama",
-    createdAt: "2026-10-18T07:30:00+07:00",
-    timeLabel: "2 jam lalu",
-  },
-  {
-    id: "post-ngopi",
-    nature: "butuh",
-    title: "Teman ngopi sore sambil diskusi tugas akhir",
-    summary:
-      "Lagi buntu mengerjakan bab pembahasan. Cari teman ngobrol santai yang paham riset sosial humaniora.",
-    description:
-      "Saya sedang mengerjakan bab pembahasan tugas akhir dan butuh teman diskusi santai. Tidak perlu menjadi ahli; yang penting nyaman bertukar ide dan bisa memberi masukan dari sudut pandang lain.\n\nRencananya kita bertemu di Cosan Palagan selama kurang lebih dua jam. Suasana santai, tidak harus membawa laptop.",
-    category: "ditemani",
-    region: "sleman",
-    address: "Cosan Palagan, Sleman",
-    destination: "",
-    date: "2026-10-21",
-    time: "18:00",
-    endTime: "20:00",
-    compensation: "traktir",
-    amount: null,
-    compensationNote: "Kopi dan snack",
-    authorId: "rina-putri",
-    createdAt: "2026-10-18T06:10:00+07:00",
-    timeLabel: "3 jam lalu",
-  },
-  {
-    id: "post-belajar",
-    nature: "butuh",
-    title: "Cari teman belajar matematika",
-    summary:
-      "Mau belajar bareng untuk persiapan UTS. Fokus integral dan limit, bisa di perpustakaan kampus.",
-    description:
-      "Saya mencari teman belajar matematika untuk persiapan UTS. Materi yang ingin dibahas adalah integral dan limit. Saya sudah punya catatan serta contoh soal, tinggal butuh partner untuk membahas langkah pengerjaan.\n\nRencananya belajar di perpustakaan kampus selama satu setengah jam.",
-    category: "pendampingan",
-    region: "sleman",
-    address: "Perpustakaan kampus, Sleman",
-    destination: "",
-    date: "2026-10-22",
-    time: "15:00",
-    endTime: "16:30",
-    compensation: "sukarela",
-    amount: null,
-    compensationNote: "",
-    authorId: "budi-pratama",
-    createdAt: "2026-10-17T19:00:00+07:00",
-    timeLabel: "Kemarin",
-  },
-  {
-    id: "post-antar",
-    nature: "butuh",
-    title: "Butuh bantuan antar barang ke Seturan",
-    summary:
-      "Perlu bantuan antar paket kecil ke daerah Seturan. Bisa dibawa pakai motor.",
-    description:
-      "Saya perlu bantuan mengantar satu paket kecil ke area Seturan. Paket sudah dikemas dan ringan, bisa dibawa dengan motor. Titik ambil di sekitar kampus, lalu diantar ke alamat penerima.\n\nMohon konfirmasi lewat chat sebelum berangkat agar alamat lengkap bisa saya kirimkan.",
-    category: "bantuan",
-    region: "sleman",
-    address: "Seturan, Depok, Sleman",
-    destination: "Kos penerima di Seturan",
-    date: "2026-10-19",
-    time: "13:00",
-    endTime: "15:00",
-    compensation: "tarif",
-    amount: 20000,
-    compensationNote: "",
-    authorId: "rina-putri",
-    createdAt: "2026-10-17T15:00:00+07:00",
-    timeLabel: "Kemarin",
-  },
-  {
-    id: "post-kuliner",
-    nature: "bisa",
-    title: "Teman explore kuliner murah Malioboro",
-    summary:
-      "Saya bisa menemani explore kuliner murah di sekitar Malioboro pada akhir pekan.",
-    description:
-      "Saya menawarkan teman explore kuliner murah di sekitar Malioboro. Rute bisa disesuaikan dengan selera dan anggaran, misalnya jajanan pasar, angkringan, atau warung mahasiswa.\n\nBiaya makanan dan minuman dibagi bersama. Mari diskusikan rute dan waktu lewat chat.",
-    category: "explore",
-    region: "kota",
-    address: "Malioboro, Kota Yogyakarta",
-    destination: "",
-    date: "2026-10-25",
-    time: "10:00",
-    endTime: "13:00",
-    compensation: "patungan",
-    amount: null,
-    compensationNote: "Split bill",
-    authorId: "budi-pratama",
-    createdAt: "2026-10-16T10:00:00+07:00",
-    timeLabel: "2 hari lalu",
-  },
-];
+// Seed posts diekspor untuk kompatibilitas mundur
+export const DEMO_POSTS = INITIAL_POSTS;
+
+let cachedSeedPosts = null;
 
 export const DEMO_ACTIVITIES = [
   {
@@ -375,8 +247,61 @@ export function getUserPosts() {
   return Array.isArray(posts) ? posts : [];
 }
 
+/**
+ * Mengambil data awal seed dari /data/posts.json secara dinamis di browser.
+ * Jika berkas JSON diubah di public/data/posts.json, perubahan langsung terbaca.
+ */
+export async function fetchSeedPosts() {
+  if (typeof window === "undefined") {
+    return INITIAL_POSTS;
+  }
+
+  try {
+    const res = await fetch(`/data/posts.json?_t=${Date.now()}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      throw new Error(`Gagal memuat sumber JSON (HTTP ${res.status})`);
+    }
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      cachedSeedPosts = data;
+      return data;
+    }
+    return INITIAL_POSTS;
+  } catch (err) {
+    if (cachedSeedPosts) return cachedSeedPosts;
+    console.warn("Gagal fetch /data/posts.json, menggunakan fallback data lokal:", err);
+    return INITIAL_POSTS;
+  }
+}
+
+export function getSeedPosts() {
+  return cachedSeedPosts || INITIAL_POSTS;
+}
+
+/**
+ * Mengambil seluruh postingan (localStorage user + sumber JSON).
+ * Mendukung simulasi error terkontrol untuk QA-06 via param URL atau window.__SIMULATE_FETCH_ERROR__.
+ */
+export async function fetchPosts({ simulateError = false } = {}) {
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasSimulateParam =
+      urlParams.get("simulate_error") === "1" || urlParams.get("error") === "1";
+    if (simulateError || hasSimulateParam || window.__SIMULATE_FETCH_ERROR__) {
+      throw new Error(
+        "Simulasi error: Gagal mengambil data dari sumber JSON/API. Silakan periksa koneksi atau klik 'Coba Lagi'.",
+      );
+    }
+  }
+
+  const seed = await fetchSeedPosts();
+  return [...getUserPosts(), ...seed];
+}
+
 export function getPosts() {
-  return [...getUserPosts(), ...DEMO_POSTS];
+  return [...getUserPosts(), ...getSeedPosts()];
 }
 
 export function getPublicPosts() {
@@ -386,6 +311,16 @@ export function getPublicPosts() {
       .map((activity) => activity.postId),
   );
   return getPosts().filter((post) => !cancelledPostIds.has(post.id));
+}
+
+export async function fetchPublicPosts(options) {
+  const posts = await fetchPosts(options);
+  const cancelledPostIds = new Set(
+    getActivities()
+      .filter((activity) => activity.status === "batal")
+      .map((activity) => activity.postId),
+  );
+  return posts.filter((post) => !cancelledPostIds.has(post.id));
 }
 
 export function getPost(id) {
@@ -403,10 +338,23 @@ export function savePost(post) {
   return post;
 }
 
-export function createPost(values, user = CURRENT_USER) {
+export function createPost(values, user = CURRENT_USER, { simulateError = false } = {}) {
+  if (typeof window !== "undefined") {
+    const isSimulateTitle =
+      typeof values?.title === "string" && values.title.includes("[simulasi-gagal]");
+    if (simulateError || window.__SIMULATE_SAVE_ERROR__ || isSimulateTitle) {
+      throw new Error(
+        "Simulasi error: Gagal menyimpan data postingan ke penyimpanan lokal. Silakan coba lagi.",
+      );
+    }
+  }
+
   const createdAt = new Date().toISOString();
+  const randomSuffix = Math.random().toString(36).substring(2, 7);
+  const uniqueId = `post-${Date.now()}-${randomSuffix}`;
+
   return savePost({
-    id: `post-${Date.now()}`,
+    id: uniqueId,
     nature: values.nature,
     title: values.title.trim(),
     summary: values.description.trim().slice(0, 150),
@@ -425,7 +373,7 @@ export function createPost(values, user = CURRENT_USER) {
     authorName: user.name,
     authorBio: "Pengguna demo NeedHelp",
     authorAvatar: "/assets/images/avatar-user.svg",
-    authorInitial: "P",
+    authorInitial: (user.name || "P").charAt(0).toUpperCase(),
     avatarClass: "avatar-blue",
     createdAt,
     timeLabel: "Baru saja",
