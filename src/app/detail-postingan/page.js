@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   getPost,
   getPublicPost,
+  fetchPosts,
   getPostAuthor,
   CATEGORY_LABELS,
   formatDate,
@@ -27,6 +28,11 @@ function DetailPostContent() {
   useEffect(() => {
     if (id) {
       setPost(getPost(id) || getPublicPost(id));
+      fetchPosts()
+        .then(() => {
+          setPost(getPost(id) || getPublicPost(id));
+        })
+        .catch(() => {});
     }
   }, [id]);
 

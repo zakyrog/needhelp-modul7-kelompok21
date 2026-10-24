@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPublicPosts } from "../lib/data.js";
+import { getPublicPosts, fetchPublicPosts } from "../lib/data.js";
 import { PostCard } from "../components/PostCard";
 
 export default function HomePage() {
   const [posts, setPosts] = useState(() => getPublicPosts().slice(0, 3));
 
   useEffect(() => {
-    setPosts(getPublicPosts().slice(0, 3));
+    fetchPublicPosts()
+      .then((data) => setPosts(data.slice(0, 3)))
+      .catch(() => setPosts(getPublicPosts().slice(0, 3)));
   }, []);
 
   return (
