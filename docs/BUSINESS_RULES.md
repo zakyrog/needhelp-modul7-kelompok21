@@ -118,9 +118,7 @@ Entitas Kegiatan muncul di dashboard `/aktivitas` kedua belah pihak setelah kese
 ### 5.1 Mekanisme Konfirmasi Selesai
 1. Salah satu pihak (biasanya Pemohon penerima bantuan, atau Penolong yang telah tuntas bekerja) menekan tombol **"Konfirmasi Selesai"** di halaman aktivitas.
 2. Pihak lawan menerima permintaan konfirmasi di kartu aktivitas.
-3. Status berubah menjadi `selesai` jika:
-   * Pihak kedua mengonfirmasi selesai; ATAU
-   * Pemohon bantuan secara sepihak menyatakan telah selesai dan puas.
+3. Status kegiatan HANYA berubah menjadi `selesai` jika KEDUA belah pihak (pemohon dan penolong) telah sama-sama memberikan konfirmasi selesai melalui prosedur resmi (`confirm_activity_completion`). Jika baru satu pihak yang mengonfirmasi, status tetap pada fase aktif (`terjadwal` atau `berlangsung`) dan menunggu konfirmasi mitra. Satu pihak saja tidak dapat menyelesaikan kegiatan secara sepihak.
 
 ### 5.2 Mekanisme Pembatalan
 1. **Sebelum Hari-H (Status `terjadwal`):**

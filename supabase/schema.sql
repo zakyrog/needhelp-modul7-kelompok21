@@ -1,11 +1,11 @@
 -- ====================================================================
 -- SKEMA BASIS DATA SUPABASE — NEEDHELP JOGJA
--- Versi: 2.2.0 (Transactional & Integrity Hardened)
+-- Versi: 2.3.1 (Atomic Idempotent & Terminal Status Safeguards)
 -- Platform: Supabase PostgreSQL (dengan Supabase Auth, RLS, & Atomic RPCs)
 -- ====================================================================
 
 -- 1. TABEL PROFIL PENGGUNA (Terkoneksi ke auth.users)
--- Email tidak disimpan di tabel profil publik untuk perlindungan privasi.
+-- Email dan nomor telepon tidak disimpan di public.profiles untuk privasi.
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     full_name TEXT NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Cabut hak update umum; hanya kolom bio/avatar/nama yang dapat diubah oleh pemilik
+-- Pengguna biasa hanya boleh mengupdate nama, bio, avatar, dan updated_at miliknya sendiri
 REVOKE UPDATE ON public.profiles FROM authenticated, anon, public;
 GRANT UPDATE (full_name, bio, avatar_url, updated_at) ON public.profiles TO authenticated;
 
@@ -31,7 +31,7 @@ AS $$
 BEGIN
     IF (NEW.rating_average IS DISTINCT FROM OLD.rating_average OR NEW.rating_count IS DISTINCT FROM OLD.rating_count) THEN
         IF current_setting('needhelp.system_updating_rating', true) IS DISTINCT FROM 'true' THEN
-            RAISE EXCEPTION 'Kolom rating_average dan rating_count dikelola otomatis oleh sistem.';
+            RAISE EXCEPTION 'Kolom rating_average dan rating_count dikelola otomatis oleh sistem dan tidak dapat dimanipulasi.';
         END IF;
     END IF;
     RETURN NEW;
@@ -43,7 +43,7 @@ CREATE TRIGGER trg_protect_profile_reputation
     BEFORE UPDATE ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION public.protect_profile_reputation();
 
--- Trigger otomatis untuk membuat profil saat pendaftaran akun baru di auth.users berhasil
+-- Trigger otomatis untuk membuat profil publik saat pendaftaran akun di auth.users berhasil
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER 
 LANGUAGE plpgsql
@@ -142,6 +142,10 @@ CREATE TABLE IF NOT EXISTS public.deals (
     CONSTRAINT different_deal_participants CHECK (requester_id <> helper_id)
 );
 
+-- Pengguna biasa DILARANG melakukan UPDATE langsung ke tabel deals via API client biasa.
+-- Seluruh mutasi status dan persetujuan WAJIB melalui RPC terkontrol (agree_to_deal, revise_deal, cancel_deal).
+REVOKE UPDATE, DELETE ON public.deals FROM authenticated, anon, public;
+
 
 -- 6. TABEL KEGIATAN (Activities)
 CREATE TABLE IF NOT EXISTS public.activities (
@@ -160,6 +164,10 @@ CREATE TABLE IF NOT EXISTS public.activities (
     CONSTRAINT different_activity_participants CHECK (requester_id <> helper_id)
 );
 
+-- Pengguna biasa DILARANG melakukan INSERT, UPDATE, DELETE langsung ke tabel activities via API client biasa.
+-- Pembuatan kegiatan dilakukan otomatis saat deal disepakati; konfirmasi penyelesaian WAJIB via confirm_activity_completion.
+REVOKE INSERT, UPDATE, DELETE ON public.activities FROM authenticated, anon, public;
+
 
 -- 7. TABEL ULASAN & RATING (Reviews)
 CREATE TABLE IF NOT EXISTS public.reviews (
@@ -173,6 +181,8 @@ CREATE TABLE IF NOT EXISTS public.reviews (
     CONSTRAINT unique_review_per_activity_reviewer UNIQUE (activity_id, reviewer_id),
     CONSTRAINT no_self_review CHECK (reviewer_id <> reviewee_id)
 );
+
+REVOKE UPDATE, DELETE ON public.reviews FROM authenticated, anon, public;
 
 
 -- ====================================================================
@@ -191,6 +201,10 @@ DECLARE
     v_post RECORD;
     current_uid UUID := auth.uid();
 BEGIN
+    IF current_uid IS NULL OR auth.role() IS DISTINCT FROM 'authenticated' THEN
+        RAISE EXCEPTION 'Akses ditolak: Pembuatan kesepakatan membutuhkan autentikasi pengguna.';
+    END IF;
+
     -- Validasi 1: Peserta harus berbeda
     IF NEW.requester_id = NEW.helper_id THEN
         RAISE EXCEPTION 'Pemohon dan penolong harus merupakan pengguna yang berbeda.';
@@ -259,7 +273,6 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-    -- Masukkan kartu kesepakatan resmi dari operasi tepercaya
     INSERT INTO public.chat_messages (
         thread_id,
         sender_id,
@@ -307,27 +320,34 @@ DECLARE
     v_deal RECORD;
     v_post RECORD;
     current_uid UUID := auth.uid();
-    v_both_agreed BOOLEAN := FALSE;
 BEGIN
-    -- 1. Kunci baris deal untuk mencegah persetujuan bersamaan yang saling tumpang tindih
+    -- 1. Otorisasi ketat pemanggil
+    IF current_uid IS NULL OR auth.role() IS DISTINCT FROM 'authenticated' THEN
+        RAISE EXCEPTION 'Akses ditolak: Operasi membutuhkan autentikasi pengguna.';
+    END IF;
+
+    -- 2. Kunci baris deal untuk transaksi atomik
     SELECT * INTO v_deal FROM public.deals WHERE id = p_deal_id FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Kesepakatan tidak ditemukan.';
     END IF;
 
-    -- 2. Validasi otoritas pemanggil
     IF current_uid IS DISTINCT FROM v_deal.requester_id AND current_uid IS DISTINCT FROM v_deal.helper_id THEN
-        RAISE EXCEPTION 'Anda bukan merupakan peserta dalam kesepakatan ini.';
+        RAISE EXCEPTION 'Akses ditolak: Anda bukan merupakan peserta dalam kesepakatan ini.';
     END IF;
 
-    -- 3. Mencegah persetujuan pada kesepakatan yang sudah batal, ditolak, atau selesai
+    -- 3. Idempoten: Jika sudah disepakati, cegah proses ganda dan pengurangan kuota berulang
+    IF v_deal.status = 'disepakati' THEN
+        RETURN jsonb_build_object('success', true, 'status', 'disepakati', 'already_agreed', true);
+    END IF;
+
     IF v_deal.status IN ('dibatalkan', 'ditolak') THEN
         RAISE EXCEPTION 'Kesepakatan telah dibatalkan atau ditolak dan tidak dapat disetujui.';
     END IF;
 
-    -- 4. Validasi versi kesepakatan: Tolak persetujuan versi lama
+    -- 4. Validasi versi kesepakatan: Tolak persetujuan versi usang
     IF v_deal.deal_version <> p_target_version THEN
-        RAISE EXCEPTION 'Versi kesepakatan telah diperbarui menjadi versi %. Harap tinjau ulang rincian terbaru.', v_deal.deal_version;
+        RAISE EXCEPTION 'Versi kesepakatan telah diperbarui menjadi versi %. Harap tinjau rincian terbaru.', v_deal.deal_version;
     END IF;
 
     -- 5. Catat persetujuan pihak terkait
@@ -337,17 +357,14 @@ BEGIN
         v_deal.helper_agreed := TRUE;
     END IF;
 
-    -- 6. Periksa konsensus: Apakah kedua pihak sudah setuju?
+    -- 6. Kuota HANYA berkurang jika KEDUA persetujuan sah terpenuhi
     IF v_deal.requester_agreed = TRUE AND v_deal.helper_agreed = TRUE THEN
-        v_both_agreed := TRUE;
-
         -- ATOMIK: Kunci baris postingan untuk validasi kuota
         SELECT * INTO v_post FROM public.posts WHERE id = v_deal.post_id FOR UPDATE;
         IF NOT FOUND THEN
             RAISE EXCEPTION 'Postingan rujukan tidak ditemukan.';
         END IF;
 
-        -- Khusus Saya Butuh: Periksa kuota dan status postingan
         IF v_post.nature = 'butuh' THEN
             IF v_post.status IN ('ditutup', 'kedaluwarsa') THEN
                 RAISE EXCEPTION 'Postingan rujukan sudah tidak aktif.';
@@ -356,14 +373,12 @@ BEGIN
                 RAISE EXCEPTION 'Kuota bantuan pada postingan ini sudah terpenuhi.';
             END IF;
 
-            -- Kurangi kuota secara aman (hanya jika deal baru pertama kali disepakati)
-            IF v_deal.status <> 'disepakati' THEN
-                UPDATE public.posts
-                SET remaining_quota = remaining_quota - 1,
-                    status = CASE WHEN remaining_quota - 1 <= 0 THEN 'kuota_penuh' ELSE status END,
-                    updated_at = timezone('utc'::text, now())
-                WHERE id = v_post.id;
-            END IF;
+            -- Kurangi kuota postingan secara atomik
+            UPDATE public.posts
+            SET remaining_quota = remaining_quota - 1,
+                status = CASE WHEN remaining_quota - 1 <= 0 THEN 'kuota_penuh' ELSE status END,
+                updated_at = timezone('utc'::text, now())
+            WHERE id = v_post.id;
         END IF;
 
         -- Ubah status kesepakatan menjadi disepakati
@@ -391,7 +406,7 @@ BEGIN
 
         RETURN jsonb_build_object('success', true, 'status', 'disepakati', 'version', v_deal.deal_version);
     ELSE
-        -- Masih menunggu pihak lainnya
+        -- Persetujuan pihak pertama (kuota TIDAK disentuh)
         UPDATE public.deals
         SET requester_agreed = v_deal.requester_agreed,
             helper_agreed = v_deal.helper_agreed,
@@ -424,17 +439,21 @@ DECLARE
     current_uid UUID := auth.uid();
     v_new_version INTEGER;
 BEGIN
+    IF current_uid IS NULL OR auth.role() IS DISTINCT FROM 'authenticated' THEN
+        RAISE EXCEPTION 'Akses ditolak: Operasi membutuhkan autentikasi pengguna.';
+    END IF;
+
     SELECT * INTO v_deal FROM public.deals WHERE id = p_deal_id FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Kesepakatan tidak ditemukan.';
     END IF;
 
     IF current_uid IS DISTINCT FROM v_deal.requester_id AND current_uid IS DISTINCT FROM v_deal.helper_id THEN
-        RAISE EXCEPTION 'Anda bukan merupakan peserta dalam kesepakatan ini.';
+        RAISE EXCEPTION 'Akses ditolak: Anda bukan merupakan peserta dalam kesepakatan ini.';
     END IF;
 
-    IF v_deal.status IN ('dibatalkan', 'ditolak') THEN
-        RAISE EXCEPTION 'Kesepakatan yang telah dibatalkan atau ditolak tidak dapat direvisi.';
+    IF v_deal.status IN ('disepakati', 'dibatalkan', 'ditolak') THEN
+        RAISE EXCEPTION 'Kesepakatan yang telah disepakati, dibatalkan, atau ditolak tidak dapat direvisi. Batalkan kesepakatan jika perlu menyusun rincian baru.';
     END IF;
 
     IF v_deal.deal_version <> p_target_version THEN
@@ -443,7 +462,6 @@ BEGIN
 
     v_new_version := v_deal.deal_version + 1;
 
-    -- Perbarui parameter, batalkan persetujuan lawan, naikkan versi
     UPDATE public.deals
     SET scheduled_date = p_scheduled_date,
         scheduled_time = p_scheduled_time,
@@ -457,7 +475,6 @@ BEGIN
         updated_at = timezone('utc'::text, now())
     WHERE id = p_deal_id;
 
-    -- Terbitkan kartu kesepakatan revisi resmi ke chat
     INSERT INTO public.chat_messages (
         thread_id,
         sender_id,
@@ -502,13 +519,17 @@ DECLARE
     v_post RECORD;
     current_uid UUID := auth.uid();
 BEGIN
+    IF current_uid IS NULL OR auth.role() IS DISTINCT FROM 'authenticated' THEN
+        RAISE EXCEPTION 'Akses ditolak: Operasi membutuhkan autentikasi pengguna.';
+    END IF;
+
     SELECT * INTO v_deal FROM public.deals WHERE id = p_deal_id FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Kesepakatan tidak ditemukan.';
     END IF;
 
     IF current_uid IS DISTINCT FROM v_deal.requester_id AND current_uid IS DISTINCT FROM v_deal.helper_id THEN
-        RAISE EXCEPTION 'Anda bukan merupakan peserta dalam kesepakatan ini.';
+        RAISE EXCEPTION 'Akses ditolak: Anda bukan merupakan peserta dalam kesepakatan ini.';
     END IF;
 
     IF v_deal.status = 'dibatalkan' THEN
@@ -517,6 +538,11 @@ BEGIN
 
     -- Jika sebelumnya sudah disepakati, pulihkan kuota postingan Saya Butuh
     IF v_deal.status = 'disepakati' THEN
+        -- Cegah pembatalan jika kegiatan telah tuntas diselesaikan
+        IF EXISTS (SELECT 1 FROM public.activities WHERE deal_id = v_deal.id AND status = 'selesai') THEN
+            RAISE EXCEPTION 'Kesepakatan tidak dapat dibatalkan karena kegiatan telah tuntas diselesaikan.';
+        END IF;
+
         SELECT * INTO v_post FROM public.posts WHERE id = v_deal.post_id FOR UPDATE;
         IF FOUND AND v_post.nature = 'butuh' THEN
             UPDATE public.posts
@@ -526,7 +552,6 @@ BEGIN
             WHERE id = v_post.id;
         END IF;
 
-        -- Batalkan entitas kegiatan terkait
         UPDATE public.activities
         SET status = 'batal',
             cancellation_reason = p_cancellation_reason,
@@ -539,7 +564,6 @@ BEGIN
         updated_at = timezone('utc'::text, now())
     WHERE id = p_deal_id;
 
-    -- Terbitkan pesan event sistem resmi
     INSERT INTO public.chat_messages (thread_id, sender_id, message_type, content, metadata)
     VALUES (
         v_deal.thread_id,
@@ -554,51 +578,7 @@ END;
 $$;
 
 
--- Trigger 3: Kunci Perubahan & Transisi Status pada Tabel Activities
-CREATE OR REPLACE FUNCTION public.enforce_activity_integrity()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-    -- 1. Kunci identitas dan relasi
-    IF (NEW.id <> OLD.id OR NEW.deal_id <> OLD.deal_id OR NEW.post_id <> OLD.post_id OR
-        NEW.requester_id <> OLD.requester_id OR NEW.helper_id <> OLD.helper_id) THEN
-        RAISE EXCEPTION 'Identitas kegiatan, deal_id, dan post_id tidak dapat diubah.';
-    END IF;
-
-    -- 2. Transisi status yang sah
-    IF OLD.status = 'terjadwal' AND NEW.status NOT IN ('terjadwal', 'berlangsung', 'batal') THEN
-        RAISE EXCEPTION 'Kegiatan terjadwal hanya dapat berpindah ke berlangsung atau batal.';
-    END IF;
-    IF OLD.status = 'berlangsung' AND NEW.status NOT IN ('berlangsung', 'selesai', 'batal') THEN
-        RAISE EXCEPTION 'Kegiatan berlangsung hanya dapat berpindah ke selesai atau batal.';
-    END IF;
-    IF OLD.status IN ('selesai', 'batal') AND NEW.status <> OLD.status THEN
-        RAISE EXCEPTION 'Kegiatan yang telah selesai atau batal bersifat final dan tidak dapat diubah.';
-    END IF;
-
-    -- 3. Mencegah status 'selesai' langsung lewat UPDATE biasa tanpa konfirmasi sah
-    IF NEW.status = 'selesai' AND OLD.status <> 'selesai' THEN
-        IF (NEW.requester_confirmed_done IS NOT TRUE AND NEW.helper_confirmed_done IS NOT TRUE) THEN
-            RAISE EXCEPTION 'Kegiatan tidak dapat diselesaikan tanpa konfirmasi penyelesaian.';
-        END IF;
-        NEW.completed_at := timezone('utc'::text, now());
-    END IF;
-
-    NEW.updated_at := timezone('utc'::text, now());
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_enforce_activity_integrity ON public.activities;
-CREATE TRIGGER trg_enforce_activity_integrity
-    BEFORE UPDATE ON public.activities
-    FOR EACH ROW EXECUTE FUNCTION public.enforce_activity_integrity();
-
-
--- Prosedur RPC 4: Konfirmasi Penyelesaian Kegiatan
+-- Prosedur RPC 4: Konfirmasi Penyelesaian Kegiatan (Wajib Kedua Pihak)
 CREATE OR REPLACE FUNCTION public.confirm_activity_completion(
     p_activity_id UUID
 )
@@ -611,49 +591,60 @@ DECLARE
     v_act RECORD;
     current_uid UUID := auth.uid();
 BEGIN
+    IF current_uid IS NULL OR auth.role() IS DISTINCT FROM 'authenticated' THEN
+        RAISE EXCEPTION 'Akses ditolak: Operasi membutuhkan autentikasi pengguna.';
+    END IF;
+
     SELECT * INTO v_act FROM public.activities WHERE id = p_activity_id FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Kegiatan tidak ditemukan.';
     END IF;
 
     IF current_uid IS DISTINCT FROM v_act.requester_id AND current_uid IS DISTINCT FROM v_act.helper_id THEN
-        RAISE EXCEPTION 'Anda bukan merupakan peserta dalam kegiatan ini.';
+        RAISE EXCEPTION 'Akses ditolak: Anda bukan merupakan peserta dalam kegiatan ini.';
     END IF;
 
     IF v_act.status = 'selesai' THEN
-        RETURN jsonb_build_object('success', true, 'message', 'Kegiatan sudah berstatus selesai.');
+        RETURN jsonb_build_object('success', true, 'status', 'selesai', 'already_completed', true);
     END IF;
 
     IF v_act.status = 'batal' THEN
-        RAISE EXCEPTION 'Kegiatan yang dibatalkan tidak dapat diselesaikan.';
+        RAISE EXCEPTION 'Kegiatan yang telah dibatalkan tidak dapat diselesaikan.';
     END IF;
 
-    -- Catat konfirmasi pihak terkait
+    -- Catat konfirmasi pihak terkait secara eksklusif
     IF current_uid = v_act.requester_id THEN
         v_act.requester_confirmed_done := TRUE;
     ELSIF current_uid = v_act.helper_id THEN
         v_act.helper_confirmed_done := TRUE;
     END IF;
 
-    -- Pemohon bantuan berhak menyelesaikan kegiatan secara langsung saat puas,
-    -- atau ketika kedua pihak telah sama-sama mengonfirmasi selesai
-    IF v_act.requester_confirmed_done = TRUE OR (v_act.requester_confirmed_done = TRUE AND v_act.helper_confirmed_done = TRUE) THEN
+    -- STATUS 'selesai' HANYA SAH JIKA KEDUA PIHAK TELAH MENGONFIRMASI
+    IF v_act.requester_confirmed_done = TRUE AND v_act.helper_confirmed_done = TRUE THEN
         UPDATE public.activities
-        SET requester_confirmed_done = v_act.requester_confirmed_done,
-            helper_confirmed_done = v_act.helper_confirmed_done,
+        SET requester_confirmed_done = TRUE,
+            helper_confirmed_done = TRUE,
             status = 'selesai',
             completed_at = timezone('utc'::text, now()),
             updated_at = timezone('utc'::text, now())
         WHERE id = p_activity_id;
 
-        RETURN jsonb_build_object('success', true, 'status', 'selesai');
+        RETURN jsonb_build_object('success', true, 'status', 'selesai', 'completed', true);
     ELSE
+        -- Jika baru satu pihak yang konfirmasi, status TIDAK berubah menjadi selesai
         UPDATE public.activities
-        SET helper_confirmed_done = v_act.helper_confirmed_done,
+        SET requester_confirmed_done = v_act.requester_confirmed_done,
+            helper_confirmed_done = v_act.helper_confirmed_done,
             updated_at = timezone('utc'::text, now())
         WHERE id = p_activity_id;
 
-        RETURN jsonb_build_object('success', true, 'status', v_act.status, 'waiting_requester_confirmation', true);
+        RETURN jsonb_build_object(
+            'success', true,
+            'status', v_act.status,
+            'waiting_partner_confirmation', true,
+            'requester_confirmed', v_act.requester_confirmed_done,
+            'helper_confirmed', v_act.helper_confirmed_done
+        );
     END IF;
 END;
 $$;
@@ -736,10 +727,12 @@ CREATE TRIGGER on_review_created
 -- 1. RLS PROFILES
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Profil dapat dibaca oleh siapa saja (publik)" ON public.profiles;
 CREATE POLICY "Profil dapat dibaca oleh siapa saja (publik)"
     ON public.profiles FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Pengguna hanya dapat memperbarui profil miliknya sendiri" ON public.profiles;
 CREATE POLICY "Pengguna hanya dapat memperbarui profil miliknya sendiri"
     ON public.profiles FOR UPDATE
     USING (auth.uid() = id);
@@ -747,18 +740,22 @@ CREATE POLICY "Pengguna hanya dapat memperbarui profil miliknya sendiri"
 -- 2. RLS POSTS
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Postingan dapat dibaca oleh siapa saja (publik)" ON public.posts;
 CREATE POLICY "Postingan dapat dibaca oleh siapa saja (publik)"
     ON public.posts FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Pengguna terautentikasi dapat membuat postingan miliknya" ON public.posts;
 CREATE POLICY "Pengguna terautentikasi dapat membuat postingan miliknya"
     ON public.posts FOR INSERT
     WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = author_id);
 
+DROP POLICY IF EXISTS "Pembuat postingan dapat memperbarui postingannya" ON public.posts;
 CREATE POLICY "Pembuat postingan dapat memperbarui postingannya"
     ON public.posts FOR UPDATE
     USING (auth.uid() = author_id);
 
+DROP POLICY IF EXISTS "Pembuat postingan dapat menghapus postingannya" ON public.posts;
 CREATE POLICY "Pembuat postingan dapat menghapus postingannya"
     ON public.posts FOR DELETE
     USING (auth.uid() = author_id);
@@ -766,19 +763,20 @@ CREATE POLICY "Pembuat postingan dapat menghapus postingannya"
 -- 3. RLS CHAT THREADS
 ALTER TABLE public.chat_threads ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Hanya peserta obrolan yang dapat melihat thread" ON public.chat_threads;
 CREATE POLICY "Hanya peserta obrolan yang dapat melihat thread"
     ON public.chat_threads FOR SELECT
     USING (auth.uid() = user1_id OR auth.uid() = user2_id);
 
+DROP POLICY IF EXISTS "Pengguna terautentikasi dapat membuat thread obrolan" ON public.chat_threads;
 CREATE POLICY "Pengguna terautentikasi dapat membuat thread obrolan"
     ON public.chat_threads FOR INSERT
     WITH CHECK (auth.role() = 'authenticated' AND (auth.uid() = user1_id OR auth.uid() = user2_id));
 
 -- 4. RLS CHAT MESSAGES
--- PENTING: Pengguna biasa HANYA diizinkan menyisipkan pesan 'text' biasa.
--- Pesan bertipe 'deal_card' dan 'system_event' HANYA dapat diterbitkan oleh fungsi database tepercaya (SECURITY DEFINER).
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Hanya peserta thread yang dapat melihat pesan" ON public.chat_messages;
 CREATE POLICY "Hanya peserta thread yang dapat melihat pesan"
     ON public.chat_messages FOR SELECT
     USING (
@@ -789,6 +787,7 @@ CREATE POLICY "Hanya peserta thread yang dapat melihat pesan"
         )
     );
 
+DROP POLICY IF EXISTS "Pengguna hanya dapat mengirim pesan teks biasa ke threadnya" ON public.chat_messages;
 CREATE POLICY "Pengguna hanya dapat mengirim pesan teks biasa ke threadnya"
     ON public.chat_messages FOR INSERT
     WITH CHECK (
@@ -805,36 +804,33 @@ CREATE POLICY "Pengguna hanya dapat mengirim pesan teks biasa ke threadnya"
 -- 5. RLS DEALS
 ALTER TABLE public.deals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Hanya pihak pemohon atau penolong yang dapat melihat deal" ON public.deals;
 CREATE POLICY "Hanya pihak pemohon atau penolong yang dapat melihat deal"
     ON public.deals FOR SELECT
     USING (auth.uid() = requester_id OR auth.uid() = helper_id);
 
+DROP POLICY IF EXISTS "Pihak yang terlibat dapat membuat deal" ON public.deals;
 CREATE POLICY "Pihak yang terlibat dapat membuat deal"
     ON public.deals FOR INSERT
     WITH CHECK (auth.role() = 'authenticated' AND (auth.uid() = requester_id OR auth.uid() = helper_id));
 
-CREATE POLICY "Pihak yang terlibat dapat memperbarui deal"
-    ON public.deals FOR UPDATE
-    USING (auth.uid() = requester_id OR auth.uid() = helper_id);
-
 -- 6. RLS ACTIVITIES
 ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Hanya pihak yang terlibat yang dapat melihat kegiatan" ON public.activities;
 CREATE POLICY "Hanya pihak yang terlibat yang dapat melihat kegiatan"
     ON public.activities FOR SELECT
-    USING (auth.uid() = requester_id OR auth.uid() = helper_id);
-
-CREATE POLICY "Pihak yang terlibat dapat memperbarui status kegiatan"
-    ON public.activities FOR UPDATE
     USING (auth.uid() = requester_id OR auth.uid() = helper_id);
 
 -- 7. RLS REVIEWS
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Ulasan dapat dibaca oleh publik" ON public.reviews;
 CREATE POLICY "Ulasan dapat dibaca oleh publik"
     ON public.reviews FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Peninjau terautentikasi dapat mengirim ulasan sah" ON public.reviews;
 CREATE POLICY "Peninjau terautentikasi dapat mengirim ulasan sah"
     ON public.reviews FOR INSERT
     WITH CHECK (
@@ -843,7 +839,8 @@ CREATE POLICY "Peninjau terautentikasi dapat mengirim ulasan sah"
         AND reviewer_id <> reviewee_id
     );
 
--- Berikan izin eksekusi prosedur RPC kepada pengguna terautentikasi
+-- Berikan izin eksekusi prosedur RPC hanya kepada pengguna terautentikasi
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.agree_to_deal(UUID, INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.revise_deal(UUID, INTEGER, DATE, TIME, TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.cancel_deal(UUID, TEXT) TO authenticated;

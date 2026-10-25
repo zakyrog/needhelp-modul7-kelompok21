@@ -99,9 +99,11 @@ Supabase mengamankan data secara langsung di level database melalui PostgreSQL R
   * `SELECT`: Hanya oleh peserta thread yang bersangkutan.
   * `INSERT`: Hanya pengirim yang terotentikasi (`auth.uid() = sender_id`).
 * **Tabel `deals`:**
-  * `SELECT / UPDATE`: Hanya oleh pemohon atau penolong terkait (`auth.uid() = requester_id OR auth.uid() = helper_id`).
+  * `SELECT`: Hanya oleh pemohon atau penolong terkait (`auth.uid() = requester_id OR auth.uid() = helper_id`).
+  * `INSERT`: Hanya oleh pihak terlibat dengan validasi ketat. `UPDATE` & `DELETE` langsung dari client dicabut (wajib melalui RPC atomik `agree_to_deal`, `revise_deal`, `cancel_deal`).
 * **Tabel `activities`:**
-  * `SELECT / UPDATE`: Hanya oleh pihak yang terlibat dalam kegiatan tersebut.
+  * `SELECT`: Hanya oleh pihak yang terlibat dalam kegiatan tersebut.
+  * `INSERT / UPDATE / DELETE`: Akses langsung dari client dicabut. Dibuat otomatis saat deal disepakati; konfirmasi penyelesaian wajib melalui RPC `confirm_activity_completion` (kedua pihak harus konfirmasi).
 * **Tabel `reviews`:**
   * `SELECT`: Terbuka untuk umum (`true`).
   * `INSERT`: Hanya oleh peninjau yang terotentikasi (`auth.uid() = reviewer_id` dan `reviewer_id != reviewee_id`).
