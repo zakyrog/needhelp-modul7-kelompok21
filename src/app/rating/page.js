@@ -34,7 +34,7 @@ function RatingContent() {
   useEffect(() => {
     const { activity: foundActivity, reason } = getRateableActivity(id);
     if (!foundActivity) {
-      setUnrateableReason(reason);
+      setUnrateableReason(reason || "not-found");
     } else {
       setActivity(foundActivity);
       if (foundActivity.review) {
@@ -57,6 +57,8 @@ function RatingContent() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!activity) return;
+
     const validationErrors = validateRating(stars, comment);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -108,6 +110,15 @@ function RatingContent() {
           actionText="Buka Daftar Aktivitas"
           onAction={() => router.push("/aktivitas")}
         />
+      </main>
+    );
+  }
+
+  // --- PENAMBAHAN SAFETY CHECK (AGAR TIDAK CRASH KETIKA activity MASI NULL) ---
+  if (!activity) {
+    return (
+      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
+        <p>Memuat data aktivitas...</p>
       </main>
     );
   }
@@ -164,7 +175,7 @@ function RatingContent() {
       <form onSubmit={handleSubmit} noValidate>
         {/* 1. Bintang Kepuasan */}
         <fieldset>
-          <legend>1. Berikan Bintang Kepuasan (Skala 1 - 5)</legend>
+          <legend>Berikan Bintang Kepuasan (Skala 1 - 5)</legend>
           {[
             { value: 5, label: "★★★★★ (5 - Luar Biasa)" },
             { value: 4, label: "★★★★☆ (4 - Sangat Baik)" },
