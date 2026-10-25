@@ -268,8 +268,9 @@ function CatalogContent() {
           )}
         </div>
 
-        {/* Kategori Chips */}
-        <div className="panel-categories-row" role="group" aria-label="Filter Kategori">
+        {/* Kategori Utama (4 Kategori Sah Sesuai Spesifikasi) */}
+        <div className="panel-categories-row" role="group" aria-label="Filter 4 Kategori Aktivitas">
+          <span className="panel-categories-label" id="cat-filter-label">Kategori Utama:</span>
           {Object.entries(CATEGORY_LABELS).map(([catKey, catLabel]) => {
             const isSelected = categories.includes(catKey);
             return (
@@ -279,6 +280,7 @@ function CatalogContent() {
                 className={`cat-chip-btn ${isSelected ? "selected" : ""}`}
                 onClick={() => handleCategoryToggle(catKey)}
                 aria-pressed={isSelected}
+                aria-describedby="cat-filter-label"
               >
                 {isSelected ? "✓ " : ""}{catLabel}
               </button>

@@ -42,33 +42,29 @@ export default function HomePage() {
 
   return (
     <ThreeColumnLayout>
-      {/* 1. Welcoming Community Hero Banner */}
-      <section className="feed-hero-banner" aria-label="Sambutan Komunitas">
-        <div className="hero-banner-inner">
-          <div className="online-status-pill">
-            <span className="live-dot" aria-hidden="true" />
-            <span>Komunitas Saling Bantu Mahasiswa & Warga DIY</span>
-          </div>
-          <h1 className="hero-title">
-            Butuh bantuan atau teman di Jogja hari ini?
-          </h1>
-          <p className="hero-subtitle">
-            Cari partner pindahan kos, teman nongkrong, pendampingan belajar, atau tawarkan keahlianmu secara aman dan saling percaya.
-          </p>
-          <div className="hero-category-pills">
-            <Link href="/katalog?category=bantuan" className="cat-pill">
-              📦 Bantuan Fisik
-            </Link>
-            <Link href="/katalog?category=pendampingan" className="cat-pill">
-              📚 Belajar & Les
-            </Link>
-            <Link href="/katalog?category=ditemani" className="cat-pill">
-              ☕ Ditemani Ngopi
-            </Link>
-            <Link href="/katalog?category=explore" className="cat-pill">
-              🛵 Explore Jogja
-            </Link>
-          </div>
+      {/* 1. Welcoming Community Context & 4 Core Categories */}
+      <section className="feed-community-intro-card" aria-label="Kategori Utama NeedHelp Jogja">
+        <div className="intro-card-header">
+          <h1 className="intro-card-title">Saling Bantu Mahasiswa & Warga di 5 Wilayah DIY</h1>
+          <p className="intro-card-sub">Pilih salah satu dari 4 kategori utama atau buat postingan bantuan di bawah:</p>
+        </div>
+        <div className="intro-category-grid" role="group" aria-label="4 Kategori Aktivitas Utama">
+          <Link href="/katalog?category=bantuan" className="intro-cat-item">
+            <span className="cat-icon">📦</span>
+            <span className="cat-name">Bantuan Fisik</span>
+          </Link>
+          <Link href="/katalog?category=ditemani" className="intro-cat-item">
+            <span className="cat-icon">☕</span>
+            <span className="cat-name">Ditemani</span>
+          </Link>
+          <Link href="/katalog?category=pendampingan" className="intro-cat-item">
+            <span className="cat-icon">📚</span>
+            <span className="cat-name">Pendampingan</span>
+          </Link>
+          <Link href="/katalog?category=explore" className="intro-cat-item">
+            <span className="cat-icon">🛵</span>
+            <span className="cat-name">Explore</span>
+          </Link>
         </div>
       </section>
 
