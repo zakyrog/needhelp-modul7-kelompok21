@@ -1,10 +1,16 @@
 -- ====================================================================
 -- SKEMA BASIS DATA SUPABASE — NEEDHELP JOGJA
--- Versi: 2.0.0
+-- Versi: 2.1.0 (Security Hardened & Idempotent Baseline)
 -- Platform: Supabase PostgreSQL (dengan Supabase Auth & RLS)
 -- ====================================================================
 
--- 1. PROFIL PENGGUNA (Terkoneksi ke auth.users)
+-- Catatan Migrasi:
+-- Skrip ini dirancang sebagai Initial Baseline Migration untuk proyek baru/bersih.
+-- Tidak mengandung DROP TABLE, TRUNCATE, atau DELETE FROM.
+-- ====================================================================
+
+
+-- 1. TABEL PROFIL PENGGUNA (Terkoneksi ke auth.users)
 -- PERLINDUNGAN PRIVASI EMAIL: Kolom email sengaja TIDAK disimpan di public.profiles.
 -- Email dikelola secara privat dan terenkripsi di skema auth.users, dan hanya dapat
 -- diakses oleh pemilik akun yang bersangkutan melalui sesi JWT (supabase.auth.getUser()).
@@ -13,15 +19,46 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     full_name TEXT NOT NULL,
     bio TEXT DEFAULT '',
     avatar_url TEXT DEFAULT '',
-    rating_average NUMERIC(3,2) DEFAULT 0.0,
-    rating_count INTEGER DEFAULT 0,
+    rating_average NUMERIC(3,2) DEFAULT 0.0 CHECK (rating_average >= 0.0 AND rating_average <= 5.0),
+    rating_count INTEGER DEFAULT 0 CHECK (rating_count >= 0),
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Trigger untuk membuat profil secara otomatis saat pendaftaran berhasil di auth.users
+-- Pembatasan hak update kolom: pengguna biasa HANYA boleh mengubah nama, bio, avatar, dan updated_at.
+-- rating_average dan rating_count dicabut hak UPDATE-nya dari peran publik/authenticated.
+REVOKE UPDATE ON public.profiles FROM authenticated, anon, public;
+GRANT UPDATE (full_name, bio, avatar_url, updated_at) ON public.profiles TO authenticated;
+
+-- Trigger pengaman reputasi: memblokir upaya manipulasi rating_average / rating_count dari client
+CREATE OR REPLACE FUNCTION public.protect_profile_reputation()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    IF (NEW.rating_average IS DISTINCT FROM OLD.rating_average OR NEW.rating_count IS DISTINCT FROM OLD.rating_count) THEN
+        IF current_setting('needhelp.system_updating_rating', true) IS DISTINCT FROM 'true' THEN
+            RAISE EXCEPTION 'Kolom rating_average dan rating_count dikelola otomatis oleh sistem dan tidak dapat dimanipulasi.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_profile_reputation ON public.profiles;
+CREATE TRIGGER trg_protect_profile_reputation
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.protect_profile_reputation();
+
+-- Trigger otomatis untuk membuat profil publik saat pendaftaran akun di auth.users berhasil
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     INSERT INTO public.profiles (id, full_name, avatar_url)
     VALUES (
@@ -33,7 +70,7 @@ BEGIN
     SET full_name = EXCLUDED.full_name;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -112,6 +149,74 @@ CREATE TABLE IF NOT EXISTS public.deals (
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Trigger Integritas Kartu Kesepakatan (Mencegah ganti identitas, persetujuan sepihak, atau bypass versi)
+CREATE OR REPLACE FUNCTION public.enforce_deal_integrity()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    current_uid UUID := auth.uid();
+BEGIN
+    -- 1. Identitas peserta dan konteks relasi terkunci mati
+    IF (NEW.id <> OLD.id OR NEW.post_id <> OLD.post_id OR NEW.thread_id <> OLD.thread_id OR 
+        NEW.requester_id <> OLD.requester_id OR NEW.helper_id <> OLD.helper_id) THEN
+        RAISE EXCEPTION 'Identitas peserta dan konteks kesepakatan tidak dapat diubah.';
+    END IF;
+
+    -- 2. Larangan menyetujui atas nama pihak lain
+    IF current_uid = OLD.requester_id AND (NEW.helper_agreed IS DISTINCT FROM OLD.helper_agreed) THEN
+        RAISE EXCEPTION 'Pemohon tidak memiliki hak mengubah status persetujuan penolong.';
+    END IF;
+
+    IF current_uid = OLD.helper_id AND (NEW.requester_agreed IS DISTINCT FROM OLD.requester_agreed) THEN
+        RAISE EXCEPTION 'Penolong tidak memiliki hak mengubah status persetujuan pemohon.';
+    END IF;
+
+    -- 3. Deteksi perubahan isi parameter kesepakatan (jadwal, lokasi, imbalan)
+    IF (NEW.scheduled_date IS DISTINCT FROM OLD.scheduled_date OR
+        NEW.scheduled_time IS DISTINCT FROM OLD.scheduled_time OR
+        NEW.meetup_location IS DISTINCT FROM OLD.meetup_location OR
+        NEW.compensation_type IS DISTINCT FROM OLD.compensation_type OR
+        NEW.compensation_value IS DISTINCT FROM OLD.compensation_value) THEN
+        
+        -- Naikkan versi kesepakatan dan ubah status ke menunggu_revisi
+        NEW.deal_version := OLD.deal_version + 1;
+        NEW.status := 'menunggu_revisi';
+        
+        -- Pihak yang mengedit otomatis menyetujui revisinya; persetujuan pihak lawan di-reset
+        IF current_uid = OLD.requester_id THEN
+            NEW.requester_agreed := TRUE;
+            NEW.helper_agreed := FALSE;
+        ELSIF current_uid = OLD.helper_id THEN
+            NEW.helper_agreed := TRUE;
+            NEW.requester_agreed := FALSE;
+        END IF;
+    END IF;
+
+    -- 4. Konsensus: Status 'disepakati' HANYA SAH jika kedua belah pihak setuju versi yang sama
+    IF (NEW.requester_agreed = TRUE AND NEW.helper_agreed = TRUE) THEN
+        NEW.status := 'disepakati';
+    ELSIF NEW.status = 'disepakati' AND (NEW.requester_agreed = FALSE OR NEW.helper_agreed = FALSE) THEN
+        RAISE EXCEPTION 'Kesepakatan tidak dapat berstatus disepakati tanpa persetujuan dari kedua belah pihak.';
+    END IF;
+
+    -- 5. Mencegah aktivasi kesepakatan yang sudah dibatalkan atau ditolak
+    IF OLD.status IN ('dibatalkan', 'ditolak') AND NEW.status = 'disepakati' THEN
+        RAISE EXCEPTION 'Kesepakatan yang telah dibatalkan atau ditolak tidak dapat diaktifkan kembali.';
+    END IF;
+
+    NEW.updated_at := timezone('utc'::text, now());
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_enforce_deal_integrity ON public.deals;
+CREATE TRIGGER trg_enforce_deal_integrity
+    BEFORE UPDATE ON public.deals
+    FOR EACH ROW EXECUTE FUNCTION public.enforce_deal_integrity();
+
 
 -- 6. TABEL KEGIATAN (Activities)
 CREATE TABLE IF NOT EXISTS public.activities (
@@ -127,6 +232,35 @@ CREATE TABLE IF NOT EXISTS public.activities (
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Otomatisasi pembuatan kegiatan saat deal disepakati kedua pihak
+CREATE OR REPLACE FUNCTION public.handle_deal_agreed()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    IF (NEW.status = 'disepakati' AND OLD.status <> 'disepakati') THEN
+        -- Buat entitas kegiatan jika belum ada
+        INSERT INTO public.activities (deal_id, post_id, requester_id, helper_id, status)
+        VALUES (NEW.id, NEW.post_id, NEW.requester_id, NEW.helper_id, 'terjadwal')
+        ON CONFLICT (deal_id) DO NOTHING;
+
+        -- Kurangi kuota postingan Saya Butuh
+        UPDATE public.posts
+        SET remaining_quota = GREATEST(0, remaining_quota - 1),
+            status = CASE WHEN remaining_quota - 1 <= 0 THEN 'kuota_penuh' ELSE status END
+        WHERE id = NEW.post_id AND nature = 'butuh';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_handle_deal_agreed ON public.deals;
+CREATE TRIGGER trg_handle_deal_agreed
+    AFTER UPDATE ON public.deals
+    FOR EACH ROW EXECUTE FUNCTION public.handle_deal_agreed();
+
 
 -- 7. TABEL ULASAN & RATING (Reviews)
 CREATE TABLE IF NOT EXISTS public.reviews (
@@ -141,10 +275,53 @@ CREATE TABLE IF NOT EXISTS public.reviews (
     CONSTRAINT no_self_review CHECK (reviewer_id <> reviewee_id)
 );
 
--- Trigger untuk mengkalkulasi ulang rating_average dan rating_count pada profil
-CREATE OR REPLACE FUNCTION public.recalculate_user_rating()
-RETURNS TRIGGER AS $$
+-- Validasi integritas review sebelum baris disimpan
+CREATE OR REPLACE FUNCTION public.validate_review_submission()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    act RECORD;
 BEGIN
+    SELECT * INTO act FROM public.activities WHERE id = NEW.activity_id;
+    
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Kegiatan rujukan tidak ditemukan.';
+    END IF;
+
+    IF act.status <> 'selesai' THEN
+        RAISE EXCEPTION 'Ulasan hanya dapat diberikan untuk kegiatan yang telah tuntas berstatus selesai.';
+    END IF;
+
+    IF NOT (
+        (act.requester_id = NEW.reviewer_id AND act.helper_id = NEW.reviewee_id) OR
+        (act.helper_id = NEW.reviewer_id AND act.requester_id = NEW.reviewee_id)
+    ) THEN
+        RAISE EXCEPTION 'Pemberi dan penerima ulasan harus merupakan pasangan peserta sah pada kegiatan tersebut.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_validate_review_submission ON public.reviews;
+CREATE TRIGGER trg_validate_review_submission
+    BEFORE INSERT ON public.reviews
+    FOR EACH ROW EXECUTE FUNCTION public.validate_review_submission();
+
+-- Trigger untuk mengkalkulasi ulang rating_average dan rating_count pada profil penerima
+CREATE OR REPLACE FUNCTION public.recalculate_user_rating()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    -- Berikan izin khusus agar trigger protect_profile_reputation mengizinkan pembaruan otomatis
+    PERFORM set_config('needhelp.system_updating_rating', 'true', true);
+
     UPDATE public.profiles
     SET rating_average = COALESCE((
             SELECT ROUND(AVG(stars)::numeric, 2)
@@ -158,9 +335,10 @@ BEGIN
         ),
         updated_at = timezone('utc'::text, now())
     WHERE id = NEW.reviewee_id;
+
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_review_created ON public.reviews;
 CREATE TRIGGER on_review_created
@@ -245,7 +423,7 @@ CREATE POLICY "Hanya pihak pemohon atau penolong yang dapat melihat deal"
     ON public.deals FOR SELECT
     USING (auth.uid() = requester_id OR auth.uid() = helper_id);
 
-CREATE POLICY "Pihak yang terlibat dapat membuat atau memperbarui deal"
+CREATE POLICY "Pihak yang terlibat dapat membuat deal"
     ON public.deals FOR INSERT
     WITH CHECK (auth.role() = 'authenticated' AND (auth.uid() = requester_id OR auth.uid() = helper_id));
 
@@ -271,10 +449,19 @@ CREATE POLICY "Ulasan dapat dibaca oleh publik"
     ON public.reviews FOR SELECT
     USING (true);
 
-CREATE POLICY "Peninjau terautentikasi dapat mengirim ulasan"
+CREATE POLICY "Peninjau terautentikasi dapat mengirim ulasan sah"
     ON public.reviews FOR INSERT
     WITH CHECK (
         auth.role() = 'authenticated'
         AND auth.uid() = reviewer_id
         AND reviewer_id <> reviewee_id
+        AND EXISTS (
+            SELECT 1 FROM public.activities
+            WHERE id = reviews.activity_id
+              AND status = 'selesai'
+              AND (
+                  (requester_id = reviews.reviewer_id AND helper_id = reviews.reviewee_id) OR
+                  (helper_id = reviews.reviewer_id AND requester_id = reviews.reviewee_id)
+              )
+        )
     );
