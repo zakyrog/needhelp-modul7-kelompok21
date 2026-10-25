@@ -2,20 +2,21 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchPublicPosts, filterPosts } from "../../lib/data.js";
+import { fetchPublicPosts, filterPosts, REGION_LABELS, CATEGORY_LABELS } from "../../lib/data.js";
+import { ThreeColumnLayout } from "../../components/ThreeColumnLayout";
+import { QuickPostBox } from "../../components/QuickPostBox";
 import { CatalogCard } from "../../components/CatalogCard";
 import { EmptyState } from "../../components/EmptyState";
-import { ErrorState } from "../../components/ErrorState";
 import { SkeletonList } from "../../components/Skeleton";
 
 function CatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Membaca parameter awal dari URL
+  // 1. Membaca parameter awal dari URL
   const initialQ = searchParams.get("q") || "";
   const initialType = searchParams.get("type") || "all";
-  const initialLocation = searchParams.get("location") || "";
+  const initialRegion = searchParams.get("region") || searchParams.get("location") || "";
   const initialCompensation = searchParams.get("compensation") || "";
   const initialSort = searchParams.get("sort") || "terbaru";
   const initialPage = Math.max(1, Number(searchParams.get("page")) || 1);
@@ -24,18 +25,16 @@ function CatalogContent() {
   const [query, setQuery] = useState(initialQ);
   const [postType, setPostType] = useState(initialType);
   const [categories, setCategories] = useState(initialCategories);
-  const [location, setLocation] = useState(initialLocation);
+  const [region, setRegion] = useState(initialRegion);
   const [compensation, setCompensation] = useState(initialCompensation);
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
 
-  // Status pemuatan data dinamis
   const [allPosts, setAllPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [retryTrigger, setRetryTrigger] = useState(0);
 
-  // Mengambil data secara dinamis dari sumber JSON / API dan localStorage
+  // 2. Mengambil data dari API / database
   useEffect(() => {
     let isCancelled = false;
     setLoading(true);
@@ -44,80 +43,93 @@ function CatalogContent() {
     fetchPublicPosts()
       .then((data) => {
         if (!isCancelled) {
-          setAllPosts(data);
+          setAllPosts(data || []);
           setLoading(false);
         }
       })
       .catch((err) => {
         if (!isCancelled) {
-          setError(
-            err.message ||
-              "Gagal memuat data dari sumber JSON/API. Silakan periksa koneksi atau coba lagi.",
-          );
+          setError(err.message || "Gagal memuat postingan.");
           setLoading(false);
         }
       });
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [retryTrigger, searchParams]);
+    return () => { isCancelled = true; };
+  }, []);
 
-  // Sinkronisasi state ketika URL query params berubah
+  // 3. Sinkronisasi state ketika URL searchParams berubah
   useEffect(() => {
     setQuery(searchParams.get("q") || "");
     setPostType(searchParams.get("type") || "all");
     setCategories(searchParams.getAll("category"));
-    setLocation(searchParams.get("location") || "");
+    setRegion(searchParams.get("region") || searchParams.get("location") || "");
     setCompensation(searchParams.get("compensation") || "");
     setSort(searchParams.get("sort") || "terbaru");
     setPage(Math.max(1, Number(searchParams.get("page")) || 1));
   }, [searchParams]);
 
-  // Handler retry jika terjadi error saat memuat data
-  const handleRetry = () => {
-    if (typeof window !== "undefined") {
-      window.__SIMULATE_FETCH_ERROR__ = false;
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("simulate_error") || url.searchParams.has("error")) {
-        url.searchParams.delete("simulate_error");
-        url.searchParams.delete("error");
-        router.replace(url.pathname + (url.search ? url.search : ""));
-      }
-    }
-    setRetryTrigger((prev) => prev + 1);
-  };
+  // 4. Update query params di URL secara 2 arah
+  const updateURL = (overrides = {}) => {
+    const params = new URLSearchParams();
+    const qVal = overrides.query !== undefined ? overrides.query : query;
+    const typeVal = overrides.postType !== undefined ? overrides.postType : postType;
+    const regVal = overrides.region !== undefined ? overrides.region : region;
+    const compVal = overrides.compensation !== undefined ? overrides.compensation : compensation;
+    const sortVal = overrides.sort !== undefined ? overrides.sort : sort;
+    const pageVal = overrides.page !== undefined ? overrides.page : page;
+    const catVals = overrides.categories !== undefined ? overrides.categories : categories;
 
-  const handleCategoryToggle = (cat) => {
-    setCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
-    );
-    setPage(1);
+    if (qVal) params.set("q", qVal);
+    if (typeVal && typeVal !== "all") params.set("type", typeVal);
+    if (regVal) params.set("region", regVal);
+    if (compVal) params.set("compensation", compVal);
+    if (sortVal && sortVal !== "terbaru") params.set("sort", sortVal);
+    if (pageVal > 1) params.set("page", String(pageVal));
+    catVals.forEach((c) => params.append("category", c));
+
+    const qs = params.toString();
+    router.replace(`/katalog${qs ? `?${qs}` : ""}`);
   };
 
   const handleTypeSelect = (type) => {
     setPostType(type);
     setPage(1);
+    updateURL({ postType: type, page: 1 });
   };
 
-  // Mengembalikan semua filter ke kondisi awal
+  const handleRegionChange = (newRegion) => {
+    setRegion(newRegion);
+    setPage(1);
+    updateURL({ region: newRegion, page: 1 });
+  };
+
+  const handleCategoryToggle = (cat) => {
+    const next = categories.includes(cat)
+      ? categories.filter((c) => c !== cat)
+      : [...categories, cat];
+    setCategories(next);
+    setPage(1);
+    updateURL({ categories: next, page: 1 });
+  };
+
+  const handleCompensationChange = (newComp) => {
+    setCompensation(newComp);
+    setPage(1);
+    updateURL({ compensation: newComp, page: 1 });
+  };
+
   const handleReset = () => {
     setQuery("");
     setPostType("all");
     setCategories([]);
-    setLocation("");
+    setRegion("");
     setCompensation("");
     setSort("terbaru");
     setPage(1);
     router.replace("/katalog");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setPage(1);
-  };
-
-  // Filter dan pengurutan postingan
+  // 5. Filter & Sorting
   const filteredAndSortedPosts = useMemo(() => {
     if (loading || error) return [];
 
@@ -125,385 +137,240 @@ function CatalogContent() {
       query,
       type: postType,
       categories,
-      location,
+      location: region,
       compensation,
     });
 
     const sorted = [...filtered];
-
     if (sort === "jadwal") {
       sorted.sort((a, b) =>
-        `${a.date || "9999-12-31"}T${a.time || "23:59"}`.localeCompare(
-          `${b.date || "9999-12-31"}T${b.time || "23:59"}`,
-        ),
+        `${a.date || a.planned_date || "9999-12-31"}T${a.time || a.start_time || "23:59"}`.localeCompare(
+          `${b.date || b.planned_date || "9999-12-31"}T${b.time || b.start_time || "23:59"}`
+        )
       );
     } else {
       sorted.sort((a, b) =>
-        (b.createdAt || "").localeCompare(a.createdAt || ""),
+        (b.created_at || b.createdAt || "").localeCompare(a.created_at || a.createdAt || "")
       );
     }
 
     return sorted;
-  }, [
-    loading,
-    error,
-    allPosts,
-    query,
-    postType,
-    categories,
-    location,
-    compensation,
-    sort,
-  ]);
+  }, [loading, error, allPosts, query, postType, categories, region, compensation, sort]);
 
-  // Pagination
-  const pageSize = 4;
-  const pageCount = Math.max(
-    1,
-    Math.ceil(filteredAndSortedPosts.length / pageSize),
-  );
-
-  // Mencegah halaman kosong jika filter mengubah jumlah total halaman
+  // Pagination (6 postingan per halaman)
+  const pageSize = 6;
+  const pageCount = Math.max(1, Math.ceil(filteredAndSortedPosts.length / pageSize));
   const activePage = Math.min(page, pageCount);
   const startIndex = (activePage - 1) * pageSize;
-  const visiblePosts = filteredAndSortedPosts.slice(
-    startIndex,
-    startIndex + pageSize,
+  const visiblePosts = filteredAndSortedPosts.slice(startIndex, startIndex + pageSize);
+
+  const hasActiveFilters = Boolean(
+    query || postType !== "all" || region || compensation || categories.length > 0
   );
 
   return (
-    <main>
-      <header>
-        <h1>Feed Bantuan</h1>
-        <p>
-          Temukan orang di sekitar yang sedang membutuhkan bantuan atau menawarkan keahlian.
-        </p>
+    <ThreeColumnLayout>
+      {/* 1. Quick Post Box di puncak feed */}
+      <QuickPostBox />
 
-        {/* Tab jenis postingan dan opsi pengurutan */}
-        <div className="catalog-actions-bar">
-          <div style={{ display: "flex", gap: "8px" }}>
+      {/* 2. Filter & Navigation Header */}
+      <section className="catalog-control-panel-card" aria-label="Panel Kontrol Feed">
+        <div className="panel-top-row">
+          <div className="feed-filter-tabs-bar" role="tablist">
             <button
               type="button"
-              className={`tab-btn${postType === "butuh" ? " active" : ""}`}
-              onClick={() =>
-                handleTypeSelect(postType === "butuh" ? "all" : "butuh")
-              }
-              aria-current={postType === "butuh" ? "page" : undefined}
+              role="tab"
+              aria-selected={postType === "all"}
+              className={`filter-tab-btn ${postType === "all" ? "active" : ""}`}
+              onClick={() => handleTypeSelect("all")}
             >
-              Saya Butuh
+              Semua
             </button>
-
             <button
               type="button"
-              className={`tab-btn${postType === "bisa" ? " active" : ""}`}
-              onClick={() =>
-                handleTypeSelect(postType === "bisa" ? "all" : "bisa")
-              }
-              aria-current={postType === "bisa" ? "page" : undefined}
+              role="tab"
+              aria-selected={postType === "butuh"}
+              className={`filter-tab-btn tab-butuh ${postType === "butuh" ? "active" : ""}`}
+              onClick={() => handleTypeSelect("butuh")}
             >
-              Saya Bisa
+              🆘 Saya Butuh
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={postType === "bisa"}
+              className={`filter-tab-btn tab-bisa ${postType === "bisa" ? "active" : ""}`}
+              onClick={() => handleTypeSelect("bisa")}
+            >
+              ✨ Saya Bisa
             </button>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "12px",
-              color: "var(--color-text-muted)",
-            }}
-          >
-            <label htmlFor="catalog-sort">Urutkan:</label>
-
+          <div className="sort-box">
+            <label htmlFor="catalog-sort" className="sort-label">Urutan:</label>
             <select
               id="catalog-sort"
-              data-catalog-sort
               value={sort}
               onChange={(e) => {
                 setSort(e.target.value);
                 setPage(1);
+                updateURL({ sort: e.target.value, page: 1 });
               }}
+              className="sort-select"
             >
-              <option value="terbaru">Terbaru</option>
-              <option value="jadwal">Jadwal terdekat</option>
+              <option value="terbaru">Terbaru Diunggah</option>
+              <option value="jadwal">Jadwal Terdekat</option>
             </select>
           </div>
         </div>
-      </header>
 
-      {/* Panel filter */}
-      <aside aria-label="Penyaring Pencarian">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: "15px" }}>Filter</h2>
-
-          <button
-            type="button"
-            data-filter-reset
-            onClick={handleReset}
-            style={{
-              fontSize: "12px",
-              color: "var(--color-action-primary)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Bersihkan
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} data-filter-form>
-          {/* Pencarian */}
-          <div>
-            <label htmlFor="catalog-search">Cari bantuan</label>
-
-            <input
-              type="search"
-              id="catalog-search"
-              name="q"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Cari judul atau deskripsi..."
-            />
-          </div>
-
-          {/* Jenis postingan */}
-          <fieldset>
-            <legend>Jenis Postingan</legend>
-
-            <p>
-              <input
-                type="radio"
-                id="type-all"
-                name="post_type"
-                value="all"
-                checked={postType === "all"}
-                onChange={() => handleTypeSelect("all")}
-              />
-              <label htmlFor="type-all">Semua</label>
-            </p>
-
-            <p>
-              <input
-                type="radio"
-                id="type-butuh"
-                name="post_type"
-                value="butuh"
-                checked={postType === "butuh"}
-                onChange={() => handleTypeSelect("butuh")}
-              />
-              <label htmlFor="type-butuh">Saya Butuh</label>
-            </p>
-
-            <p>
-              <input
-                type="radio"
-                id="type-bisa"
-                name="post_type"
-                value="bisa"
-                checked={postType === "bisa"}
-                onChange={() => handleTypeSelect("bisa")}
-              />
-              <label htmlFor="type-bisa">Saya Bisa</label>
-            </p>
-          </fieldset>
-
-          {/* Kategori */}
-          <fieldset>
-            <legend>Kategori</legend>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-ditemani"
-                name="category"
-                value="ditemani"
-                checked={categories.includes("ditemani")}
-                onChange={() => handleCategoryToggle("ditemani")}
-              />
-              <label htmlFor="cat-ditemani">Ditemani</label>
-            </p>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-bantuan"
-                name="category"
-                value="bantuan"
-                checked={categories.includes("bantuan")}
-                onChange={() => handleCategoryToggle("bantuan")}
-              />
-              <label htmlFor="cat-bantuan">Bantuan Fisik</label>
-            </p>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-pendampingan"
-                name="category"
-                value="pendampingan"
-                checked={categories.includes("pendampingan")}
-                onChange={() => handleCategoryToggle("pendampingan")}
-              />
-              <label htmlFor="cat-pendampingan">Pendampingan</label>
-            </p>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-explore"
-                name="category"
-                value="explore"
-                checked={categories.includes("explore")}
-                onChange={() => handleCategoryToggle("explore")}
-              />
-              <label htmlFor="cat-explore">Explore</label>
-            </p>
-          </fieldset>
-
-          {/* Lokasi */}
-          <div>
-            <label htmlFor="catalog-location">Lokasi</label>
-
+        {/* Baris Filter Dropdown & Kategori */}
+        <div className="panel-filter-row">
+          <div className="filter-dropdown-group">
             <select
-              id="catalog-location"
-              name="location"
-              value={location}
-              onChange={(e) => {
-                setLocation(e.target.value);
-                setPage(1);
-              }}
+              value={region}
+              onChange={(e) => handleRegionChange(e.target.value)}
+              aria-label="Pilih Wilayah DIY"
+              className="filter-select"
             >
-              <option value="">Semua lokasi</option>
+              <option value="">📍 Semua 5 Wilayah DIY</option>
               <option value="sleman">Sleman</option>
               <option value="kota">Kota Yogyakarta</option>
               <option value="bantul">Bantul</option>
               <option value="kulonprogo">Kulon Progo</option>
               <option value="gunungkidul">Gunungkidul</option>
             </select>
-          </div>
-
-          {/* Kompensasi */}
-          <div>
-            <label htmlFor="catalog-compensation">Sistem Kompensasi</label>
 
             <select
-              id="catalog-compensation"
-              name="compensation"
               value={compensation}
-              onChange={(e) => {
-                setCompensation(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => handleCompensationChange(e.target.value)}
+              aria-label="Pilih Jenis Imbalan"
+              className="filter-select"
             >
-              <option value="">Semua kompensasi</option>
+              <option value="">💰 Semua Jenis Imbalan</option>
               <option value="tarif">Tarif Pasti</option>
-              <option value="nego">Bisa Negosiasi</option>
-              <option value="patungan">Patungan</option>
-              <option value="traktir">Traktir</option>
-              <option value="sukarela">Sukarela</option>
+              <option value="nego">Nego di Chat</option>
+              <option value="patungan">Patungan Biaya</option>
+              <option value="bayarsendiri">Bayar Sendiri-sendiri</option>
+              <option value="traktir">Traktir Makan/Minum</option>
+              <option value="sukarela">Sukarela (Tanpa Imbalan)</option>
             </select>
           </div>
-        </form>
-      </aside>
 
-      {/* Daftar postingan */}
-      <section>
-        <h2>Daftar Permintaan &amp; Penawaran Aktif</h2>
-
-        <p data-catalog-count aria-live="polite">
-          {loading
-            ? "Memuat postingan dari sumber data..."
-            : error
-              ? "Gagal memuat data postingan"
-              : `${filteredAndSortedPosts.length} postingan ditemukan`}
-        </p>
-
-        <div data-catalog-list>
-          {loading ? (
-            <SkeletonList count={3} />
-          ) : error ? (
-            <ErrorState
-              title="Gagal Memuat Data Postingan"
-              message={error}
-              onRetry={handleRetry}
-            />
-          ) : visiblePosts.length > 0 ? (
-            visiblePosts.map((post) => (
-              <CatalogCard key={post.id} post={post} backUrl="/katalog" />
-            ))
-          ) : (
-            <EmptyState
-              icon="🔍"
-              title="Tidak ada postingan yang cocok"
-              description="Coba ubah kata kunci pencarian atau bersihkan filter di samping."
-              actionText="Bersihkan Filter"
-              onAction={handleReset}
-            />
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="btn-reset-filters"
+            >
+              ✕ Reset Filter
+            </button>
           )}
         </div>
 
-        {/* Navigasi halaman */}
-        {!loading && !error && pageCount > 1 && (
-          <nav data-catalog-pagination aria-label="Navigasi Halaman Katalog">
-            <ol>
-              {Array.from({ length: pageCount }).map((_, index) => {
-                const pageNumber = index + 1;
-                const isCurrent = pageNumber === activePage;
+        {/* Kategori Chips */}
+        <div className="panel-categories-row" role="group" aria-label="Filter Kategori">
+          {Object.entries(CATEGORY_LABELS).map(([catKey, catLabel]) => {
+            const isSelected = categories.includes(catKey);
+            return (
+              <button
+                key={catKey}
+                type="button"
+                className={`cat-chip-btn ${isSelected ? "selected" : ""}`}
+                onClick={() => handleCategoryToggle(catKey)}
+                aria-pressed={isSelected}
+              >
+                {isSelected ? "✓ " : ""}{catLabel}
+              </button>
+            );
+          })}
+        </div>
 
-                return (
-                  <li key={pageNumber}>
-                    {isCurrent ? (
-                      <span aria-current="page">{pageNumber}</span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setPage(pageNumber)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "inherit",
-                          font: "inherit",
-                          padding: 0,
-                        }}
-                      >
-                        {pageNumber}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
+        {/* Status Hasil Pencarian */}
+        <div className="panel-results-summary">
+          <span>
+            Ditemukan <strong>{filteredAndSortedPosts.length}</strong> postingan aktif
+            {region ? ` di wilayah ${REGION_LABELS[region] || region}` : ""}
+            {query ? ` untuk kata kunci "${query}"` : ""}
+          </span>
+        </div>
+      </section>
+
+      {/* 3. Feed List */}
+      <section className="feed-stream" aria-label="Daftar Postingan Bantuan">
+        {loading ? (
+          <SkeletonList count={4} />
+        ) : error ? (
+          <div className="feed-error-card">
+            <p>Terjadi kesalahan saat memuat data: {error}</p>
+            <button
+              type="button"
+              className="button button-sm button-primary"
+              onClick={() => window.location.reload()}
+            >
+              Coba Lagi
+            </button>
+          </div>
+        ) : visiblePosts.length > 0 ? (
+          visiblePosts.map((post) => (
+            <CatalogCard key={post.id} post={post} backUrl="/katalog" />
+          ))
+        ) : (
+          <EmptyState
+            icon="📍"
+            title={region ? `Belum ada postingan di ${REGION_LABELS[region] || region}` : "Tidak ada postingan yang sesuai"}
+            description={
+              region
+                ? `Wilayah ${REGION_LABELS[region] || region} belum memiliki permohonan atau penawaran aktif. Jadilah yang pertama membuat postingan di sini!`
+                : "Coba sesuaikan kata kunci atau bersihkan filter untuk melihat postingan lainnya."
+            }
+            actionText={region ? `+ Buat Postingan di ${REGION_LABELS[region] || region}` : "Reset Seluruh Filter"}
+            onAction={region ? () => router.push(`/buat-postingan?region=${region}`) : handleReset}
+          />
         )}
       </section>
-    </main>
+
+      {/* 4. Pagination */}
+      {pageCount > 1 && (
+        <nav className="pagination-bar" aria-label="Navigasi Halaman Postingan">
+          <button
+            type="button"
+            className="pagination-btn"
+            disabled={activePage <= 1}
+            onClick={() => {
+              const prev = activePage - 1;
+              setPage(prev);
+              updateURL({ page: prev });
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            &larr; Sebelumnya
+          </button>
+          <span className="pagination-info">
+            Halaman {activePage} dari {pageCount}
+          </span>
+          <button
+            type="button"
+            className="pagination-btn"
+            disabled={activePage >= pageCount}
+            onClick={() => {
+              const next = activePage + 1;
+              setPage(next);
+              updateURL({ page: next });
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            Berikutnya &rarr;
+          </button>
+        </nav>
+      )}
+    </ThreeColumnLayout>
   );
 }
 
 export default function CatalogPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="catalog-loading" aria-busy="true">
-          <h1>Feed Bantuan</h1>
-          <p className="sr-only">Memuat katalog...</p>
-          <SkeletonList count={3} />
-        </main>
-      }
-    >
+    <Suspense fallback={<div className="skeleton-container" style={{ maxWidth: "1200px", margin: "40px auto", padding: "0 16px" }}><SkeletonList count={4} /></div>}>
       <CatalogContent />
     </Suspense>
   );

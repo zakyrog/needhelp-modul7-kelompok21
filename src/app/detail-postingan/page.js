@@ -7,199 +7,300 @@ import {
   getPost,
   getPublicPost,
   fetchPosts,
-  getPostAuthor,
   CATEGORY_LABELS,
+  REGION_LABELS,
+  COMPENSATION_LABELS,
   formatDate,
-  formatTimeRange,
-  formatCompensation,
+  formatRupiah,
   formatDateTime,
 } from "../../lib/data.js";
+import { createClient } from "../../utils/supabase/client";
+import { ThreeColumnLayout } from "../../components/ThreeColumnLayout";
 import { EmptyState } from "../../components/EmptyState";
+import { useToast } from "../../components/Toast";
 
 function DetailPostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
 
   const id = searchParams.get("id");
   const backUrl = searchParams.get("back") || "/katalog";
 
   const [post, setPost] = useState(() => (id ? getPost(id) || getPublicPost(id) : null));
+  const [loading, setLoading] = useState(!post);
 
   useEffect(() => {
-    if (id) {
-      setPost(getPost(id) || getPublicPost(id));
-      fetchPosts()
-        .then(() => {
-          setPost(getPost(id) || getPublicPost(id));
-        })
-        .catch(() => {});
+    let isMounted = true;
+    if (!id) {
+      setLoading(false);
+      return;
     }
+
+    async function loadPostData() {
+      // 1. Coba ambil dari Supabase
+      try {
+        const supabase = createClient();
+        if (supabase) {
+          const { data, error } = await supabase
+            .from("posts")
+            .select(`
+              id,
+              author_id,
+              nature,
+              title,
+              category,
+              description,
+              planned_date,
+              start_time,
+              end_time,
+              region,
+              address_general,
+              compensation_type,
+              amount,
+              compensation_note,
+              quota,
+              remaining_quota,
+              status,
+              created_at,
+              profiles:author_id (
+                full_name,
+                bio,
+                avatar_url,
+                rating_average,
+                rating_count
+              )
+            `)
+            .eq("id", id)
+            .single();
+
+          if (!error && data && isMounted) {
+            setPost(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase detail fetch error, trying local:", err);
+      }
+
+      // 2. Fallback ke data lokal
+      const local = getPost(id) || getPublicPost(id);
+      if (local && isMounted) {
+        setPost(local);
+        setLoading(false);
+      } else {
+        fetchPosts()
+          .then(() => {
+            if (isMounted) {
+              setPost(getPost(id) || getPublicPost(id));
+              setLoading(false);
+            }
+          })
+          .catch(() => {
+            if (isMounted) setLoading(false);
+          });
+      }
+    }
+
+    loadPostData();
+
+    return () => { isMounted = false; };
   }, [id]);
 
-  if (!id || !post) {
+  if (loading) {
     return (
-      <main className="detail-main-layout">
-        <div style={{ maxWidth: "600px", margin: "40px auto", textAlign: "center" }}>
-          <EmptyState
-            icon="🔎"
-            title="Postingan tidak ditemukan"
-            description="Postingan yang kamu cari tidak tersedia atau mungkin sudah dihapus."
-            actionText="Kembali ke Katalog"
-            onAction={() => router.push(backUrl)}
-          />
+      <ThreeColumnLayout>
+        <div className="skeleton-loading-box" style={{ padding: "40px", background: "#fff", borderRadius: "12px" }}>
+          <div style={{ height: "24px", width: "60%", background: "#e2e8f0", marginBottom: "16px", borderRadius: "4px" }} />
+          <div style={{ height: "16px", width: "40%", background: "#e2e8f0", marginBottom: "24px", borderRadius: "4px" }} />
+          <div style={{ height: "120px", background: "#f8fafc", borderRadius: "8px" }} />
         </div>
-      </main>
+      </ThreeColumnLayout>
     );
   }
 
-  const author = getPostAuthor(post);
-  const isNeed = post.nature === "butuh";
-  const typeLabel = isNeed ? "Saya Butuh" : "Saya Bisa";
-  const categoryLabel = CATEGORY_LABELS[post.category] || post.category;
-  const chatUrl = `/chat?user=${encodeURIComponent(author.id)}&topic=${encodeURIComponent(post.title)}`;
+  if (!id || !post) {
+    return (
+      <ThreeColumnLayout>
+        <EmptyState
+          icon="🔎"
+          title="Postingan tidak ditemukan"
+          description="Postingan yang kamu cari tidak tersedia, sudah ditutup, atau tautan tidak valid."
+          actionText="Kembali ke Feed Bantuan"
+          onAction={() => router.push(backUrl)}
+        />
+      </ThreeColumnLayout>
+    );
+  }
+
+  // Normalisasi data (Supabase vs JSON)
+  const isNeed = (post.nature || "butuh") === "butuh";
+  const title = post.title;
+  const description = post.description || post.summary || "";
+  const category = post.category || "bantuan";
+  const region = post.region || "sleman";
+  const address = post.address_general || post.address || "Area Yogyakarta";
+  const date = post.planned_date || post.date;
+  const time = post.start_time || post.time || "10:00";
+  const endTime = post.end_time || post.endTime;
+  const compType = post.compensation_type || post.compensation || "sukarela";
+  const amount = post.amount;
+  const compNote = post.compensation_note || post.compensationNote || "";
+  const quota = post.quota || 1;
+  const remainingQuota = post.remaining_quota !== undefined ? post.remaining_quota : (post.remainingQuota !== undefined ? post.remainingQuota : 1);
+  const status = post.status || "aktif";
+  const createdAt = post.created_at || post.createdAt;
+
+  // Author info
+  const authorName = post.profiles?.full_name || post.authorName || "Warga Jogja";
+  const authorBio = post.profiles?.bio || post.authorBio || "Mahasiswa / Warga Yogyakarta";
+  const authorRating = post.profiles?.rating_average !== undefined
+    ? Number(post.profiles.rating_average).toFixed(1)
+    : "5.0";
+  const authorRatingCount = post.profiles?.rating_count !== undefined ? post.profiles.rating_count : 5;
+  const authorId = post.author_id || post.authorId || "";
+
+  const timeFormatted = endTime ? `${time.slice(0, 5)} - ${endTime.slice(0, 5)} WIB` : `${time.slice(0, 5)} WIB`;
+  const dateFormatted = formatDate(date);
+
+  // Kompensasi text
+  const compLabel = COMPENSATION_LABELS[compType] || compType;
+  let compFormatted = compLabel;
+  if (compType === "tarif" && amount) {
+    compFormatted = `${formatRupiah(amount)}${compNote ? ` (${compNote})` : ""}`;
+  } else if (compNote) {
+    compFormatted = `${compLabel} • ${compNote}`;
+  }
+
+  const isFull = status === "kuota_penuh" || remainingQuota <= 0;
+  const chatUrl = `/chat?postId=${encodeURIComponent(post.id)}&authorId=${encodeURIComponent(authorId)}`;
+
+  const handleShare = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard?.writeText(window.location.href);
+      showToast("Tautan postingan berhasil disalin!", "success");
+    }
+  };
 
   return (
-    <main className="detail-main-layout">
-      <nav aria-label="Jejak Navigasi" className="breadcrumb-nav">
-        <p className="breadcrumb-back">
-          <Link href={backUrl} data-detail-back>
-            &larr; Kembali ke Feed
-          </Link>
-        </p>
-        <div className="breadcrumb-status">
-          <span className="status-title">Detail Postingan #{post.id}</span>
-          <span className="status-badge">
-            <mark>{typeLabel}</mark> &bull; Kategori: {categoryLabel}
-          </span>
-        </div>
+    <ThreeColumnLayout>
+      <nav aria-label="Jejak Navigasi" style={{ marginBottom: "12px" }}>
+        <Link href={backUrl} className="detail-back-link" style={{ fontSize: "13px", fontWeight: "600", textDecoration: "none", color: "var(--color-action-primary)" }}>
+          &larr; Kembali ke Feed
+        </Link>
       </nav>
 
-      <article className="detail-article">
-        <section className="requester-section">
-          <img
-            src={author.avatar || "/assets/images/avatar-user.svg"}
-            alt={`Foto profil ${author.name}`}
-            width={48}
-            height={48}
-            className="requester-img"
-          />
-          <div>
-            <h3 className="requester-name">{author.name}</h3>
-            <p className="requester-info">{author.bio}</p>
-          </div>
-          <div className="requester-rating">⭐<span>{author.rating ? author.rating.split(" ")[0] : "4.9"}</span>
-          </div>
-        </section>
+      <article className="feed-card detail-article-card" style={{ padding: "24px" }}>
+        {/* Badges Bar */}
+        <div className="feed-card-badges" style={{ marginBottom: "14px" }}>
+          <span className={`nature-badge ${isNeed ? "badge-butuh" : "badge-bisa"}`}>
+            {isNeed ? "SAYA BUTUH BANTUAN" : "SAYA BISA MEMBANTU"}
+          </span>
+          <span className="category-badge">
+            Kategori: {CATEGORY_LABELS[category] || category}
+          </span>
+          <span className="post-region-badge">
+            📍 {REGION_LABELS[region] || region}
+          </span>
+          {isNeed && (
+            <span className={`quota-pill ${isFull ? "quota-full" : "quota-available"}`}>
+              {isFull ? "Kuota Terpenuhi" : `Sisa Kuota: ${remainingQuota} dari ${quota} orang`}
+            </span>
+          )}
+        </div>
 
-        <header className="article-header">
-          <h1>{post.title}</h1>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "14px", margin: "8px 0 16px 0" }}>
-            Dipublikasikan oleh <strong>{author.name}</strong> pada{" "}
-            <time dateTime={post.createdAt}>{formatDateTime(post.createdAt)}</time>
-          </p>
-          <div style={{ lineHeight: "1.7" }}>
-            <h2>{isNeed ? "Deskripsi Kebutuhan" : "Deskripsi Penawaran"}</h2>
-            {post.description.split(/\n{2,}/).map((p, idx) => (
-              <p key={idx}>{p}</p>
-            ))}
-          </div>
-        </header>
+        {/* Title */}
+        <h1 style={{ fontSize: "22px", fontWeight: "700", margin: "0 0 16px 0", lineHeight: "1.3" }}>
+          {title}
+        </h1>
 
-        <section className="info-grid-section">
-          <div className="info-card">
-            <img
-              src="/assets/images/icon-kurir.svg"
-              alt="Kategori"
-              width={20}
-              height={20}
-            />
-            <div>
-              <div className="info-label">Kategori</div>
-              <div className="info-value">{categoryLabel}</div>
+        {/* Author Section */}
+        <div className="feed-card-header" style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", marginBottom: "20px" }}>
+          <div className="author-avatar-wrap">
+            <span className="author-initial">{authorName.charAt(0).toUpperCase()}</span>
+          </div>
+          <div className="author-meta">
+            <div className="author-name-row">
+              <span className="author-name" style={{ fontSize: "15px" }}>{authorName}</span>
+              <span className="rating-badge">⭐ {authorRating} ({authorRatingCount} ulasan)</span>
             </div>
+            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--color-text-muted)" }}>
+              {authorBio}
+            </p>
           </div>
+        </div>
 
-          <div className="info-card">
-            <img
-              src="/assets/images/icon-quote.svg"
-              alt="Kompensasi"
-              width={20}
-              height={20}
-            />
-            <div>
-              <div className="info-label">Kompensasi</div>
-              <div className="info-value">{formatCompensation(post)}</div>
-            </div>
-          </div>
-
-          <div className="info-card">
-            <img
-              src="/assets/images/icon-bell.svg"
-              alt="Waktu"
-              width={20}
-              height={20}
-            />
-            <div>
-              <div className="info-label">Waktu</div>
-              <div className="info-value">
-                {formatDate(post.date)} ({formatTimeRange(post)})
-              </div>
-            </div>
-          </div>
-
-          <div className="info-card">
-            <img
-              src="/assets/images/icon-search.svg"
-              alt="Lokasi"
-              width={20}
-              height={20}
-            />
-            <div>
-              <div className="info-label">Lokasi</div>
-              <div className="info-value">
-                {post.destination ? `${post.address} → ${post.destination}` : post.address}
-              </div>
-            </div>
-          </div>
-        </section>
-      </article>
-
-      <div className="detail-sidebar">
-        <section className="action-box">
-          <h2>
-            {isNeed ? "Ajukan Penawaran Bantuan" : "Tertarik dengan Tawaran Ini?"}
+        {/* Description */}
+        <div style={{ marginBottom: "24px" }}>
+          <h2 style={{ fontSize: "15px", fontWeight: "700", margin: "0 0 8px 0", color: "var(--color-text-primary)" }}>
+            {isNeed ? "Rincian Kebutuhan Bantuan:" : "Rincian Keahlian yang Ditawarkan:"}
           </h2>
-          <p>
-            {isNeed
-              ? `Tertarik membantu ${author.name} menyelesaikan kebutuhan ini?`
-              : `Hubungi ${author.name} untuk menanyakan detail tawaran bantuan ini.`}
+          <div style={{ fontSize: "14px", lineHeight: "1.7", color: "var(--color-text-secondary)", whiteSpace: "pre-line" }}>
+            {description}
+          </div>
+        </div>
+
+        {/* Meta Info Grid */}
+        <div className="feed-card-meta-grid" style={{ padding: "16px", gap: "10px", marginBottom: "24px" }}>
+          <div className="meta-item">
+            <span className="meta-icon" style={{ fontSize: "16px" }}>📅</span>
+            <div>
+              <strong style={{ display: "block", fontSize: "11px", color: "var(--color-text-muted)" }}>Jadwal Pelaksanaan</strong>
+              <span>{dateFormatted} pukul {timeFormatted}</span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <span className="meta-icon" style={{ fontSize: "16px" }}>📍</span>
+            <div>
+              <strong style={{ display: "block", fontSize: "11px", color: "var(--color-text-muted)" }}>Titik Temu / Lokasi</strong>
+              <span>{address} ({REGION_LABELS[region] || region})</span>
+            </div>
+          </div>
+          <div className="meta-item">
+            <span className="meta-icon" style={{ fontSize: "16px" }}>💰</span>
+            <div>
+              <strong style={{ display: "block", fontSize: "11px", color: "var(--color-text-muted)" }}>Bentuk Imbalan / Kompensasi</strong>
+              <span style={{ color: "var(--color-action-secondary)", fontWeight: "600" }}>{compFormatted}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--color-border-subtle)", paddingTop: "18px" }}>
+          {isFull ? (
+            <div className="badge-closed" style={{ padding: "8px 16px", fontSize: "13px" }}>
+              ⛔ Bantuan ini sudah terpenuhi kuotanya.
+            </div>
+          ) : (
+            <Link href={chatUrl} className="button button-primary" style={{ padding: "10px 24px", fontSize: "14px", fontWeight: "600" }}>
+              💬 Kirim Pesan & Sepakati
+            </Link>
+          )}
+
+          <button
+            type="button"
+            className="button button-outline"
+            onClick={handleShare}
+            style={{ padding: "10px 18px", fontSize: "13px" }}
+          >
+            🔗 Bagikan Postingan
+          </button>
+        </div>
+
+        {createdAt && (
+          <p style={{ margin: "20px 0 0", fontSize: "11px", color: "var(--color-text-light)" }}>
+            Diunggah pada {formatDateTime(createdAt)}
           </p>
-
-          <Link href={chatUrl} className="btn-bantu">
-            {isNeed ? "Mulai Chat & Tawarkan Bantuan" : "Mulai Chat & Tanyakan Detail"}
-          </Link>
-
-          <Link href={`/formbantuan?id=${encodeURIComponent(post.id)}`} className="btn-chat">
-            &#128221; Form Pengajuan Bantuan
-          </Link>
-        </section>
-
-        {/* Kotak Tips Aman */}
-        <section className="safety-box">
-          <h3>🛡️ Tips aman</h3>
-          <p>
-            Selalu ketemu di tempat ramai pertama kali. Jangan transfer uang
-            muka sebelum ketemu langsung.
-          </p>
-        </section>
-      </div>
-    </main>
+        )}
+      </article>
+    </ThreeColumnLayout>
   );
 }
 
 export default function DetailPostPage() {
   return (
-    <Suspense fallback={<div className="detail-main-layout"><p>Memuat detail postingan...</p></div>}>
+    <Suspense fallback={<div className="skeleton-container" style={{ maxWidth: "1200px", margin: "40px auto", padding: "0 16px" }}><div style={{ height: "300px", background: "#fff", borderRadius: "12px" }} /></div>}>
       <DetailPostContent />
     </Suspense>
   );

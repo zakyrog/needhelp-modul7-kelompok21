@@ -2,168 +2,148 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPublicPosts, fetchPublicPosts } from "../lib/data.js";
-import { PostCard } from "../components/PostCard";
+import { fetchPublicPosts } from "../lib/data.js";
+import { ThreeColumnLayout } from "../components/ThreeColumnLayout";
+import { QuickPostBox } from "../components/QuickPostBox";
+import { CatalogCard } from "../components/CatalogCard";
+import { EmptyState } from "../components/EmptyState";
+import { SkeletonList } from "../components/Skeleton";
 
 export default function HomePage() {
-  const [posts, setPosts] = useState(() => getPublicPosts().slice(0, 3));
+  const [posts, setPosts] = useState([]);
+  const [filterNature, setFilterNature] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
     fetchPublicPosts()
-      .then((data) => setPosts(data.slice(0, 3)))
-      .catch(() => setPosts(getPublicPosts().slice(0, 3)));
+      .then((data) => {
+        if (isMounted) {
+          setPosts(data || []);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(err.message || "Gagal memuat feed beranda.");
+          setLoading(false);
+        }
+      });
+
+    return () => { isMounted = false; };
   }, []);
 
+  const filteredPosts = posts.filter((post) => {
+    if (filterNature === "all") return true;
+    return post.nature === filterNature;
+  });
+
   return (
-    <main>
-      <section className="hero-section">
-        <div className="hero-decorations">
-          <div className="circle-large" />
-          <div className="circle-small" />
-        </div>
-
-        <div className="hero-content">
-          <div className="online-badge">
-            <span className="dot" />
-            128 orang online sedang mencari bantuan
+    <ThreeColumnLayout>
+      {/* 1. Welcoming Community Hero Banner */}
+      <section className="feed-hero-banner" aria-label="Sambutan Komunitas">
+        <div className="hero-banner-inner">
+          <div className="online-status-pill">
+            <span className="live-dot" aria-hidden="true" />
+            <span>Komunitas Saling Bantu Mahasiswa & Warga DIY</span>
           </div>
-          <h1>Butuh bantuan atau teman hari ini?</h1>
-          <p>
-            Temukan orang di sekitar yang bisa membantu, atau tawarkan bantuanmu
-            kepada mereka yang membutuhkan.
+          <h1 className="hero-title">
+            Butuh bantuan atau teman di Jogja hari ini?
+          </h1>
+          <p className="hero-subtitle">
+            Cari partner pindahan kos, teman nongkrong, pendampingan belajar, atau tawarkan keahlianmu secara aman dan saling percaya.
           </p>
-          <div className="hero-actions">
-            <Link href="/buat-postingan" className="button button-primary">
-              Buat Permintaan
+          <div className="hero-category-pills">
+            <Link href="/katalog?category=bantuan" className="cat-pill">
+              📦 Bantuan Fisik
             </Link>
-            <Link href="/katalog" className="button button-outline">
-              Tawarkan Bantuan
+            <Link href="/katalog?category=pendampingan" className="cat-pill">
+              📚 Belajar & Les
+            </Link>
+            <Link href="/katalog?category=ditemani" className="cat-pill">
+              ☕ Ditemani Ngopi
+            </Link>
+            <Link href="/katalog?category=explore" className="cat-pill">
+              🛵 Explore Jogja
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="container category-section">
-        <h2>Kategori populer</h2>
-        <div className="category-grid">
-          <Link href="/katalog?category=pendampingan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-les-privat.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Les Privat</h3>
-            <p>48 aktif</p>
-          </Link>
+      {/* 2. Quick Post Creator Box */}
+      <QuickPostBox />
 
-          <Link href="/katalog?category=bantuan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-kebersihan.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Jasa Kebersihan</h3>
-            <p>22 aktif</p>
-          </Link>
+      {/* 3. Filter Bar (Semua / Saya Butuh / Saya Bisa) */}
+      <div className="feed-filter-tabs-bar" role="tablist" aria-label="Filter Jenis Feed">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filterNature === "all"}
+          className={`filter-tab-btn ${filterNature === "all" ? "active" : ""}`}
+          onClick={() => setFilterNature("all")}
+        >
+          🌐 Semua Postingan
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filterNature === "butuh"}
+          className={`filter-tab-btn tab-butuh ${filterNature === "butuh" ? "active" : ""}`}
+          onClick={() => setFilterNature("butuh")}
+        >
+          🆘 Saya Butuh ({posts.filter(p => p.nature === "butuh").length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filterNature === "bisa"}
+          className={`filter-tab-btn tab-bisa ${filterNature === "bisa" ? "active" : ""}`}
+          onClick={() => setFilterNature("bisa")}
+        >
+          ✨ Saya Bisa ({posts.filter(p => p.nature === "bisa").length})
+        </button>
+      </div>
 
-          <Link href="/katalog?category=bantuan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-kurir.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Kurir / Titip</h3>
-            <p>35 aktif</p>
-          </Link>
+      {/* 4. Feed Stream */}
+      <div className="feed-stream" aria-live="polite">
+        {loading ? (
+          <SkeletonList count={3} />
+        ) : error ? (
+          <div className="feed-error-card">
+            <p>Terjadi kendala saat memuat feed: {error}</p>
+            <button
+              type="button"
+              className="button button-sm button-primary"
+              onClick={() => window.location.reload()}
+            >
+              Muat Ulang
+            </button>
+          </div>
+        ) : filteredPosts.length > 0 ? (
+          filteredPosts.slice(0, 6).map((post) => (
+            <CatalogCard key={post.id} post={post} backUrl="/" />
+          ))
+        ) : (
+          <EmptyState
+            icon="📋"
+            title="Belum ada postingan aktif"
+            description="Jadilah yang pertama membuat permohonan bantuan atau menawarkan keahlian di Jogja!"
+            actionText="+ Buat Postingan Sekarang"
+            onAction={() => window.location.href = "/buat-postingan"}
+          />
+        )}
+      </div>
 
-          <Link href="/katalog?category=bantuan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-teknis.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Teknis</h3>
-            <p>18 aktif</p>
-          </Link>
-
-          <Link href="/katalog" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-lainnya.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Lainnya</h3>
-            <p>15 aktif</p>
-          </Link>
-        </div>
-      </section>
-
-      <section className="container request-section">
-        <div className="section-header">
-          <h2>Permintaan terbaru di sekitar kamu</h2>
-          <Link href="/katalog" className="see-all">
-            Lihat semua &rarr;
+      {/* 5. Tautan ke Katalog Penuh */}
+      {filteredPosts.length > 0 && (
+        <div className="feed-more-footer text-center" style={{ margin: "16px 0 32px" }}>
+          <Link href="/katalog" className="button button-outline" style={{ display: "inline-block", width: "100%", padding: "10px 16px" }}>
+            Jelajahi Seluruh Postingan & Filter 5 Wilayah DIY &rarr;
           </Link>
         </div>
-
-        <div className="cards-grid">
-          {posts.length > 0 ? (
-            posts.map((post, idx) => (
-              <PostCard key={post.id} post={post} index={idx} />
-            ))
-          ) : (
-            <p className="empty-state">Belum ada postingan aktif saat ini.</p>
-          )}
-        </div>
-      </section>
-
-      <section className="container table-section" hidden>
-        <h2>Statistik Komunitas NeedHelp</h2>
-        <table>
-          <caption>
-            Ringkasan Capaian dan Aktivitas Komunitas Kota Yogyakarta
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Indikator</th>
-              <th scope="col">Capaian Saat Ini</th>
-              <th scope="col">Keterangan</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Permintaan Dibantu</th>
-              <td>2.100+</td>
-              <td>Kebutuhan terselesaikan</td>
-            </tr>
-            <tr>
-              <th scope="row">Relawan Aktif</th>
-              <td>850+</td>
-              <td>Mahasiswa dan pekerja muda</td>
-            </tr>
-            <tr>
-              <th scope="row">Rating Komunitas</th>
-              <td>4.8 / 5.0</td>
-              <td>Tingkat kepuasan interaksi</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-    </main>
+      )}
+    </ThreeColumnLayout>
   );
 }

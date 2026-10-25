@@ -25,6 +25,7 @@ export const COMPENSATION_LABELS = {
   tarif: "Tarif Pasti",
   nego: "Nego di Chat",
   patungan: "Patungan",
+  bayarsendiri: "Bayar Sendiri-sendiri",
   traktir: "Traktir",
   sukarela: "Sukarela",
 };
