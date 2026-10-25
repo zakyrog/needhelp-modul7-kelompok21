@@ -254,9 +254,16 @@
 }
 
 .layout-col-center {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.layout-col-center > * {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 
@@ -1426,6 +1433,20 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
+}
+
+.feed-stream .skeleton-list,
+.feed-stream .skeleton-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.feed-stream .skeleton-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .feed-error-card {

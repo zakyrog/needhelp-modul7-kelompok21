@@ -2847,9 +2847,9 @@ body.notification-page {
   }
 }
 
-/* FIX FINAL: layout katalog hasil simulasi Codex */
-body.catalog-page > main,
-body.catalog-page main {
+/* Legacy layout katalog modul 7 dinetralkan agar tidak merusak layout 3-kolom modul 8 */
+body.catalog-page:not(:has(.three-column-grid-wrapper)) > main,
+body.catalog-page:not(:has(.three-column-grid-wrapper)) main {
   display: grid !important;
   grid-template-columns: 280px minmax(0, 1fr) !important;
   gap: 24px !important;
@@ -2978,8 +2978,8 @@ body.catalog-page > header.site-header {
   box-sizing: border-box;
 }
 
-body.catalog-page > main,
-body.catalog-page main {
+body.catalog-page:not(:has(.three-column-grid-wrapper)) > main,
+body.catalog-page:not(:has(.three-column-grid-wrapper)) main {
   flex: 0 0 auto !important;
   height: auto !important;
   min-height: 0 !important;
