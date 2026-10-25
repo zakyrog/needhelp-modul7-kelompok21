@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeedHelp - Platform Bantuan dan Teman Situasional</title>
+  <meta name="description" content="NeedHelp adalah platform digital untuk menemukan bantuan dan teman situasional di Kota Yogyakarta.">
+
+  <!-- Open Graph Metadata (Tahap 6 Modul 06) -->
+  <meta property="og:title" content="NeedHelp - Platform Bantuan dan Teman Situasional">
+  <meta property="og:description" content="Temukan orang di sekitar yang bisa membantu atau tawarkan bantuanmu di Yogyakarta.">
+  <meta property="og:image" content="./assets/images/logo.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="id_ID">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "NeedHelp",
+    "applicationCategory": "CommunityApplication",
+    "operatingSystem": "Web",
+    "description": "Platform digital penghubung kebutuhan situasional dan penyedia bantuan informal di Yogyakarta."
+  }
+  </script>
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <link rel="stylesheet" href="./assets/css/base.css">
+  <script type="module" src="./assets/js/app.js"></script>
+</head>
+<body class="home-page">
+
+  <header class="site-header">
+    <a class="site-brand" href="index.html" aria-label="NeedHelp - Beranda">
+      <img src="./assets/images/logo.svg" alt="NeedHelp" width="160" height="40">
+    </a>
+    <nav class="site-nav" aria-label="Navigasi Utama">
+      <ul>
+        <li><a href="index.html" aria-current="page">Beranda</a></li>
+        <li><a href="katalog.html">Katalog</a></li>
+        <li><a href="aktivitas.html">Aktivitas</a></li>
+        <li><a href="chat.html">Pesan</a></li>
+      </ul>
+    </nav>
+    <div class="header-right-actions">
+      <form class="search-box-wrapper" action="katalog.html" method="get" role="search">
+        <img src="./assets/images/icon-search.svg" alt="" class="search-icon" width="16" height="16">
+        <input type="search" name="q" placeholder="Cari bantuan..." aria-label="Cari bantuan">
+      </form>
+      <a href="chat.html" class="icon-action-btn" aria-label="Pesan">
+        <img src="./assets/images/icon-chat.svg" alt="" width="18" height="18">
+      </a>
+      <a href="notifikasi.html" class="icon-action-btn" aria-label="Notifikasi">
+        <img src="./assets/images/icon-bell.svg" alt="" width="18" height="18">
+      </a>
+      <span class="user-profile-badge" role="img" aria-label="Profil pengguna">P</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-section">
+      <div class="hero-decorations">
+        <div class="circle-large"></div>
+        <div class="circle-small"></div>
+      </div>
+      
+      <div class="hero-content">
+        <div class="online-badge">
+          <span class="dot"></span>
+          128 orang online sedang mencari bantuan
+        </div>
+        <h1>Butuh bantuan atau teman hari ini?</h1>
+        <p>Temukan orang di sekitar yang bisa membantu, atau tawarkan bantuanmu kepada mereka yang membutuhkan.</p>
+        <div class="hero-actions">
+          <a href="buat-postingan.html" class="button button-primary">Buat Permintaan</a>
+          <a href="katalog.html" class="button button-outline">Tawarkan Bantuan</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="container category-section">
+      <h2>Kategori populer</h2>
+      <div class="category-grid">
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-les-privat.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Les Privat</h3>
+          <p>48 aktif</p>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-kebersihan.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Jasa Kebersihan</h3>
+          <p>22 aktif</p>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-kurir.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Kurir / Titip</h3>
+          <p>35 aktif</p>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-teknis.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Teknis</h3>
+          <p>18 aktif</p>
+        </a>
+        <a href="katalog.html" class="category-card">
+          <div class="category-icon">
+            <img src="./assets/images/icon-lainnya.svg" alt="" width="20" height="20">
+          </div>
+          <h3>Lainnya</h3>
+          <p>15 aktif</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="container request-section">
+      <div class="section-header">
+        <h2>Permintaan terbaru di sekitar kamu</h2>
+        <a href="katalog.html" class="see-all">Lihat semua &rarr;</a>
+      </div>
+
+      <div class="cards-grid">
+        <article class="request-card">
+          <header class="card-user">
+            <img src="./assets/images/avatar-sari.svg" alt="Foto profil Sari Wijaya" width="36" height="36" class="avatar-img">
+            <div class="user-info">
+              <h3>Sari Wijaya</h3>
+              <p><time datetime="2026-10-06T15:50">15 menit lalu</time> &bull; 1,2 km</p>
+            </div>
+          </header>
+          <h4><a href="detail-postingan.html">Butuh bantuan pindahan kos</a></h4>
+          <p>Butuh bantuan membawa beberapa barang dari kos lama ke tempat baru di sekitar kampus.</p>
+          <div class="tags">
+            <span class="tag">Kurir / Titip</span>
+            <span class="tag">Patungan</span>
+          </div>
+        </article>
+
+        <article class="request-card highlight-card">
+          <header class="card-user">
+            <img src="./assets/images/avatar-budi.svg" alt="Foto profil Budi Pratama" width="36" height="36" class="avatar-img">
+            <div class="user-info">
+              <h3>Budi Pratama</h3>
+              <p><time datetime="2026-10-06T15:33">32 menit lalu</time> &bull; 0,8 km</p>
+            </div>
+          </header>
+          <h4><a href="detail-postingan.html">Cari teman belajar matematika</a></h4>
+          <p>Mau belajar bareng untuk persiapan UTS. Fokus integral &amp; limit, bisa di perpus kampus.</p>
+          <div class="tags">
+            <span class="tag">Les Privat</span>
+            <span class="tag">Sukarela</span>
+          </div>
+        </article>
+
+        <article class="request-card">
+          <header class="card-user">
+            <img src="./assets/images/avatar-rina.svg" alt="Foto profil Rina Putri" width="36" height="36" class="avatar-img">
+            <div class="user-info">
+              <h3>Rina Putri</h3>
+              <p><time datetime="2026-10-06T15:05">1 jam lalu</time> &bull; 2,4 km</p>
+            </div>
+          </header>
+          <h4><a href="detail-postingan.html">Butuh bantuan antar barang</a></h4>
+          <p>Perlu bantuan antar paket kecil ke daerah Gubeng. Bisa dibawa pakai motor.</p>
+          <div class="tags">
+            <span class="tag">Kurir / Titip</span>
+            <span class="tag">Tarif Pasti</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="container table-section" hidden>
+      <h2>Statistik Komunitas NeedHelp</h2>
+      <table>
+        <caption>Ringkasan Capaian dan Aktivitas Komunitas Kota Yogyakarta</caption>
+        <thead>
+          <tr>
+            <th scope="col">Indikator</th>
+            <th scope="col">Capaian Saat Ini</th>
+            <th scope="col">Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Permintaan Dibantu</th>
+            <td>2.100+</td>
+            <td>Kebutuhan terselesaikan</td>
+          </tr>
+          <tr>
+            <th scope="row">Relawan Aktif</th>
+            <td>850+</td>
+            <td>Mahasiswa dan pekerja muda</td>
+          </tr>
+          <tr>
+            <th scope="row">Rating Komunitas</th>
+            <td>4.8 / 5.0</td>
+            <td>Tingkat kepuasan interaksi</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 NeedHelp - Need-Based Companion &amp; Help.</p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beri Penilaian &amp; Ulasan - NeedHelp</title>
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <link rel="stylesheet" href="./assets/css/base.css">
+  <script type="module" src="./assets/js/app.js"></script>
+</head>
+<body>
+  <!-- Header & Navigasi -->
+  <header class="site-header">
+    <a class="site-brand" href="index.html" aria-label="NeedHelp - Beranda">
+      <img src="./assets/images/logo.svg" alt="NeedHelp" width="160" height="40">
+    </a>
+    <nav class="site-nav" aria-label="Navigasi Utama">
+      <ul>
+        <li><a href="index.html">Beranda</a></li>
+        <li><a href="katalog.html">Katalog</a></li>
+        <li><a href="aktivitas.html" aria-current="page">Aktivitas</a></li>
+        <li><a href="chat.html">Pesan</a></li>
+      </ul>
+    </nav>
+    <div class="header-right-actions">
+      <form class="search-box-wrapper" action="katalog.html" method="get" role="search">
+        <img src="./assets/images/icon-search.svg" alt="" class="search-icon" width="16" height="16">
+        <input type="search" name="q" placeholder="Cari bantuan..." aria-label="Cari bantuan">
+      </form>
+      <a href="chat.html" class="icon-action-btn" aria-label="Pesan">
+        <img src="./assets/images/icon-chat.svg" alt="" width="18" height="18">
+      </a>
+      <a href="notifikasi.html" class="icon-action-btn" aria-label="Notifikasi">
+        <img src="./assets/images/icon-bell.svg" alt="" width="18" height="18">
+      </a>
+      <span class="user-profile-badge" role="img" aria-label="Profil pengguna">P</span>
+    </div>
+  </header>
+
+  <main>
+    <header>
+      <h1>Beri Ulasan dan Penilaian</h1>
+      <p>Bantu bangun reputasi komunitas dengan memberikan ulasan jujur setelah aktivitas bantuan selesai dilaksanakan.</p>
+    </header>
+
+    <!-- Ringkasan Kegiatan yang Telah Selesai -->
+    <article>
+      <header>
+        <h2>Ringkasan Aktivitas</h2>
+        <p>Aktivitas: <strong>Butuh bantuan pindahan kos &amp; angkat lemari</strong></p>
+        <p>Rekan Bantuan: <strong>Budi Pratama</strong></p>
+      </header>
+      <dl>
+        <dt>Tanggal Pelaksanaan</dt>
+        <dd>Sabtu, 10 Oktober 2026</dd>
+        <dt>Lokasi</dt>
+        <dd>Pogung Baru ke Palagan, Sleman</dd>
+        <dt>Status</dt>
+        <dd><mark>Aktivitas Selesai di Dunia Nyata</mark></dd>
+      </dl>
+    </article>
+
+    <!-- Formulir Evaluasi & Rating -->
+    <form action="aktivitas.html" method="post">
+      <!-- Tingkat Kepuasan Bintang -->
+      <fieldset>
+        <legend>1. Berikan Bintang Kepuasan (Skala 1 - 5)</legend>
+        <p>
+          <input type="radio" id="star-5" name="star_rating" value="5" checked>
+          <label for="star-5">&#9733;&#9733;&#9733;&#9733;&#9733; (5 - Luar Biasa)</label>
+        </p>
+        <p>
+          <input type="radio" id="star-4" name="star_rating" value="4">
+          <label for="star-4">&#9733;&#9733;&#9733;&#9733;&#9734; (4 - Sangat Baik)</label>
+        </p>
+        <p>
+          <input type="radio" id="star-3" name="star_rating" value="3">
+          <label for="star-3">&#9733;&#9733;&#9733;&#9734;&#9734; (3 - Cukup Baik)</label>
+        </p>
+        <p>
+          <input type="radio" id="star-2" name="star_rating" value="2">
+          <label for="star-2">&#9733;&#9733;&#9734;&#9734;&#9734; (2 - Kurang Memuaskan)</label>
+        </p>
+        <p>
+          <input type="radio" id="star-1" name="star_rating" value="1">
+          <label for="star-1">&#9733;&#9734;&#9734;&#9734;&#9734; (1 - Tidak Memuaskan)</label>
+        </p>
+      </fieldset>
+
+      <!-- Aspek Positif yang Dirasakan -->
+      <fieldset>
+        <legend>2. Apa yang Paling Kamu Apresiasi dari Budi?</legend>
+        <p>
+          <input type="checkbox" id="badge-punctual" name="badges" value="tepat-waktu" checked>
+          <label for="badge-punctual">Tepat Waktu &amp; Disiplin</label>
+        </p>
+        <p>
+          <input type="checkbox" id="badge-friendly" name="badges" value="ramah" checked>
+          <label for="badge-friendly">Ramah &amp; Menyenangkan</label>
+        </p>
+        <p>
+          <input type="checkbox" id="badge-helpful" name="badges" value="sangat-membantu" checked>
+          <label for="badge-helpful">Tenaga Kuat &amp; Sangat Membantu</label>
+        </p>
+        <p>
+          <input type="checkbox" id="badge-communicative" name="badges" value="komunikatif">
+          <label for="badge-communicative">Komunikatif &amp; Responsif di Chat</label>
+        </p>
+      </fieldset>
+
+      <!-- Ulasan Tulisan Terbuka -->
+      <fieldset>
+        <legend>3. Catatan &amp; Testimoni</legend>
+        <p>
+          <label for="review-comment">Ceritakan pengalamanmu:</label>
+          <textarea
+            id="review-comment"
+            name="review"
+            rows="4"
+            cols="50"
+            required
+            placeholder="Tulis ulasan tentang keandalan rekan bantuan untuk ditampilkan di profilnya..."
+          ></textarea>
+        </p>
+        <p>
+          <label for="recommend-user">Apakah kamu merekomendasikan Budi ke teman lain?</label>
+          <select id="recommend-user" name="recommend">
+            <option value="yes">Sangat Merekomendasikan</option>
+            <option value="neutral">Netral</option>
+            <option value="no">Tidak Merekomendasikan</option>
+          </select>
+        </p>
+      </fieldset>
+
+      <!-- Tombol Aksi -->
+      <fieldset>
+        <legend>4. Konfirmasi Akhir</legend>
+        <p>
+          <button type="submit">Kirim Penilaian &amp; Selesaikan Bantuan</button>
+          <a href="aktivitas.html">Kembali ke Aktivitas</a>
+        </p>
+      </fieldset>
+    </form>
+  </main>
+
+  <!-- Kaki Halaman (Footer) -->
+  <footer>
+    <p>&copy; 2026 NeedHelp - Need-Based Companion &amp; Help.</p>
+  </footer>
+</body>
+</html>

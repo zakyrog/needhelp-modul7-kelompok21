@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buat Postingan Baru - NeedHelp</title>
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <link rel="stylesheet" href="./assets/css/base.css">
+  <script type="module" src="./assets/js/app.js"></script>
+</head>
+<body>
+  <!-- Header & Navigasi -->
+  <header class="site-header">
+    <a class="site-brand" href="index.html" aria-label="NeedHelp - Beranda">
+      <img src="./assets/images/logo.svg" alt="NeedHelp" width="160" height="40">
+    </a>
+    <nav class="site-nav" aria-label="Navigasi Utama">
+      <ul>
+        <li><a href="index.html">Beranda</a></li>
+        <li><a href="katalog.html" aria-current="page">Katalog</a></li>
+        <li><a href="aktivitas.html">Aktivitas</a></li>
+        <li><a href="chat.html">Pesan</a></li>
+      </ul>
+    </nav>
+    <div class="header-right-actions">
+      <form class="search-box-wrapper" action="katalog.html" method="get" role="search">
+        <img src="./assets/images/icon-search.svg" alt="" class="search-icon" width="16" height="16">
+        <input type="search" name="q" placeholder="Cari bantuan..." aria-label="Cari bantuan">
+      </form>
+      <a href="chat.html" class="icon-action-btn" aria-label="Pesan">
+        <img src="./assets/images/icon-chat.svg" alt="" width="18" height="18">
+      </a>
+      <a href="notifikasi.html" class="icon-action-btn" aria-label="Notifikasi">
+        <img src="./assets/images/icon-bell.svg" alt="" width="18" height="18">
+      </a>
+      <span class="user-profile-badge" role="img" aria-label="Profil pengguna">P</span>
+    </div>
+  </header>
+
+  <main>
+    <header>
+      <h1>Formulir Pasang Postingan Baru</h1>
+      <p>Publikasikan permintaan bantuan yang kamu butuhkan atau tawarkan waktu dan keahlianmu kepada orang sekitar.</p>
+    </header>
+
+    <form action="sukses-postingan.html" method="post">
+      <!-- Jenis Pintu Masuk Postingan -->
+      <fieldset>
+        <legend>1. Pilih Jenis Pintu Masuk Postingan</legend>
+        <p>
+          <input type="radio" id="post-need" name="post_nature" value="butuh" checked>
+          <label for="post-need"><strong>Saya Butuh</strong> &mdash; Saya membutuhkan bantuan atau teman pendamping</label>
+        </p>
+        <p>
+          <input type="radio" id="post-can" name="post_nature" value="bisa">
+          <label for="post-can"><strong>Saya Bisa</strong> &mdash; Saya memiliki keahlian atau waktu luang untuk membantu</label>
+        </p>
+      </fieldset>
+
+      <!-- Informasi Utama Kebutuhan -->
+      <fieldset>
+        <legend>2. Detail Informasi Aktivitas</legend>
+        <p>
+          <label for="post-title">Judul Singkat Postingan:</label>
+          <input
+            type="text"
+            id="post-title"
+            name="title"
+            required
+            placeholder="Contoh: Butuh teman ngopi santai di Palagan"
+            maxlength="100"
+          >
+        </p>
+
+        <p>
+          <label for="post-category">Kategori Aktivitas:</label>
+          <select id="post-category" name="category" required>
+            <option value="">-- Pilih Kategori --</option>
+            <option value="ditemani">Ditemani (Gym, Ngopi, Nonton, Mancing)</option>
+            <option value="bantuan">Bantuan Fisik (Pindahan kos, Angkat barang, Bersih-bersih)</option>
+            <option value="pendampingan">Pendampingan (Diskusi tugas, Beli barang elektronik)</option>
+            <option value="explore">Explore (Wisata, Kuliner murah, Hidden gem)</option>
+          </select>
+        </p>
+
+        <p>
+          <label for="post-description">Deskripsi Lengkap Kebutuhan / Keahlian:</label>
+          <textarea
+            id="post-description"
+            name="description"
+            rows="5"
+            cols="50"
+            required
+            placeholder="Jelaskan kebutuhan secara spesifik, barang yang dibawa, titik temu, atau keahlian yang kamu tawarkan..."
+          ></textarea>
+        </p>
+      </fieldset>
+
+      <!-- Waktu & Wilayah Lokasi -->
+      <fieldset>
+        <legend>3. Waktu &amp; Lokasi Pelaksanaan</legend>
+        <p>
+          <label for="post-date">Tanggal Rencana:</label>
+          <input type="date" id="post-date" name="activity_date" required>
+        </p>
+        <p>
+          <label for="post-time">Waktu / Jam Mulai:</label>
+          <input type="time" id="post-time" name="activity_time" required>
+        </p>
+        <p>
+          <label for="post-region">Wilayah Kabupaten/Kota:</label>
+          <select id="post-region" name="region" required>
+            <option value="">-- Pilih Wilayah --</option>
+            <option value="sleman">Kabupaten Sleman</option>
+            <option value="kota">Kota Yogyakarta</option>
+            <option value="bantul">Kabupaten Bantul</option>
+            <option value="kulonprogo">Kabupaten Kulon Progo</option>
+            <option value="gunungkidul">Kabupaten Gunungkidul</option>
+          </select>
+        </p>
+        <p>
+          <label for="post-address">Titik Lokasi / Tempat Bertemu:</label>
+          <input
+            type="text"
+            id="post-address"
+            name="address"
+            required
+            placeholder="Contoh: Cosan Palagan / Pogung Baru Blok D"
+          >
+        </p>
+      </fieldset>
+
+      <!-- Model Kompensasi Fleksibel -->
+      <fieldset>
+        <legend>4. Sistem Kompensasi / Imbalan</legend>
+        <p>
+          <input type="radio" id="comp-fixed" name="compensation_type" value="tarif" checked>
+          <label for="comp-fixed">Tarif Pasti (Nominal Uang)</label>
+        </p>
+        <p>
+          <label for="comp-amount">Nominal Tarif (Rp):</label>
+          <input type="number" id="comp-amount" name="amount" min="0" step="5000" placeholder="50000">
+        </p>
+        <p>
+          <input type="radio" id="comp-nego" name="compensation_type" value="nego">
+          <label for="comp-nego">Nego di Chat (Saling berdiskusi)</label>
+        </p>
+        <p>
+          <input type="radio" id="comp-split" name="compensation_type" value="patungan">
+          <label for="comp-split">Patungan Transport / Tiket (Split-Bill)</label>
+        </p>
+        <p>
+          <input type="radio" id="comp-treat" name="compensation_type" value="traktir">
+          <label for="comp-treat">Traktir Makan / Minum Ngopi</label>
+        </p>
+        <p>
+          <input type="radio" id="comp-free" name="compensation_type" value="sukarela">
+          <label for="comp-free">Sukarela / Gratis</label>
+        </p>
+      </fieldset>
+
+      <!-- Konfirmasi dan Tindakan -->
+      <fieldset>
+        <legend>5. Persetujuan Komunitas</legend>
+        <p>
+          <input type="checkbox" id="terms-agree" name="terms" required>
+          <label for="terms-agree">Saya menyetujui pedoman keamanan dan kesopanan komunitas NeedHelp</label>
+        </p>
+        <p>
+          <button type="submit">Terbitkan Postingan Sekarang</button>
+          <a href="katalog.html">Batal</a>
+        </p>
+      </fieldset>
+    </form>
+  </main>
+
+  <!-- Kaki Halaman (Footer) -->
+  <footer>
+    <p>&copy; 2026 NeedHelp - Need-Based Companion &amp; Help.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,26 @@
+:root {
+  --color-bg-default: #f6fbfb;
+  --color-bg-subtle: #e3fdfd;
+  --color-bg-surface: #fff;
+  --color-action-primary: #4a9ba0;
+  --color-text-primary: #0f2e33;
+  --color-text-secondary: #284950;
+  --color-text-muted: #5e7a80;
+  --color-text-inverse: #fff;
+  --color-border-default: #cfdadc;
+  /* Token error sementara: anggota 1 wajib memeriksa 02_LoginError/08_FormError. */
+  --color-error: #a52626;
+  --color-error-bg: #fff1f1;
+  --spacing-4: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  --radius-sm: 6px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --font-family: var(--font-inter), "Inter", Arial, sans-serif;
+}
