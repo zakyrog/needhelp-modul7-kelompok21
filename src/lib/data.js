@@ -619,3 +619,4 @@ export function markAllNotificationsRead() {
     DEMO_NOTIFICATIONS.map((notification) => notification.id),
   );
 }
+

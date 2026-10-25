@@ -87,8 +87,7 @@ function DetailPostContent() {
             <h3 className="requester-name">{author.name}</h3>
             <p className="requester-info">{author.bio}</p>
           </div>
-          <div className="requester-rating">
-            &star; <span>{author.rating ? author.rating.split(" ")[0] : "4.9"}</span>
+          <div className="requester-rating">⭐<span>{author.rating ? author.rating.split(" ")[0] : "4.9"}</span>
           </div>
         </section>
 
