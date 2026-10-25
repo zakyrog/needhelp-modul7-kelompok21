@@ -31,8 +31,8 @@ export function ProfileMiniCard() {
             });
             setProfile({
               full_name: localSess.name,
-              rating_average: 5.0,
-              rating_count: 1,
+              rating_average: 0.0,
+              rating_count: 0,
             });
           }
         }
@@ -106,11 +106,18 @@ export function ProfileMiniCard() {
           {profile?.bio || "Mahasiswa / Warga Yogyakarta"}
         </p>
 
-        <div className="profile-rating-badge">
-          <span className="rating-star">⭐</span>
-          <span className="rating-score">{ratingAvg}</span>
-          <span className="rating-count">({ratingCount} ulasan)</span>
-        </div>
+        {ratingCount > 0 ? (
+          <div className="profile-rating-badge">
+            <span className="rating-star">⭐</span>
+            <span className="rating-score">{ratingAvg}</span>
+            <span className="rating-count">({ratingCount} ulasan)</span>
+          </div>
+        ) : (
+          <div className="profile-rating-badge rating-badge-new">
+            <span className="rating-star">⭐</span>
+            <span className="rating-score">Anggota Baru</span>
+          </div>
+        )}
 
         <hr className="profile-divider" />
 

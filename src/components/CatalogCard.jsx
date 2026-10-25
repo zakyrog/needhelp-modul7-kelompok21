@@ -34,10 +34,13 @@ export function CatalogCard({ post, backUrl = "/katalog" }) {
   // Author details
   const authorName = post.profiles?.full_name || post.authorName || post.author?.name || "Warga Jogja";
   const authorBio = post.profiles?.bio || post.authorBio || post.author?.bio || "Mahasiswa / Perantau di DIY";
-  const authorRating = post.profiles?.rating_average !== undefined
+  const hasDbProfile = Boolean(post.profiles);
+  const authorRating = hasDbProfile && post.profiles.rating_average !== undefined
     ? Number(post.profiles.rating_average).toFixed(1)
-    : (post.author?.rating ? post.author.rating.split("/")[0].trim() : "5.0");
-  const authorRatingCount = post.profiles?.rating_count !== undefined ? post.profiles.rating_count : 3;
+    : (post.author?.rating ? post.author.rating.split("/")[0].trim() : "0.0");
+  const authorRatingCount = hasDbProfile
+    ? (post.profiles.rating_count || 0)
+    : (post.author?.rating ? 8 : 0);
   const authorInitial = authorName.charAt(0).toUpperCase();
 
   const isNeed = nature === "butuh";
@@ -74,9 +77,15 @@ export function CatalogCard({ post, backUrl = "/katalog" }) {
             <span className="author-bio-snippet">{authorBio}</span>
           </div>
           <div className="author-rating-row">
-            <span className="rating-badge">
-              ⭐ {authorRating} <span className="text-muted">({authorRatingCount} ulasan)</span>
-            </span>
+            {authorRatingCount > 0 ? (
+              <span className="rating-badge">
+                ⭐ {authorRating} <span className="text-muted">({authorRatingCount} ulasan)</span>
+              </span>
+            ) : (
+              <span className="rating-badge rating-badge-new">
+                ⭐ Anggota Baru
+              </span>
+            )}
             <span className="post-region-badge">
               📍 {REGION_LABELS[region] || region}
             </span>

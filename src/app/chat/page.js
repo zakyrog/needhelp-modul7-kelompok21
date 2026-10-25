@@ -462,7 +462,7 @@ function ChatContent() {
             <div className="partner-meta">
               <h2>{isSupabaseMode ? (partnerUser?.full_name || "Mitra Bantuan") : getPerson(localActiveUserId).name}</h2>
               <p>
-                <span className="green-status-dot" /> Online • Terverifikasi Komunitas
+                <span>💬 Obrolan Langsung • Anggota NeedHelp Jogja</span>
               </p>
             </div>
           </div>

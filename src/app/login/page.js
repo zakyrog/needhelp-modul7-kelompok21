@@ -206,16 +206,16 @@ function LoginForm() {
 
           <div className="banner-stats">
             <div className="stat-item">
-              <h3>2.1k+</h3>
-              <p>Permintaan dibantu</p>
+              <h3>5 Kab/Kota</h3>
+              <p>Cakupan wilayah DIY</p>
             </div>
             <div className="stat-item">
-              <h3>850+</h3>
-              <p>Relawan aktif</p>
+              <h3>2 Arah</h3>
+              <p>Saya Butuh & Saya Bisa</p>
             </div>
             <div className="stat-item">
-              <h3>4.8★</h3>
-              <p>Rating komunitas</p>
+              <h3>🤝 Bersama</h3>
+              <p>Kesepakatan transparan</p>
             </div>
           </div>
         </div>
@@ -277,6 +277,24 @@ function LoginForm() {
               ? "Masuk untuk mulai meminta atau menawarkan bantuan."
               : "Buat akun untuk saling tolong-menolong bersama warga & mahasiswa Jogja."}
           </p>
+
+          {nextParam && nextParam !== "/" && (
+            <div
+              className="login-redirect-notice"
+              role="alert"
+              style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                padding: "10px 14px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                color: "#166534",
+                marginTop: "12px",
+              }}
+            >
+              🔒 Silakan masuk atau daftar akun terlebih dahulu untuk melanjutkan ke halaman yang Anda tuju.
+            </div>
+          )}
         </header>
 
         {!supabaseReady && (

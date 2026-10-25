@@ -45,8 +45,8 @@ export default function ProfilPage() {
             setProfile({
               full_name: localSess.name,
               bio: "Mahasiswa / Warga Yogyakarta",
-              rating_average: 5.0,
-              rating_count: 1,
+              rating_average: 0.0,
+              rating_count: 0,
             });
             setFullName(localSess.name || "");
             setBio("Mahasiswa / Warga Yogyakarta");
@@ -166,9 +166,15 @@ export default function ProfilPage() {
               {profile?.bio || "Mahasiswa / Warga Yogyakarta"}
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
-              <span className="profile-rating-badge">
-                ⭐ <strong>{ratingAvg}</strong> ({ratingCount} ulasan tuntas)
-              </span>
+              {ratingCount > 0 ? (
+                <span className="profile-rating-badge">
+                  ⭐ <strong>{ratingAvg}</strong> ({ratingCount} ulasan tuntas)
+                </span>
+              ) : (
+                <span className="profile-rating-badge rating-badge-new">
+                  ⭐ <strong>Anggota Baru</strong> (Belum ada ulasan)
+                </span>
+              )}
               <span style={{ color: "var(--color-text-light)" }}>•</span>
               <span style={{ color: "var(--color-text-muted)", fontSize: "12px" }}>
                 UID: {user.id ? `${user.id.slice(0, 8)}...` : "Demo"}

@@ -155,10 +155,13 @@ function DetailPostContent() {
   // Author info
   const authorName = post.profiles?.full_name || post.authorName || "Warga Jogja";
   const authorBio = post.profiles?.bio || post.authorBio || "Mahasiswa / Warga Yogyakarta";
-  const authorRating = post.profiles?.rating_average !== undefined
+  const hasDbProfile = Boolean(post.profiles);
+  const authorRating = hasDbProfile && post.profiles.rating_average !== undefined
     ? Number(post.profiles.rating_average).toFixed(1)
-    : "5.0";
-  const authorRatingCount = post.profiles?.rating_count !== undefined ? post.profiles.rating_count : 5;
+    : (post.author?.rating ? post.author.rating.split("/")[0].trim() : "0.0");
+  const authorRatingCount = hasDbProfile
+    ? (post.profiles.rating_count || 0)
+    : (post.author?.rating ? 8 : 0);
   const authorId = post.author_id || post.authorId || "";
 
   const timeFormatted = endTime ? `${time.slice(0, 5)} - ${endTime.slice(0, 5)} WIB` : `${time.slice(0, 5)} WIB`;
@@ -223,7 +226,11 @@ function DetailPostContent() {
           <div className="author-meta">
             <div className="author-name-row">
               <span className="author-name" style={{ fontSize: "15px" }}>{authorName}</span>
-              <span className="rating-badge">⭐ {authorRating} ({authorRatingCount} ulasan)</span>
+              {authorRatingCount > 0 ? (
+                <span className="rating-badge">⭐ {authorRating} ({authorRatingCount} ulasan)</span>
+              ) : (
+                <span className="rating-badge rating-badge-new">⭐ Anggota Baru</span>
+              )}
             </div>
             <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--color-text-muted)" }}>
               {authorBio}
