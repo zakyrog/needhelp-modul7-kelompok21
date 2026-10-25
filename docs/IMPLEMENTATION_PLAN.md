@@ -1,7 +1,7 @@
 # Implementation Plan (IMPLEMENTATION_PLAN) — NeedHelp Jogja
-**Status:** Tahap 1 - 7 Diimplementasikan & Diverifikasi Lokal (Pengujian Akun Live Ditunda Sampai Besok)  
-**Versi:** 2.1.0  
-**Tanggal:** 26 Oktober 2026  
+**Status:** Tahap 1 - 7 Diimplementasikan, UI Disempurnakan & Diverifikasi Visual (14 Screenshots & Dev Preview Aktif)  
+**Versi:** 2.2.0  
+**Tanggal:** 26 Oktober 2026, 05:36 WIB  
 **Pendekatan:** Satu Alur Utuh per Tahap (*End-to-End Vertical Slicing*), Uji Nyata, Tanpa Mock Data Palsu  
 
 ---
@@ -10,13 +10,13 @@
 
 | Tahap | Deskripsi | Status Implementasi | Status Verifikasi |
 |---|---|---|---|
-| **Tahap 1** | Fondasi Supabase, Skema SQL, RLS, & Auth | ✅ Selesai (`schema.sql`, `@supabase/ssr`, cookie middleware) | ⏳ DITUNDA: Pengujian 23 skenario otomatis multi-user (`scripts/test-suite.mjs`) ditunda besok atas instruksi user. |
+| **Tahap 1** | Fondasi Supabase, Skema SQL, RLS, & Auth | ✅ Selesai (`schema.sql`, `@supabase/ssr`, cookie middleware) | ⏳ DITUNDA: Pengujian 23 skenario otomatis multi-user (`scripts/test-suite.mjs`) menunggu kredensial nyata di `.test-credentials.local.json`. |
 | **Tahap 2** | Shell 3-Kolom LinkedIn-Style & Responsif | ✅ Selesai (Layout 240-640-280, Mini Card, Community Tips, Docked Chat, Bottom Nav) | ✅ LULUS: Verifikasi visual Chrome Headless (1440px, 1024px, 390px). |
-| **Tahap 3** | Penjelajahan Publik, 5 Wilayah DIY, & Detail | ✅ Selesai (URL params 2 arah, filter 5 kab/kota DIY, 6 imbalan, empty state per wilayah) | ✅ LULUS: Akses publik lancar, query filter responsif. |
-| **Tahap 4** | Penerbitan Postingan (Saya Butuh & Saya Bisa) | ✅ Selesai (Dua pintu setara, validasi kuota, 6 imbalan, middleware protection) | ✅ LULUS: Redirect login untuk tamu, form validasi ketat, insert Supabase + fallback. |
-| **Tahap 5** | Chat Riil & Kartu Kesepakatan (*Deal Card*) | ✅ Selesai (Komponen `DealCard.jsx`, konsensus ganda, atomic RPC, revisi, pembatalan) | ✅ LULUS: Build & UI render sukses. |
-| **Tahap 6** | Siklus Kegiatan (Aktivitas) & Rating | ✅ Selesai (Tab status, dual-confirmation RPC `confirm_activity_completion`, form review 1-5 bintang) | ✅ LULUS: Proteksi middleware aktif, build sukses. |
-| **Tahap 7** | Audit Kualitas, Build, & Screenshots | ✅ Selesai (ESLint 0 error 0 warning, Next.js build 19/19 pages sukses 5.9s, 11 screenshots) | ✅ LULUS: 11 file PNG tersimpan di `docs/screenshots/`. |
+| **Tahap 3** | Penjelajahan Publik, 5 Wilayah DIY, & Detail | ✅ Selesai (URL params 2 arah, filter 5 kab/kota DIY, 6 imbalan, 4 kategori utama, empty state) | ✅ LULUS: Akses publik lancar, tata letak kolom penuh dinetralkan dari CSS warisan. |
+| **Tahap 4** | Penerbitan Postingan (Saya Butuh & Saya Bisa) | ✅ Selesai (Dua pintu setara, validasi kuota, 6 imbalan, middleware protection, mode preview berlabel) | ✅ LULUS: Terbukti redirect login untuk tamu, dan form terverifikasi via `/dev-preview?enable=1&view=buat-postingan`. |
+| **Tahap 5** | Chat Riil & Kartu Kesepakatan (*Deal Card*) | ✅ Selesai (Komponen `DealCard.jsx`, konsensus ganda, RPC `agree_to_deal`, revisi, pembatalan) | ✅ LULUS: Build & UI render sukses, tanpa badge/green-dot palsu. |
+| **Tahap 6** | Siklus Kegiatan (Aktivitas) & Rating | ✅ Selesai (Tab status, dual-confirmation RPC `confirm_activity_completion`, form review 1-5 bintang) | ✅ LULUS: Proteksi middleware aktif, UI terverifikasi via `/dev-preview?enable=1&view=aktivitas` & `&view=rating`. |
+| **Tahap 7** | Audit Kualitas, Build, & Screenshots | ✅ Selesai (ESLint 0 error 0 warning, Next.js build 20/20 pages sukses 6.4s, 14 screenshots) | ✅ LULUS: 14 file PNG tersimpan di `docs/screenshots/`. |
 
 ---
 

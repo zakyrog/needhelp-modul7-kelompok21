@@ -1,231 +1,141 @@
 # Dokumen Serah Terima (HANDOFF) — NeedHelp Jogja
 **Proyek:** NeedHelp Jogja (Kelompok 21 / Modul 8 Upgrade)  
 **Cabang Git:** `feat/phase-2-ui-features`  
-**Tanggal:** 26 Oktober 2026  
-**Status:** Tahap 1 - 7 Diimplementasikan & Diverifikasi Lokal; Pengujian Multi-Akun Live Supabase Siap Dijalankan Besok  
+**Waktu Pembaruan:** 26 Oktober 2026, 05:36 WIB  
+**Status Sesi Mandiri:** Selesai & Terverifikasi (UI/UX Desktop, Penyelarasan RPC, Penghapusan Badge/Rating Palsu, Pratinjau Lokal Berlabel, & 14 Tangkapan Layar)
 
 ---
 
-## 1. Halaman dan Fitur yang Selesai
+## 1. Perubahan yang Benar-Benar Selesai
 
-Seluruh arsitektur visual dan fungsional NeedHelp Jogja telah berhasil dibangun sesuai spesifikasi [`docs/PRD.md`](file:///C:/needhelp-modul7-kelompok21-main/docs/PRD.md), [`docs/BUSINESS_RULES.md`](file:///C:/needhelp-modul7-kelompok21-main/docs/BUSINESS_RULES.md), [`docs/TECH_SPEC.md`](file:///C:/needhelp-modul7-kelompok21-main/docs/TECH_SPEC.md), dan arahan desain [`docs/DESIGN_DIRECTION.md`](file:///C:/needhelp-modul7-kelompok21-main/docs/DESIGN_DIRECTION.md):
+Pada sesi mandiri ini, dilakukan serangkaian perbaikan konkret dan terukur berdasarkan dokumen spesifikasi dan Taste Skill:
 
-### A. Tata Letak Fondasi & Kerangka Desktop 3-Kolom (LinkedIn-Style)
-* **Tata Letak 3-Kolom ([`ThreeColumnLayout.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/ThreeColumnLayout.jsx)):**
-  * **Kolom Kiri (240px):** Menampilkan [`ProfileMiniCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/ProfileMiniCard.jsx) dengan status profil pengguna (atau kartu ajakan login bagi tamu), statistik reputasi bintang, dan tautan pintas navigasi aktivitas.
-  * **Kolom Tengah (640px):** Area konten utama dinamis untuk feed postingan, formulir pencarian/filter, rincian bantuan, chat, dan formulir rating.
-  * **Kolom Kanan (280px):** Menampilkan [`CommunityTipsWidget.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/CommunityTipsWidget.jsx) berisi tips keamanan interaksi di Jogja, tombol pintas 5 wilayah DIY, dan catatan hak cipta komunitas.
-* **Header Sticky 64px ([`Header.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/Header.jsx)):**
-  * Logo NeedHelp Jogja dengan warna Jogja toska (`#4a9ba0`) dan slate gelap (`#0f2e33`).
-  * Kolom pencarian global cepat terintegrasi langsung dengan katalog.
-  * Ikon menu navigasi: Beranda, Katalog, Buat Postingan, Aktivitas, Obrolan, dan Profil.
-* **Docked Chat Drawer ([`DockedChatDrawer.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/DockedChatDrawer.jsx)):**
-  * Laci obrolan mengambang (*docked*) di pojok kanan bawah desktop ala LinkedIn, dapat dibuka/tutup tanpa meninggalkan halaman saat ini.
-* **Navigasi Seluler Bawah ([`BottomNav.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/BottomNav.jsx)):**
-  * Bilah navigasi tetap (*fixed bottom bar*) pada layar ponsel (`< 768px`) dengan tombol utama Beranda, Jelajah, Buat Postingan, Aktivitas, dan Chat.
+### A. Penyelarasan RPC & Skema Database Supabase
+* **Penyelarasan Nama RPC Kesepakatan:** Memastikan pemanggilan RPC di kode antarmuka [`src/app/chat/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/chat/page.js) dan skrip pengujian [`scripts/test-suite.mjs`](file:///C:/needhelp-modul7-kelompok21-main/scripts/test-suite.mjs) menggunakan nama prosedur SQL yang sah dari [`supabase/schema.sql`](file:///C:/needhelp-modul7-kelompok21-main/supabase/schema.sql):
+  * Prosedur: `public.agree_to_deal(p_deal_id UUID, p_target_version INTEGER)`.
+  * Dokumentasi dan kode diselaraskan dari penyebutan lama `agree_deal_atomic` menjadi `agree_to_deal`.
+  * Parameter revisi: `revise_deal(p_deal_id, p_target_version, p_scheduled_date, p_scheduled_time, p_meetup_location, p_compensation_type, p_compensation_value)`.
+  * Parameter pembatalan: `cancel_deal(p_deal_id, p_cancellation_reason)`.
+  * Parameter penyelesaian: `confirm_activity_completion(p_activity_id)`.
 
----
+### B. Penghapusan Seluruh Indikator Palsu, Rating Palsu, dan Badge Tanpa Otorisasi
+* **Penghapusan Rating Fiktif (`5.0` Default & Ulasan Palsu):**
+  * Pada [`CatalogCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/CatalogCard.jsx), [`detail-postingan/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/detail-postingan/page.js), [`ProfileMiniCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/ProfileMiniCard.jsx), dan [`profil/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/profil/page.js):
+    * Menghilangkan fallback fiktif yang memberikan nilai `5.0` dan 3–5 ulasan pada akun tanpa reputasi.
+    * Akun dengan `rating_count === 0` kini secara jujur dan transparan menampilkan badge: **`⭐ Anggota Baru`** atau **`Belum ada ulasan`**.
+* **Penghapusan Statistik Fiktif di Halaman Login ([`src/app/login/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/login/page.js)):**
+  * Menghilangkan angka klaim palsu (`2.1k+ Permintaan`, `850+ Relawan`, `4.8★ Rating`).
+  * Menggantinya dengan kartu informasi fitur riil: **5 Kab/Kota DIY**, **2 Arah (Saya Butuh & Saya Bisa)**, dan **Kesepakatan Bersama**.
+  * Menambahkan banner pemberitahuan redirect kontekstual (`🔒 Silakan masuk atau daftar akun terlebih dahulu untuk melanjutkan ke halaman yang Anda tuju`).
+* **Penghapusan Indikator Palsu di Chat ([`src/app/chat/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/chat/page.js)):**
+  * Menghilangkan green pulsing dot dan label palsu `Online • Terverifikasi Komunitas`.
+  * Menggantinya dengan status kontekstual yang sah: `💬 Obrolan Langsung • Anggota NeedHelp Jogja`.
 
-### B. Beranda & Feed Komunitas ([`src/app/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/page.js))
-* **Hero Banner Sambutan Jogja:** Banner bergradien toska-slate dengan indikator komunitas aktif dan pill filter cepat kategori populer (*Bantuan Fisik*, *Belajar & Les*, *Ditemani Ngopi*, *Explore Jogja*).
-* **Quick Post Box ([`QuickPostBox.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/QuickPostBox.jsx)):** Input cepat di bagian atas feed dengan dua tombol aksi setara: `+ Saya Butuh` (merah bata lembut) dan `+ Saya Bisa` (hijau sage lembut).
-* **Tab Filter Feed:** Pilihan cepat tab *🌐 Semua Postingan*, *🆘 Saya Butuh*, dan *✨ Saya Bisa* dengan penghitung jumlah postingan aktif secara real-time.
-* **Feed Stream:** Menampilkan kartu postingan menggunakan [`CatalogCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/CatalogCard.jsx) yang memuat avatar pembuat, nama, rating, badge wilayah DIY, deskripsi, kuota, tanggal kegiatan, dan tombol aksi.
+### C. Restrukturisasi Feed Beranda & Katalog Mengacu Pola LinkedIn
+* **Penyederhanaan Hero Banner Beranda ([`src/app/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/page.js)):**
+  * Mengganti banner gradien raksasa (220px+) dengan kartu konteks ringkas (tinggi ~70px) yang langsung menyoroti **4 Kategori Aktivitas Utama**:
+    1. 📦 **Bantuan Fisik**
+    2. ☕ **Ditemani**
+    3. 📚 **Pendampingan**
+    4. 🛵 **Explore**
+  * Kotak `QuickPostBox` langsung terlihat di layar utama (*above-the-fold*) tanpa terdorong ke bawah.
+* **Perbaikan Tampilan Panel Filter Katalog ([`src/app/katalog/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/katalog/page.js)):**
+  * Memberikan label penjelas tegas **`Kategori Utama:`** pada baris 4 kategori sah untuk membedakannya dari filter dropdown Wilayah DIY dan Imbalan.
+  * Menetralisir aturan CSS warisan Modul 7 (`body.catalog-page main { display: grid !important; ... }`) pada [`src/styles/base.css`](file:///C:/needhelp-modul7-kelompok21-main/src/styles/base.css) yang sebelumnya menyebabkan kolom tengah terbelah menjadi dua kolom sempit.
+  * Menegakkan tata letak kartu penuh 100% pada `.layout-col-center` di [`src/styles/three-column.css`](file:///C:/needhelp-modul7-kelompok21-main/src/styles/three-column.css).
 
----
-
-### C. Penjelajahan Publik & Filter 5 Wilayah DIY ([`src/app/katalog/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/katalog/page.js))
-* **Sinkronisasi Dua Arah URL `searchParams`:** Setiap perubahan filter langsung tersinkronisasi ke URL (`q`, `type`, `region`, `compensation`, `category`, `sort`, `page`), sehingga tautan dapat dibagikan atau di-bookmark.
-* **Filter Wilayah 5 Kab/Kota DIY:** Sleman, Kota Yogyakarta, Bantul, Kulon Progo, dan Gunungkidul.
-* **Filter 6 Opsi Imbalan Resmi:** Tarif Pasti, Nego di Chat, Patungan Biaya, Bayar Sendiri-sendiri, Traktir Makan/Minum, dan Sukarela (Tanpa Imbalan).
-* **Filter Kategori Cepat:** Chip tombol kategori yang dapat dipilih ganda (multi-select).
-* **Kondisi Kosong Wilayah (*Empty State*):** Jika suatu wilayah belum memiliki postingan, ditampilkan kartu informatif yang ramah dengan opsi reset filter atau ajakan membuat postingan pertama.
-* **Paginasi & Pengurutan:** Paginasi halaman terintegrasi dan pengurutan berdasarkan *Terbaru Diunggah* atau *Jadwal Terdekat*.
-
----
-
-### D. Detail Postingan ([`src/app/detail-postingan/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/detail-postingan/page.js))
-* Tata letak 3-kolom yang konsisten.
-* Informasi kuota sisa yang jelas dengan badge status (*Tersedia* vs *Kuota Penuh*).
-* Profil pembuat postingan lengkap dengan bintang reputasi dan jumlah ulasan terverifikasi.
-* Tombol aksi "Kirim Pesan / Bicarakan Bantuan" yang langsung membuka percakapan ke pengguna tersebut.
-* Tombol "Bagikan Postingan" untuk menyalin tautan langsung.
-
----
-
-### E. Formulir Penerbitan Postingan ([`src/app/buat-postingan/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/buat-postingan/page.js))
-* **Dua Pintu Setara:** Pemilih jenis postingan *Saya Butuh* vs *Saya Bisa* dengan penjelasan tujuan yang jelas.
-* **Validasi Ketat:**
-  * Judul minimal 6 karakter.
-  * Deskripsi minimal 20 karakter.
-  * Tanggal kegiatan tidak boleh di masa lampau.
-  * Kuota penerima minimal 1 orang (untuk Saya Butuh).
-  * 6 pilihan imbalan resmi (termasuk Bayar Sendiri-sendiri).
-* **Proteksi Akses Server:** Rute diproteksi oleh [`src/middleware.js`](file:///C:/needhelp-modul7-kelompok21-main/src/middleware.js); tamu tanpa login dialihkan ke `/login?next=/buat-postingan`.
-* **Penyimpanan:** Insert langsung ke tabel Supabase `posts` dengan fallback lokal yang aman.
+### D. Mode Pratinjau UI Privat Terisolasi & Berlabel ([`src/app/dev-preview/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/dev-preview/page.js))
+* Membangun rute pengujian visual khusus `/dev-preview` yang memenuhi 4 syarat ketat dari pengguna:
+  1. **Terpisah:** Rute mandiri di luar rute utama aplikasi.
+  2. **Nonaktif secara default:** Hanya dapat diakses dengan parameter otorisasi eksplisit `?enable=1`.
+  3. **Berlabel tegas:** Menampilkan banner kuning di atas halaman bertuliskan `⚠️ PRATINJAU UI LOKAL BERLABEL: Seluruh mutasi hanya berjalan di memori peramban tanpa koneksi tulis ke Supabase`.
+  4. **Tanpa mutasi database:** Formulir divalidasi dengan logika `validatePost` asli, namun aksi submit hanya memicu feedback lokal tanpa mengirim mutasi ke Supabase.
+* Menyediakan pratinjau visual lengkap untuk 3 halaman privat:
+  * Form Buat Postingan (`?view=buat-postingan`) dengan dua pintu setara (Saya Butuh vs Saya Bisa), 4 kategori, 5 wilayah DIY, dan 6 opsi imbalan.
+  * Dashboard Aktivitas (`?view=aktivitas`) dengan tab status, detail titik temu, dan simulasi konfirmasi selesai dua pihak.
+  * Formulir Rating (`?view=rating`) dengan selektor 1-5 bintang interaktif dan validasi ulasan 10-500 karakter.
 
 ---
 
-### F. Percakapan & Kartu Kesepakatan di Chat ([`src/app/chat/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/chat/page.js))
-* **Daftar Thread Percakapan:** Menampilkan daftar obrolan aktif dengan mitra bantuan.
-* **Streaming Pesan & Supabase Realtime:** Aliran pesan teks dengan langganan saluran `supabase.channel` untuk pembaruan instan antarpengguna tanpa perlu reload.
-* **Kartu Kesepakatan di Chat ([`DealCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/DealCard.jsx)):**
-  * Memuat parameter lengkap: judul bantuan, peserta, waktu pelaksanaan, titik temu, jenis imbalan, dan nominal.
-  * Pelacakan persetujuan ganda (*mutual consensus*): Menampilkan status persetujuan masing-masing pihak secara transparan.
-  * **Aksi Persetujuan Atomik:** Memanggil RPC Supabase `agree_deal_atomic` yang mengunci status menjadi `disepakati` hanya setelah kedua pihak setuju pada nomor versi yang sama.
-  * **Modal Ajukan Revisi:** Perubahan isi memicu kenaikan nomor versi (`version + 1`) dan membatalkan persetujuan versi lama.
-  * **Modal Batalkan Kesepakatan:** Membatalkan deal dengan alasan terstruktur.
+## 2. Halaman yang Sudah Diperiksa Secara Visual
 
----
+Semua halaman telah diperiksa secara visual melalui tangkapan layar Chrome Headless beresolusi tinggi (disimpan di folder [`docs/screenshots/`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/)):
 
-### G. Aktivitas & Siklus Selesai ([`src/app/aktivitas/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/aktivitas/page.js))
-* **Tab Status Kegiatan:** Memisahkan kegiatan berdasarkan status: *Semua*, *Berjalan / Terjadwal*, *Selesai*, dan *Dibatalkan*.
-* **Konfirmasi Ganda Penyelesaian:**
-  * Tombol "Konfirmasi Selesai" memanggil RPC Supabase `confirm_activity_completion`.
-  * Status kegiatan hanya berganti menjadi `selesai` jika kedua belah pihak telah memberikan konfirmasi masing-masing.
-* **Tautan Penilaian:** Ketika kegiatan telah berstatus `selesai`, muncul tombol langsung untuk memberi ulasan ke mitra bantuan.
-
----
-
-### H. Ulasan & Rating Reputasi ([`src/app/rating/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/rating/page.js))
-* Validasi kegiatan: Hanya kegiatan berstatus `selesai` yang dapat dinilai.
-* Pemilih bintang interaktif (1 sampai 5 bintang).
-* Kolom ulasan tekstual (10 sampai 500 karakter).
-* Perlindungan anti self-rating dan perlindungan ulasan ganda (satu ulasan per pihak per kegiatan, dijamin oleh constraint unik database).
-* Trigger database Supabase `update_profile_rating` secara otomatis memperbarui nilai `rating_average` dan `rating_count` pada profil pengguna tanpa manipulasi manual.
-
----
-
-### I. Autentikasi & Profil Pengguna ([`src/app/login/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/login/page.js), [`src/app/profil/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/profil/page.js))
-* Pendaftaran akun baru dan login berbasis email/password dengan Supabase Auth.
-* Penanganan redirect tujuan (`?next=...`) setelah login berhasil.
-* Halaman profil menampilkan statistik reputasi, badge anggota terverifikasi, formulir ubah nama dan bio, serta riwayat postingan yang dibuat pengguna.
-
----
-
-## 2. Integrasi yang Terhubung dan Status Fallback
-
-| Komponen Integrasi | Status Keterhubungan | Catatan Teknis & Mode Fallback |
+| Halaman & Viewport | Berkas Tangkapan Layar | Hasil Pemeriksaan Visual |
 |---|---|---|
-| **Database Supabase (`podbybeihwbawmamfkua`)** | ✅ **Terhubung & Skema Aktif** | Seluruh 7 tabel (`profiles`, `posts`, `chat_threads`, `chat_messages`, `deals`, `activities`, `reviews`) telah dibuat dan RLS aktif. |
-| **Aturan Keamanan (RLS & RPC)** | ✅ **Terhubung** | RPC `agree_deal_atomic`, `confirm_activity_completion`, dan `increment_deal_version` telah terpasang dengan `SECURITY DEFINER` dan pembatasan otorisasi. |
-| **Supabase SSR Sesi Cookie** | ✅ **Terhubung** | Menggunakan `@supabase/ssr` melalui [`src/lib/supabase/server.js`](file:///C:/needhelp-modul7-kelompok21-main/src/lib/supabase/server.js), [`src/lib/supabase/client.js`](file:///C:/needhelp-modul7-kelompok21-main/src/lib/supabase/client.js), dan [`src/middleware.js`](file:///C:/needhelp-modul7-kelompok21-main/src/middleware.js). |
-| **Proteksi Server Route** | ✅ **Aktif** | Middleware menolak akses unauthenticated pada `/buat-postingan`, `/aktivitas`, `/rating` dan mengarahkan ke `/login`. |
-| **Supabase Realtime Channel** | ✅ **Terhubung di Chat** | Langganan `postgres_changes` aktif pada tabel `chat_messages` dan `deals`. |
-| **Data Feed & Katalog Publik** | ✅ **Terhubung + Fallback Graceful** | Membaca data riil dari Supabase; jika koneksi gagal atau data remote masih kosong, sistem secara transparan menyajikan data contoh wilayah DIY agar antarmuka tetap dapat didemonstrasikan. |
-| **Akun Uji Pengguna Riil** | ⏳ **Menunggu Kredensial Pengujian** | Pengujian 23 skenario otomatis ditunda sampai besok sesuai arahan pengguna. File konfigurasi `.test-credentials.local.json` telah disiapkan dan diabaikan oleh Git. |
+| **Beranda Desktop (1440px)** | [`docs/screenshots/01-desktop-1440-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/01-desktop-1440-beranda.png) | 3-kolom simetris, intro 4 kategori ringkas, QuickPostBox setara, feed cards dengan badge jujur `⭐ Anggota Baru`. |
+| **Katalog Desktop (1440px)** | [`docs/screenshots/02-desktop-1440-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/02-desktop-1440-katalog.png) | Kolom tengah membentang penuh 100%, QuickPostBox dan panel filter tersusun vertikal rapi, dropdown wilayah & imbalan simetris. |
+| **Chat Desktop (1440px)** | [`docs/screenshots/04-desktop-1440-chat.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/04-desktop-1440-chat.png) | Sidebar thread kontak, bubble chat toska Jogja, banner konteks bantuan, tanpa green dot atau badge palsu. |
+| **Profil Desktop (1440px)** | [`docs/screenshots/06-desktop-1440-profil.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/06-desktop-1440-profil.png) | Empty state terstruktur ramah pengguna saat sesi tamu belum login. |
+| **Proteksi Buat Post (1440px)** | [`docs/screenshots/03-desktop-1440-buat-postingan-unauth.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/03-desktop-1440-buat-postingan-unauth.png) | Terbukti diarahkan oleh middleware ke `/login?next=...` dengan alert hijau penjelas. |
+| **Proteksi Aktivitas (1440px)** | [`docs/screenshots/05-desktop-1440-aktivitas-unauth.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/05-desktop-1440-aktivitas-unauth.png) | Terbukti diarahkan oleh middleware ke `/login?next=...`. |
+| **Pratinjau Form Post (1440px)** | [`docs/screenshots/03-desktop-1440-buat-postingan-preview.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/03-desktop-1440-buat-postingan-preview.png) | Banner pratinjau aktif, dua pintu setara merah/hijau, 4 kategori, 5 wilayah DIY, input tanggal, imbalan, dan kuota. |
+| **Pratinjau Aktivitas (1440px)** | [`docs/screenshots/05-desktop-1440-aktivitas-preview.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/05-desktop-1440-aktivitas-preview.png) | Kartu status Terjadwal/Selesai/Batal, status konfirmasi kamu/mitra, tombol konfirmasi selesai dan beri ulasan. |
+| **Pratinjau Rating (1440px)** | [`docs/screenshots/12-desktop-1440-rating-preview.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/12-desktop-1440-rating-preview.png) | Selektor bintang 1-5 interaktif warna kuning amber, area ulasan dengan indikator karakter minimal 10. |
+| **Tablet Beranda (1024px)** | [`docs/screenshots/07-tablet-1024-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/07-tablet-1024-beranda.png) | Tata letak 2-kolom responsif, kolom kanan tips disembunyikan rapi tanpa horizontal scroll. |
+| **Tablet Katalog (1024px)** | [`docs/screenshots/08-tablet-1024-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/08-tablet-1024-katalog.png) | Kontrol panel katalog adaptif, skeleton loading terpusat satu kolom penuh. |
+| **Mobile Beranda (390px)** | [`docs/screenshots/09-mobile-390-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/09-mobile-390-beranda.png) | Kolom tunggal, grid 2x2 kategori, tombol navigasi bawah tetap (*Mobile Bottom Nav*). |
+| **Mobile Katalog (390px)** | [`docs/screenshots/10-mobile-390-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/10-mobile-390-katalog.png) | Filter bertumpuk ergonomis untuk sentuhan jari ponsel. |
+| **Mobile Form Preview (390px)** | [`docs/screenshots/11-mobile-390-buat-postingan-preview.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/11-mobile-390-buat-postingan-preview.png) | Seluruh input formulir pas dengan lebar 390px tanpa terpotong. |
 
 ---
 
-## 3. Pemeriksaan yang Dijalankan dan Hasilnya
+## 3. Hasil Lint, Build, dan Pengujian yang Dijalankan
 
-### A. Pemeriksaan Lint (`npm run lint`)
-* **Hasil:** **LULUS (0 Error, 0 Warning)**
-* **Waktu:** 26 Oktober 2026, 01:51 WIB
-
-### B. Pemeriksaan Build Produksi (`npm run build`)
-* **Hasil:** **LULUS (19 dari 19 rute terkompilasi sukses dalam 5.9 detik)**
-* Seluruh halaman publik, rute dinamis, dan middleware terkompilasi optimal tanpa issue CSS atau JavaScript.
-
-### C. Pemeriksaan Visual Antarmuka (Chrome Headless Screenshots)
-Tangkapan layar resolusi tinggi telah diambil secara otomatis di tiga format viewport (Desktop 1440px, Tablet 1024px, dan Ponsel 390px) dan tersimpan di folder [`docs/screenshots/`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/):
-
-| Viewport | Halaman | Berkas Tangkapan Layar | Status Tampilan |
-|---|---|---|---|
-| **Desktop 1440x900** | Beranda Feed | [`docs/screenshots/01-desktop-1440-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/01-desktop-1440-beranda.png) | 3-kolom simetris, Hero Banner bergradien, Quick Post Box, Feed Card |
-| **Desktop 1440x900** | Katalog & Filter | [`docs/screenshots/02-desktop-1440-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/02-desktop-1440-katalog.png) | Panel filter terstruktur, dropdown wilayah DIY, chip kategori |
-| **Desktop 1440x900** | Buat Postingan | [`docs/screenshots/03-desktop-1440-buat-postingan.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/03-desktop-1440-buat-postingan.png) | Redirect ke Login via Middleware (proteksi server berfungsi) |
-| **Desktop 1440x900** | Percakapan & Chat | [`docs/screenshots/04-desktop-1440-chat.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/04-desktop-1440-chat.png) | Antarmuka chat, panel thread, integrasi kartu kesepakatan |
-| **Desktop 1440x900** | Aktivitas | [`docs/screenshots/05-desktop-1440-aktivitas.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/05-desktop-1440-aktivitas.png) | Redirect ke Login via Middleware (proteksi server berfungsi) |
-| **Desktop 1440x900** | Profil Pengguna | [`docs/screenshots/06-desktop-1440-profil.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/06-desktop-1440-profil.png) | Kartu reputasi bintang, detail profil pengguna, daftar postingan |
-| **Tablet 1024x768** | Beranda Feed | [`docs/screenshots/07-tablet-1024-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/07-tablet-1024-beranda.png) | Tata letak menyesuaikan responsif, kolom kanan tertata rapi |
-| **Tablet 1024x768** | Katalog | [`docs/screenshots/08-tablet-1024-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/08-tablet-1024-katalog.png) | Kontrol panel filter responsif dan mudah ditekan |
-| **Mobile 390x844** | Beranda Feed | [`docs/screenshots/09-mobile-390-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/09-mobile-390-beranda.png) | Kolom tunggal, Bottom Nav aktif di bagian bawah, bebas scroll horizontal |
-| **Mobile 390x844** | Katalog | [`docs/screenshots/10-mobile-390-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/10-mobile-390-katalog.png) | Filter bertumpuk vertikal yang ergonomis untuk sentuhan jari |
-| **Mobile 390x844** | Buat Postingan | [`docs/screenshots/11-mobile-390-buat-postingan.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/11-mobile-390-buat-postingan.png) | Halaman login redirect tampil presisi dan ramah layar ponsel |
+* **ESLint (`npm run lint`):** **LULUS (0 Error, 0 Warning)** pada seluruh direktori `src`.
+* **Kompilasi Next.js (`npm run build`):** **LULUS (20 dari 20 rute terkompilasi statis + middleware dalam 6.4 detik)**.
+* **Pengujian Tangkapan Layar Otomatis (`scripts/capture-screenshots.mjs`):** **14 berkas tangkapan layar berhasil dibuat** via Chrome Headless v1440, v1024, dan v390.
 
 ---
 
-## 4. Pengujian yang Ditunda
+## 4. Integrasi atau Pengujian yang Belum Terverifikasi
 
-Sesuai arahan pengguna ("*Pengujian yang membutuhkan akun Supabase saya tunda sampai besok*"):
 * **Pengujian Otomatis 23 Skenario Multi-User ([`scripts/test-suite.mjs`](file:///C:/needhelp-modul7-kelompok21-main/scripts/test-suite.mjs)):**
-  * Skenario 1 - 5: Registrasi, login, logout, dan persistensi sesi Akun A & B.
-  * Skenario 6 - 8: RLS Profile (isolasi edit profil lawan, proteksi kolom reputasi).
-  * Skenario 9 - 11: Penerbitan postingan Saya Butuh (Akun A) dan Saya Bisa (Akun B).
-  * Skenario 12 - 16: Pengujian Chat riil dan RLS Pesan (tamu/pihak ketiga tidak bisa menyusup).
-  * Skenario 17 - 20: Persetujuan kesepakatan atomik (`agree_deal_atomic`), penurunan kuota, pembuatan kegiatan.
-  * Skenario 21 - 23: Konfirmasi penyelesaian ganda (`confirm_activity_completion`), ulasan rating, dan pembaruan trigger reputasi.
+  * Skenario 1 - 23 mencakup otorisasi RLS, penolakan anonim, atomic agreement RPC, dan trigger recalculate user rating.
+  * **Status:** Belum dijalankan karena menunggu Anda memasukkan kredensial 2 akun pengujian nyata ke `.test-credentials.local.json`.
 
 ---
 
-## 5. Masalah Tersisa dan Langkah Berikutnya Bagi Pengguna
+## 5. Masalah Tersisa Berdasarkan Prioritas
 
-Tidak ada kendala pemblokir (*blocking issues*) pada kode aplikasi saat ini. Seluruh kode siap diuji dengan akun nyata. Berikut langkah mudah yang dapat Anda lakukan besok:
-
-### Langkah 1: Siapkan 2 Akun Pengujian di Supabase
-Anda dapat mendaftarkan dua email pengujian (misal `tester.a@needhelp.jogja` dan `tester.b@needhelp.jogja`):
-* Opsi A: Lewat antarmuka aplikasi di [http://localhost:3000/login](http://localhost:3000/login) &rarr; klik tab **Daftar Akun Baru**.
-* Opsi B: Lewat Supabase Dashboard &rarr; **Authentication** &rarr; **Users** &rarr; **Add User** (centang *Auto Confirm User* jika tidak ingin repot verifikasi tautan email saat pengujian).
-
-### Langkah 2: Buat Berkas Kredensial Lokal Pengujian
-Salin berkas contoh:
-```bash
-Copy-Item .test-credentials.local.example.json .test-credentials.local.json
-```
-Buka `.test-credentials.local.json` dan isi email serta kata sandi kedua akun tersebut:
-```json
-{
-  "userA": {
-    "email": "akunA@example.com",
-    "password": "passwordAkunA123"
-  },
-  "userB": {
-    "email": "akunB@example.com",
-    "password": "passwordAkunB123"
-  }
-}
-```
-*(Catatan: Berkas `.test-credentials.local.json` sudah diabaikan secara ketat oleh `.gitignore`, sehingga tidak akan pernah terdorong ke repositori Git).*
-
-### Langkah 3: Jalankan Skrip Pengujian Otomatis
-Jalankan perintah berikut di terminal:
-```bash
-node scripts/test-suite.mjs
-```
-Skrip akan menguji seluruh 23 skenario positif dan negatif (termasuk proteksi RLS dan RPC atomik) dan mencetak laporan kelulusan (*Pass/Fail*).
-
-### Langkah 4: Uji Interaktif di Dua Peramban Berbeda
-1. Buka Chrome biasa untuk Akun A dan Chrome Incognito / Firefox untuk Akun B.
-2. Login pada kedua jendela.
-3. Akun A menerbitkan postingan *Saya Butuh*.
-4. Akun B membuka detail postingan dan mengklik *Kirim Pesan*.
-5. Buka `/chat` pada kedua jendela dan amati pesan mengalir secara *realtime*.
-6. Kirim kartu kesepakatan (*Deal Card*) dan klik *Setujui* dari kedua belah pihak untuk melihat status berubah menjadi *Disepakati* dan kuota postingan berkurang secara instan.
+1. **Prioritas Tinggi (Menunggu Kredensial Nyata):**
+   * Verifikasi end-to-end multi-akun Supabase nyata via terminal (`node scripts/test-suite.mjs`).
+2. **Prioritas Menengah (Penyempurnaan Polish Realtime Chat):**
+   * Pengujian pertukaran pesan instan secara live antara Browser Chrome (Akun A) dan Browser Edge/Firefox (Akun B) untuk melihat kartu kesepakatan berubah status dari `diajukan` menjadi `disepakati` secara otomatis tanpa refresh.
+3. **Prioritas Rendah (Backlog):**
+   * Penambahan avatar upload kustom (saat ini menggunakan avatar inisial nama).
 
 ---
 
-## 6. Cara Menjalankan Aplikasi Secara Lokal
+## 6. Riwayat Commit dan Cara Menjalankan
 
-### Menjalankan Server Pengembangan:
-```bash
-npm run dev
-```
-Buka peramban di [http://localhost:3000](http://localhost:3000).
+### Riwayat Commit Sesi Ini:
+1. `18c6f47`: *refactor(ui): align RPC naming, eliminate fake ratings/badges, and truthify login/profile displays*
+2. `3ab6612`: *style(feed): replace oversized banner with compact 4-category intro card and clean catalog labeling*
+3. `da9850d`: *feat(preview): add isolated labeled local dev preview for private forms, activities, and ratings*
+4. `9819613`: *fix(layout): neutralize legacy catalog CSS overrides, enforce center column flex width, and capture full visual verification suite*
 
-### Menjalankan Build Produksi:
-```bash
-npm run build
-npm run start
-```
+### Cara Menjalankan Aplikasi:
+* Menjalankan server lokal: `npm run dev` (buka [http://localhost:3000](http://localhost:3000)).
+* Menjalankan build produksi: `npm run build` dilanjutkan `npm run start`.
+* Membuka mode pratinjau UI lokal berlabel: [http://localhost:3000/dev-preview?enable=1&view=buat-postingan](http://localhost:3000/dev-preview?enable=1&view=buat-postingan).
+* Menjalankan pengambilan tangkapan layar otomatis: `node scripts/capture-screenshots.mjs`.
 
-### Menjalankan Linter:
-```bash
-npm run lint
-```
+---
 
-### Mengambil Ulang Tangkapan Layar:
-```bash
-node scripts/capture-screenshots.mjs
-```
-*(Membutuhkan Google Chrome terpasang di path standar Windows).*
+## 7. Tiga Langkah Paling Penting untuk Anda Setelah Kembali
+
+1. **Buat 2 Akun Pengujian di Supabase:**
+   * Buka browser di [http://localhost:3000/login](http://localhost:3000/login) (tab Daftar Akun Baru) atau langsung lewat Supabase Dashboard > Authentication > Users (klik *Add User*, centang *Auto Confirm User* agar tidak perlu konfirmasi email).
+2. **Isi Berkas `.test-credentials.local.json`:**
+   * Salin dari berkas contoh:
+     ```bash
+     Copy-Item .test-credentials.local.example.json .test-credentials.local.json
+     ```
+   * Masukkan email dan kata sandi kedua akun yang baru dibuat ke `.test-credentials.local.json`.
+3. **Jalankan Skrip Pengujian Otomatis 23 Skenario:**
+   * Jalankan di terminal:
+     ```bash
+     node scripts/test-suite.mjs
+     ```
+   * Seluruh 23 skenario (alur registrasi, pembuatan postingan, penolakan akses tamu, persetujuan atomik `agree_to_deal`, konfirmasi ganda `confirm_activity_completion`, dan pembaruan trigger rating reputasi) akan tereksekusi secara otomatis dengan laporan hasil kelulusan yang transparan.
