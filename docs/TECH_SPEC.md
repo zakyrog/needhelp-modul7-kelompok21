@@ -52,7 +52,6 @@ Menyimpan informasi publik pengguna dan terhubung langsung ke `auth.users` Supab
 ```sql
 CREATE TABLE public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL,
     bio TEXT DEFAULT '',
     avatar_url TEXT DEFAULT '',
@@ -66,10 +65,9 @@ CREATE TABLE public.profiles (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, avatar_url)
+    INSERT INTO public.profiles (id, full_name, avatar_url)
     VALUES (
         new.id,
-        new.email,
         COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
         COALESCE(new.raw_user_meta_data->>'avatar_url', '')
     );

@@ -5,14 +5,14 @@
 -- ====================================================================
 
 -- 1. PROFIL PENGGUNA (Terkoneksi ke auth.users)
--- Tidak menyimpan kata sandi; kata sandi dikelola aman oleh auth.users
+-- PERLINDUNGAN PRIVASI EMAIL: Kolom email sengaja TIDAK disimpan di public.profiles.
+-- Email dikelola secara privat dan terenkripsi di skema auth.users, dan hanya dapat
+-- diakses oleh pemilik akun yang bersangkutan melalui sesi JWT (supabase.auth.getUser()).
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL,
     bio TEXT DEFAULT '',
     avatar_url TEXT DEFAULT '',
-    phone_number TEXT DEFAULT '',
     rating_average NUMERIC(3,2) DEFAULT 0.0,
     rating_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -23,16 +23,14 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, avatar_url)
+    INSERT INTO public.profiles (id, full_name, avatar_url)
     VALUES (
         new.id,
-        new.email,
         COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
         COALESCE(new.raw_user_meta_data->>'avatar_url', '')
     )
     ON CONFLICT (id) DO UPDATE
-    SET email = EXCLUDED.email,
-        full_name = EXCLUDED.full_name;
+    SET full_name = EXCLUDED.full_name;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
