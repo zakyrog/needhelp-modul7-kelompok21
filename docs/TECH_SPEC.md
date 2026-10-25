@@ -15,23 +15,18 @@
 
 ---
 
-## 2. Analisis & Rekomendasi Pilihan Database & Autentikasi
+## 2. Arsitektur Backend: Supabase (PostgreSQL + Supabase Auth + Realtime)
 
-Berikut adalah 3 opsi realistis yang kompatibel dengan Next.js 15 App Router dan lingkungan server hosting saat ini:
+Berdasarkan keputusan pengguna, sistem menggunakan **Supabase** sebagai platform data terpusat, autentikasi, dan pembaruan realtime:
 
-| Kriteria Evaluasi | Opsi 1: Supabase (PostgreSQL Cloud) *(Rekomendasi Utama)* | Opsi 2: SQLite Mandiri di Server VPS (via better-sqlite3 / Drizzle) | Opsi 3: Neon Serverless Postgres + Auth.js |
-|---|---|---|---|
-| **Kesesuaian Fitur NeedHelp** | **Sangat Tinggi:** Menyediakan database relasional, built-in Authentication (email & password), serta listener Realtime (cocok untuk chat & deal card). | **Tinggi untuk Data, Sedang untuk Chat:** Cocok untuk data relasional, tetapi membutuhkan polling HTTP atau server WebSocket terpisah untuk chat realtime. | **Tinggi:** Database Postgres modern, namun autentikasi harus dikonfigurasi mandiri via Auth.js / NextAuth. |
-| **Kebutuhan Akun & Registrasi** | Memerlukan pembuatan 1 akun developer di `supabase.com`. | **Nol:** Tidak memerlukan akun eksternal sama sekali. Database berjalan sebagai berkas lokal di server VPS. | Memerlukan 1 akun di `neon.tech`. |
-| **Biaya & Batasan Layanan (Free Tier)** | **Gratis (Free Tier):**<br>- Kuota basis data 500 MB (lebih dari cukup untuk ribuan postingan & chat).<br>- 50.000 pengguna aktif bulanan (MAU).<br>- Batasan: Proyek gratis mengalami *pause* otomatis jika tidak ada trafik selama 7 hari (dapat diaktifkan kembali sekali klik). | **100% Gratis & Permanen:**<br>- Menggunakan kapasitas disk server VPS yang sudah ada.<br>- Tidak ada batasan pihak ketiga atau masa jeda (*no sleep/pause*). | **Gratis (Free Tier):**<br>- 0.5 GB storage, 100 jam komputasi aktif per bulan. |
-| **Kompleksitas Implementasi** | **Rendah:** Menggunakan `@supabase/supabase-js` dan `@supabase/ssr`. Skema tabel dibuat via SQL editor dashboard Supabase; modul Auth sudah siap pakai. | **Menengah:** Membutuhkan instalasi modul Node native (`better-sqlite3`), pembuatan skema SQL migration, dan penulisan sistem autentikasi password hashing (bcrypt) serta manajemen JWT token mandiri. | **Tinggi:** Menghubungkan library ORM dan mengonfigurasi adapter Auth.js di Next.js 15 (memerlukan setup secret key & session handlers). |
-| **Konsekuensi Teknis** | Menambahkan variabel lingkungan di server/lokal: `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY`. | Berkas database (`needhelp.db`) tersimpan di disk server. Jika repositori di-deploy ulang dengan *overwrite*, berkas db harus berada di luar direktori build agar tidak tertimpa. | Membutuhkan string koneksi `DATABASE_URL` dan `AUTH_SECRET`. |
-
-> **REKOMENDASI TEKNIS:**
-> 1. **Jika pembuatan akun gratis pihak ketiga diizinkan:** **Supabase (Opsi 1)** adalah pilihan paling efektif dan modern untuk Next.js App Router, karena menyelesaikan kebutuhan Multi-User DB, Auth, dan Chat Realtime sekaligus dalam satu SDK resmi.
-> 2. **Jika ingin 100% mandiri tanpa akun pihak ketiga:** **SQLite di VPS (Opsi 2)** adalah pilihan terbersih tanpa ketergantungan luar, dengan chat yang diperbarui melalui query interval/polling ringan.
->
-> *(Status: Menunggu keputusan Anda sebelum library database dipasang).*
+* **Integrasi SDK:** `@supabase/ssr` dan `@supabase/supabase-js`.
+* **Mekanisme Sesi:** Berbasis Cookie yang dikelola secara transparan oleh `@supabase/ssr` pada server client (`cookies()` Next.js) dan browser client (`document.cookie`), dengan sinkronisasi sesi aktif melalui Next.js Middleware.
+* **Variabel Lingkungan:**
+  * `NEXT_PUBLIC_SUPABASE_URL` (URL proyek Supabase)
+  * `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Kunci publik aman untuk akses klien dengan proteksi RLS)
+  * *Catatan Keamanan:* Kunci rahasia `service_role_key` **tidak digunakan di klien** dan tidak disimpan di Git.
+* **Autentikasi:** Ditangani oleh Supabase Auth (`auth.users`). Kata sandi di-hash dan disimpan secara aman di skema internal `auth.users`, **tidak disimpan di tabel `public.profiles`**.
+* **Sinkronisasi Profil:** Menggunakan trigger database PostgreSQL (`after insert on auth.users`) untuk membuat baris profil publik secara otomatis saat pendaftaran berhasil.
 
 ---
 
@@ -51,20 +46,67 @@ erDiagram
     CHAT_THREADS ||--o{ CHAT_MESSAGES : "berisi"
 ```
 
-### 3.1 Tabel `users` (Profil Pengguna Dasar)
+### 3.1 Tabel `profiles` (Profil Pengguna Publik)
+Menyimpan informasi publik pengguna dan terhubung langsung ke `auth.users` Supabase:
+
 ```sql
-CREATE TABLE users (
-    id TEXT PRIMARY KEY,                   -- UUID unik
+CREATE TABLE public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,           -- Hashing aman
     full_name TEXT NOT NULL,
     bio TEXT DEFAULT '',
     avatar_url TEXT DEFAULT '',
     rating_average REAL DEFAULT 0.0,       -- Dihitung dinamis dari ulasan
     rating_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Trigger otomatis untuk membuat baris profile saat pengguna baru mendaftar di auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, email, full_name, avatar_url)
+    VALUES (
+        new.id,
+        new.email,
+        COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+        COALESCE(new.raw_user_meta_data->>'avatar_url', '')
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 ```
+
+### 3.2 Aturan Keamanan Tingkat Baris (Row Level Security - RLS)
+Supabase mengamankan data secara langsung di level database melalui PostgreSQL RLS:
+
+* **Tabel `profiles`:**
+  * `SELECT`: Terbuka untuk umum (`true`) agar pengguna dapat saling melihat nama dan rating.
+  * `INSERT`: Dikelola oleh trigger sistem (`on_auth_user_created`).
+  * `UPDATE`: Hanya oleh pemilik akun (`auth.uid() = id`).
+  * `DELETE`: Hanya oleh pemilik akun (`auth.uid() = id`).
+* **Tabel `posts`:**
+  * `SELECT`: Terbuka untuk umum (`true`).
+  * `INSERT`: Wajib login (`auth.role() = 'authenticated'` dan `auth.uid() = author_id`).
+  * `UPDATE / DELETE`: Hanya oleh pembuat postingan (`auth.uid() = author_id`).
+* **Tabel `chat_threads`:**
+  * `SELECT`: Hanya oleh peserta thread (`auth.uid() = user1_id OR auth.uid() = user2_id`).
+  * `INSERT`: Wajib login dan menjadi salah satu peserta thread.
+* **Tabel `chat_messages`:**
+  * `SELECT`: Hanya oleh peserta thread yang bersangkutan.
+  * `INSERT`: Hanya pengirim yang terotentikasi (`auth.uid() = sender_id`).
+* **Tabel `deals`:**
+  * `SELECT / UPDATE`: Hanya oleh pemohon atau penolong terkait (`auth.uid() = requester_id OR auth.uid() = helper_id`).
+* **Tabel `activities`:**
+  * `SELECT / UPDATE`: Hanya oleh pihak yang terlibat dalam kegiatan tersebut.
+* **Tabel `reviews`:**
+  * `SELECT`: Terbuka untuk umum (`true`).
+  * `INSERT`: Hanya oleh peninjau yang terotentikasi (`auth.uid() = reviewer_id` dan `reviewer_id != reviewee_id`).
 
 ### 3.2 Tabel `posts` (Postingan Saya Butuh & Saya Bisa)
 ```sql

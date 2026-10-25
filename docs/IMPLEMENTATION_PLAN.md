@@ -51,18 +51,20 @@
 
 ---
 
-### TAHAP 1: Fondasi Database & Autentikasi Multipengguna
-* **Tujuan:** Menyiapkan basis data relasional terpusat dan sistem autentikasi akun riil agar Pengguna A dan B dapat memiliki identitas terpisah.
+### TAHAP 1: Fondasi Supabase, Autentikasi Riil, & RLS
+* **Tujuan:** Menyiapkan basis data Supabase terpusat, integrasi `@supabase/ssr` berbasis cookie, migrasi skema tabel, aturan RLS, dan sistem autentikasi akun riil (register, login, logout, profil).
 * **ID Kebutuhan yang Dipenuhi:** `REQ-CORE-03`, `REQ-CORE-04`
-* **Dependensi:** Keputusan pilihan provider DB (Supabase / SQLite VPS / Neon).
+* **Dependensi:** Pemasangan `@supabase/supabase-js` dan `@supabase/ssr`.
 * **Rincian Tugas:**
-  1. Pasang dependensi client SDK basis data terpilih.
-  2. Eksekusi skema migrasi tabel (`users`, `posts`, `chat_threads`, `chat_messages`, `deals`, `activities`, `reviews`).
-  3. Bangun Route Handlers Next.js di `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, dan `/api/auth/logout`.
-  4. Perbarui form login dan registrasi di [`src/app/login/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/login/page.js) agar terhubung ke API riil dengan penanganan pesan error yang jelas.
+  1. Pasang dependensi client SDK `@supabase/supabase-js` dan `@supabase/ssr`.
+  2. Susun berkas migrasi SQL lengkap (`supabase/schema.sql`) mencakup pembuatan tabel, relasi profil ke `auth.users`, trigger profil otomatis, dan aturan Row Level Security (RLS).
+  3. Buat utilitas Supabase resmi: `client.js` (browser), `server.js` (server cookies), dan `middleware.js` (sinkronisasi sesi).
+  4. Pasang `middleware.js` di root Next.js untuk menjaga sesi cookie tetap terbarui pada setiap permintaan.
+  5. Perbarui halaman login/register di `src/app/login/page.js` untuk mendukung autentikasi Supabase nyata dengan validasi input dan penanganan error terstruktur.
+  6. Siapkan `.env.example` untuk memudahkan konfigurasi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 * **Bukti Pengujian & Verifikasi:**
-  * Pengujian HTTP: Mendaftarkan Akun 1 (`userA@test.com`) dan Akun 2 (`userB@test.com`).
-  * Verifikasi Sesi: Cookie auth tersimpan aman; data `/api/auth/me` mengembalikan profil masing-masing.
+  * Pengujian Konfigurasi: Verifikasi pemanggilan client SDK dan fallback gracefully jika environment variables belum terisi.
+  * Pengujian Multi-Akun (Live setelah user mengisi kredensial): Mendaftarkan Akun A dan Akun B, verifikasi login/logout, persistensi reload F5, verifikasi RLS (Akun A tidak bisa mengubah profil Akun B), dan verifikasi akses publik tamu.
 
 ---
 

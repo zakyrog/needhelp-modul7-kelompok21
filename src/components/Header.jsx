@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { readSession, clearSession } from "../lib/auth";
+import { readSession, clearSession, signOutUser, getAuthUser } from "../lib/auth";
 import { getNotifications } from "../lib/data";
 import { useToast } from "./Toast";
 
@@ -18,7 +18,25 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const syncAuthAndNotifs = () => {
-    setSession(readSession());
+    // Coba baca sesi lokal terlebih dahulu untuk render instan
+    const localSess = readSession();
+    if (localSess) setSession(localSess);
+
+    // Sinkronkan secara asinkron dengan Supabase Auth jika tersedia
+    getAuthUser().then((user) => {
+      if (user) {
+        setSession({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Pengguna",
+        });
+      } else {
+        setSession(null);
+      }
+    }).catch(() => {
+      // Abaikan jika Supabase belum terkonfigurasi
+    });
+
     const notifs = getNotifications();
     const unread = notifs.filter((n) => !n.read).length;
     setUnreadNotifCount(unread);
@@ -48,11 +66,12 @@ export function Header() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleLogout = (e) => {
+  const handleLogout = async (e) => {
     e.preventDefault();
+    await signOutUser();
     clearSession();
     setSession(null);
-    showToast("Berhasil keluar dari akun demo.", "info");
+    showToast("Berhasil keluar dari akun.", "info");
     router.push("/");
   };
 
