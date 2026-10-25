@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   getActivities,
   getActivityStats,
@@ -15,6 +15,7 @@ import { EmptyState } from "../../components/EmptyState";
 
 function ActivityContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { showToast } = useToast();
 
   const [session, setSession] = useState(null);

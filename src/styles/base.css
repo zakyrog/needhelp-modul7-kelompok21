@@ -1102,7 +1102,7 @@ body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > 
 
 body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > nav[aria-label="Navigasi Halaman Katalog"] {
   grid-column: 1 / -1;
-  margin-top: 12px;
+  margin-top: 32px;
 }
 
 body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > nav[aria-label="Navigasi Halaman Katalog"] ol {
@@ -1153,10 +1153,10 @@ body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > 
 /* ========================================================== */
 
 .detail-main-layout {
-  max-width: 100% !important; 
-  margin: 0 auto 60px auto;
-  padding: 24px 40px; 
-  background: var(--color-bg-subtle, #e3fdfd); 
+  max-width: 100% !important;
+  margin: 0 auto 24px auto;
+  padding: 24px 40px;
+  background: var(--color-bg-subtle, #e3fdfd);
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 24px;
@@ -1263,6 +1263,10 @@ body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > 
   padding: 0;
   background: transparent;
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
 }
 
 .article-header h1 {
@@ -1270,6 +1274,7 @@ body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > 
   color: var(--color-text-primary, #0f2e33);
   margin: 0 0 10px 0;
   font-weight: 700;
+  text-align: left;
 }
 
 .article-header p {
@@ -1277,6 +1282,7 @@ body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > 
   color: var(--color-text-secondary, #284950);
   line-height: 1.5;
   margin: 0;
+  text-align: left;
 }
 
 .info-grid-section {
@@ -1393,7 +1399,7 @@ body:has(aside[aria-label="Penyaring Pencarian"]) main > section:last-of-type > 
   .detail-main-layout {
     grid-template-columns: minmax(0, 1fr);
     padding: 24px 16px;
-    margin-bottom: 40px;
+    margin-bottom: 24px;
   }
 
   .breadcrumb-status {
@@ -3010,6 +3016,9 @@ body > header.site-header {
   background: var(--color-bg-surface, #ffffff);
   border-bottom: 1px solid #eef2f1;
   box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .site-brand {

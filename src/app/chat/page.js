@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   getConversations,
   ensureConversation,
@@ -11,11 +11,22 @@ import {
   getActivities,
   formatMessageTime,
 } from "../../lib/data.js";
+import { readSession } from "../../lib/auth.js";
 import { useToast } from "../../components/Toast";
 
 function ChatContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { showToast } = useToast();
+
+  // Proteksi halaman chat - harus login
+  useEffect(() => {
+    const session = readSession();
+    if (!session) {
+      showToast("Silakan masuk terlebih dahulu untuk mengakses pesan.", "info");
+      router.replace("/login?next=/chat");
+    }
+  }, [router, showToast]);
 
   const [conversations, setConversations] = useState(() => getConversations());
   const [activeUserId, setActiveUserId] = useState(() => {

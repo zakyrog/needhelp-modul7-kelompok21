@@ -2,16 +2,36 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPublicPosts, fetchPublicPosts } from "../lib/data.js";
+import { fetchPublicPosts, getPublicPosts, DEMO_POSTS } from "../lib/data.js";
 import { PostCard } from "../components/PostCard";
 
+// Data seed statis untuk initial state yang konsisten antara server dan client
+// Menggunakan DEMO_POSTS yang di-import langsung, bukan dari fungsi yang bisa berubah
+const INITIAL_SEED_POSTS = DEMO_POSTS.slice(0, 3);
+
 export default function HomePage() {
-  const [posts, setPosts] = useState(() => getPublicPosts().slice(0, 3));
+  // Initial state menggunakan data statis yang dijamin konsisten
+  const [posts, setPosts] = useState(INITIAL_SEED_POSTS);
 
   useEffect(() => {
+    // Setelah mount, ambil data lengkap termasuk postingan user dari localStorage
+    let isCancelled = false;
+
     fetchPublicPosts()
-      .then((data) => setPosts(data.slice(0, 3)))
-      .catch(() => setPosts(getPublicPosts().slice(0, 3)));
+      .then((data) => {
+        if (!isCancelled) {
+          setPosts(data.slice(0, 3));
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setPosts(getPublicPosts().slice(0, 3));
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   return (

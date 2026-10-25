@@ -23,6 +23,7 @@ function RatingContent() {
 
   const [activity, setActivity] = useState(null);
   const [unrateableReason, setUnrateableReason] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [stars, setStars] = useState(5);
   const [badges, setBadges] = useState(["tepat-waktu", "ramah", "sangat-membantu"]);
@@ -32,11 +33,14 @@ function RatingContent() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
     const { activity: foundActivity, reason } = getRateableActivity(id);
     if (!foundActivity) {
       setUnrateableReason(reason);
+      setActivity(null);
     } else {
       setActivity(foundActivity);
+      setUnrateableReason(null);
       if (foundActivity.review) {
         setStars(foundActivity.review.rating || 5);
         setComment(foundActivity.review.comment || "");
@@ -45,6 +49,7 @@ function RatingContent() {
         }
       }
     }
+    setLoading(false);
   }, [id]);
 
   const handleBadgeToggle = (badgeKey) => {
@@ -87,6 +92,17 @@ function RatingContent() {
     }
   };
 
+  // Handle loading state
+  if (loading) {
+    return (
+      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <p style={{ color: "var(--color-text-muted)", fontSize: "14px" }}>Memuat data aktivitas...</p>
+        </div>
+      </main>
+    );
+  }
+
   if (unrateableReason) {
     const errorMessages = {
       missing: "Pilih aktivitas dari halaman Aktivitas sebelum memberi ulasan.",
@@ -105,6 +121,21 @@ function RatingContent() {
             errorMessages[unrateableReason] ||
             "Aktivitas ini tidak memenuhi syarat untuk dinilai."
           }
+          actionText="Buka Daftar Aktivitas"
+          onAction={() => router.push("/aktivitas")}
+        />
+      </main>
+    );
+  }
+
+  // Safety check: activity should not be null at this point
+  if (!activity) {
+    return (
+      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
+        <EmptyState
+          icon="⚠️"
+          title="Data Aktivitas Tidak Tersedia"
+          description="Terjadi masalah saat memuat data aktivitas. Silakan coba lagi atau kembali ke daftar aktivitas."
           actionText="Buka Daftar Aktivitas"
           onAction={() => router.push("/aktivitas")}
         />

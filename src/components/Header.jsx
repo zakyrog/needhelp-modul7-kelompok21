@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { readSession, clearSession } from "../lib/auth";
@@ -16,6 +16,8 @@ export function Header() {
   const [session, setSession] = useState(null);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   const syncAuthAndNotifs = () => {
     setSession(readSession());
@@ -37,21 +39,37 @@ export function Header() {
     };
   }, [pathname]);
 
-  // Handle escape key to close menu
+  // Handle escape key to close menus
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         setMenuOpen(false);
+        setProfileMenuOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    if (profileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [profileMenuOpen]);
+
   const handleLogout = (e) => {
     e.preventDefault();
     clearSession();
     setSession(null);
+    setProfileMenuOpen(false);
     showToast("Berhasil keluar dari akun demo.", "info");
     router.push("/");
   };
@@ -68,6 +86,10 @@ export function Header() {
   };
 
   const closeMenu = () => setMenuOpen(false);
+
+  const toggleProfileMenu = () => {
+    setProfileMenuOpen((prev) => !prev);
+  };
 
   if (pathname === "/login") {
     return null;
@@ -120,35 +142,29 @@ export function Header() {
               Katalog
             </Link>
           </li>
-          <li>
-            <Link
-              href="/aktivitas"
-              aria-current={pathname === "/aktivitas" ? "page" : undefined}
-              onClick={closeMenu}
-            >
-              Aktivitas
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/chat"
-              aria-current={pathname === "/chat" ? "page" : undefined}
-              onClick={closeMenu}
-            >
-              Pesan
-            </Link>
-          </li>
-          <li>
-            {session ? (
-              <a href="#logout" onClick={handleLogout}>
-                Keluar ({session.name ? session.name.split(" ")[0] : "Demo"})
-              </a>
-            ) : (
-              <Link href="/login" onClick={closeMenu}>
-                Masuk
-              </Link>
-            )}
-          </li>
+          {/* Hanya tampilkan Aktivitas dan Pesan jika sudah login */}
+          {session && (
+            <>
+              <li>
+                <Link
+                  href="/aktivitas"
+                  aria-current={pathname === "/aktivitas" ? "page" : undefined}
+                  onClick={closeMenu}
+                >
+                  Aktivitas
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/chat"
+                  aria-current={pathname === "/chat" ? "page" : undefined}
+                  onClick={closeMenu}
+                >
+                  Pesan
+                </Link>
+              </li>
+            </>
+          )}
         </ul>
       </nav>
 
@@ -175,9 +191,12 @@ export function Header() {
           />
         </form>
 
-        <Link href="/chat" className="icon-action-btn" aria-label="Pesan" onClick={closeMenu}>
-          <img src="/assets/images/icon-chat.svg" alt="" width="18" height="18" />
-        </Link>
+        {/* Icon chat hanya jika sudah login */}
+        {session && (
+          <Link href="/chat" className="icon-action-btn" aria-label="Pesan" onClick={closeMenu}>
+            <img src="/assets/images/icon-chat.svg" alt="" width="18" height="18" />
+          </Link>
+        )}
 
         <Link
           href="/notifikasi"
@@ -214,14 +233,102 @@ export function Header() {
           )}
         </Link>
 
-        <span
-          className="user-profile-badge"
-          role="img"
-          aria-label={session ? `Profil ${session.name}` : "Profil tamu"}
-          title={session ? session.name : "Tamu demo"}
+        {/* Profile Badge dengan Dropdown Menu */}
+        <div
+          ref={profileMenuRef}
+          style={{ position: "relative" }}
         >
-          {session ? session.name.charAt(0).toUpperCase() : "P"}
-        </span>
+          <button
+            type="button"
+            className="user-profile-badge"
+            role="button"
+            aria-label={session ? `Menu profil ${session.name}` : "Menu profil tamu"}
+            aria-expanded={profileMenuOpen}
+            aria-haspopup="true"
+            title={session ? session.name : "Tamu demo"}
+            onClick={toggleProfileMenu}
+            style={{
+              cursor: "pointer",
+              border: "none",
+              background: "transparent",
+              padding: 0,
+            }}
+          >
+            {session ? session.name.charAt(0).toUpperCase() : "P"}
+          </button>
+
+          {/* Dropdown Menu */}
+          {profileMenuOpen && (
+            <div
+              className="profile-dropdown-menu"
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                right: 0,
+                background: "#ffffff",
+                border: "1px solid #cfdadc",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                minWidth: "180px",
+                zIndex: 1001,
+                overflow: "hidden",
+              }}
+            >
+              {session ? (
+                <>
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      borderBottom: "1px solid #eef2f1",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      color: "#0f2e33",
+                    }}
+                  >
+                    {session.name || "Pengguna Demo"}
+                  </div>
+                  <a
+                    href="#logout"
+                    onClick={handleLogout}
+                    style={{
+                      display: "block",
+                      padding: "12px 16px",
+                      fontSize: "14px",
+                      color: "#e53e3e",
+                      textDecoration: "none",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => (e.target.style.background = "#fee2e2")}
+                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
+                  >
+                    Keluar
+                  </a>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    closeMenu();
+                  }}
+                  style={{
+                    display: "block",
+                    padding: "12px 16px",
+                    fontSize: "14px",
+                    color: "#4a9ba0",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                    transition: "background-color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
+                  onMouseLeave={(e) => (e.target.style.background = "transparent")}
+                >
+                  Masuk
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
