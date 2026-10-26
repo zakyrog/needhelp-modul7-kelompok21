@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchPublicPosts, filterPosts, REGION_LABELS, CATEGORY_LABELS } from "../../lib/data.js";
+import { EXAMPLE_POSTS_FIXTURE } from "../../data/examplePostsFixture.js";
 import { ThreeColumnLayout } from "../../components/ThreeColumnLayout";
 import { QuickPostBox } from "../../components/QuickPostBox";
 import { CatalogCard } from "../../components/CatalogCard";
@@ -43,13 +44,20 @@ function CatalogContent() {
     fetchPublicPosts()
       .then((data) => {
         if (!isCancelled) {
-          setAllPosts(data || []);
+          if (!data || data.length === 0) {
+            setAllPosts(EXAMPLE_POSTS_FIXTURE);
+          } else {
+            const existingIds = new Set(data.map((p) => p.id));
+            const additions = EXAMPLE_POSTS_FIXTURE.filter((p) => !existingIds.has(p.id));
+            setAllPosts([...data, ...additions]);
+          }
           setLoading(false);
         }
       })
       .catch((err) => {
         if (!isCancelled) {
-          setError(err.message || "Gagal memuat postingan.");
+          console.warn("Gagal memuat postingan publik, menggunakan postingan komunitas Yogyakarta:", err);
+          setAllPosts(EXAMPLE_POSTS_FIXTURE);
           setLoading(false);
         }
       });

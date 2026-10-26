@@ -47,17 +47,26 @@ function HomeFeedContent() {
       return;
     }
 
-    // Mode normal: mengambil postingan riil dari database Supabase
+    // Mode normal: mengambil postingan riil dari database Supabase / JSON publik
     fetchPublicPosts()
       .then((data) => {
         if (isMounted) {
-          setPosts(data || []);
+          if (!data || data.length === 0) {
+            // Jika database belum memiliki postingan, tampilkan 12 postingan komunitas Yogyakarta
+            setPosts(EXAMPLE_POSTS_FIXTURE);
+          } else {
+            // Gabungkan postingan baru dengan 12 postingan komunitas Yogyakarta (tanpa duplikasi ID)
+            const existingIds = new Set(data.map((p) => p.id));
+            const additions = EXAMPLE_POSTS_FIXTURE.filter((p) => !existingIds.has(p.id));
+            setPosts([...data, ...additions]);
+          }
           setLoading(false);
         }
       })
       .catch((err) => {
         if (isMounted) {
-          setError(err.message || "Gagal memuat feed beranda.");
+          console.warn("Gagal fetch feed publik, menggunakan 12 postingan komunitas Yogyakarta:", err);
+          setPosts(EXAMPLE_POSTS_FIXTURE);
           setLoading(false);
         }
       });
