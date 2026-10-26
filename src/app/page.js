@@ -134,25 +134,29 @@ function HomeContent() {
           <p className="home-subtitle">Mulai bantuanmu, lanjutkan kegiatanmu.</p>
         </header>
 
-        {/* 2. Kartu Aksi Dua Pintu: Apa yang ingin kamu lakukan? */}
-        <QuickPostBox />
+        {/* 2. Container Stack untuk Semua Kartu Seksi Utama (Gap Konsisten) */}
+        <div className="home-sections-stack">
+          {/* Kartu 1: Aksi Dua Pintu: Apa yang ingin kamu lakukan? */}
+          <QuickPostBox />
 
-        {/* 3. Bagian: Perlu ditindaklanjuti */}
-        <section className="home-section-card" aria-label="Aktivitas Perlu Ditindaklanjuti">
-          <div className="home-section-header">
-            <h2 className="home-section-heading">Perlu ditindaklanjuti</h2>
-            <Link href="/aktivitas" className="home-section-link">
-              Lihat aktivitas &rarr;
-            </Link>
-          </div>
+          {/* Kartu 2: Bagian: Perlu ditindaklanjuti */}
+          <section className="home-section-card" aria-label="Aktivitas Perlu Ditindaklanjuti">
+            <div className="home-section-header">
+              <h2 className="home-section-heading">Perlu ditindaklanjuti</h2>
+              <Link href="/aktivitas" className="home-section-link">
+                Lihat aktivitas &rarr;
+              </Link>
+            </div>
 
-          <div className="home-section-body">
-            {session ? (
-              userActivities.length > 0 ? (
+            <div className="home-section-body">
+              {userActivities.length > 0 ? (
                 <div className="actionable-items-list">
                   {userActivities.map((act) => (
                     <div key={act.id} className="actionable-item-row">
-                      <div className="actionable-icon-box icon-doc" aria-hidden="true">
+                      <div
+                        className={`actionable-icon-box ${act.status === "berlangsung" ? "icon-box-doc" : "icon-box-check"}`}
+                        aria-hidden="true"
+                      >
                         {act.status === "berlangsung" ? "📄" : "✅"}
                       </div>
                       <div className="actionable-text-cluster">
@@ -163,49 +167,47 @@ function HomeContent() {
                       </div>
                       <Link
                         href={`/aktivitas?id=${act.id}`}
-                        className="button button-outline button-sm actionable-btn"
+                        className="actionable-pill-btn"
                       >
                         {act.status === "berlangsung" ? "Lihat kesepakatan" : "Buka kegiatan"}
                       </Link>
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : session ? (
                 <div className="home-empty-notice">
-                  <span className="notice-icon" aria-hidden="true">📋</span>
+                  <span className="notice-icon-box" aria-hidden="true">📋</span>
                   <div className="notice-content">
                     <p className="notice-text">Tidak ada kegiatan yang perlu ditindaklanjuti saat ini.</p>
                     <Link href="/aktivitas" className="notice-link">Buka riwayat aktivitas &rarr;</Link>
                   </div>
                 </div>
-              )
-            ) : (
-              <div className="home-guest-callout">
-                <div className="guest-icon-box" aria-hidden="true">🔒</div>
-                <div className="guest-text-box">
-                  <strong className="guest-title">Masuk untuk melihat tindak lanjut kegiatanmu</strong>
-                  <p className="guest-desc">Pantau status kesepakatan, obrolan bantuan, dan konfirmasi selesai.</p>
+              ) : (
+                <div className="home-guest-callout">
+                  <div className="guest-icon-box" aria-hidden="true">🔒</div>
+                  <div className="guest-text-box">
+                    <strong className="guest-title">Masuk untuk melihat tindak lanjut kegiatanmu</strong>
+                    <p className="guest-desc">Pantau status kesepakatan, obrolan bantuan, dan konfirmasi selesai.</p>
+                  </div>
+                  <Link href="/login" className="button button-primary button-sm">
+                    Masuk Akun
+                  </Link>
                 </div>
-                <Link href="/login" className="button button-primary button-sm">
-                  Masuk Akun
-                </Link>
-              </div>
-            )}
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
 
-        {/* 4. Bagian: Posting aktifmu */}
-        <section className="home-section-card" aria-label="Ringkasan Posting Aktif">
-          <div className="home-section-header">
-            <h2 className="home-section-heading">Posting aktifmu</h2>
-            <Link href={session ? "/aktivitas" : "/login"} className="home-section-link">
-              Kelola posting &rarr;
-            </Link>
-          </div>
+          {/* Kartu 3: Bagian: Posting aktifmu */}
+          <section className="home-section-card" aria-label="Ringkasan Posting Aktif">
+            <div className="home-section-header">
+              <h2 className="home-section-heading">Posting aktifmu</h2>
+              <Link href={session ? "/aktivitas" : "/login"} className="home-section-link">
+                Kelola posting &rarr;
+              </Link>
+            </div>
 
-          <div className="home-section-body">
-            {session ? (
-              userActivePosts.length > 0 ? (
+            <div className="home-section-body">
+              {userActivePosts.length > 0 ? (
                 <div className="user-active-posts-list">
                   {userActivePosts.map((post) => {
                     const isNeed = post.nature === "butuh";
@@ -239,30 +241,18 @@ function HomeContent() {
                 </div>
               ) : (
                 <div className="home-empty-notice">
-                  <span className="notice-icon" aria-hidden="true">📝</span>
+                  <span className="notice-icon-box" aria-hidden="true">📝</span>
                   <div className="notice-content">
                     <p className="notice-text">Kamu belum memiliki postingan aktif.</p>
                     <Link href="/buat-postingan" className="notice-link">Buat postingan pertamamu &rarr;</Link>
                   </div>
                 </div>
-              )
-            ) : (
-              <div className="home-guest-callout">
-                <div className="guest-icon-box" aria-hidden="true">📢</div>
-                <div className="guest-text-box">
-                  <strong className="guest-title">Masuk untuk mengelola postingan bantuanmu</strong>
-                  <p className="guest-desc">Buat kebutuhan bantuan baru atau tawarkan kemampuanmu kepada warga.</p>
-                </div>
-                <Link href="/login" className="button button-outline button-sm">
-                  Masuk Akun
-                </Link>
-              </div>
-            )}
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
 
-        {/* 5. Bagian: Terbaru di NeedHelp (Cuplikan 2-3 posting dengan link Lihat semua) */}
-        <section className="home-section-card" aria-label="Postingan Komunitas Terbaru">
+          {/* Kartu 4: Bagian: Terbaru di NeedHelp (Cuplikan 2-3 posting dengan link Lihat semua) */}
+          <section className="home-section-card" aria-label="Postingan Komunitas Terbaru">
           <div className="home-section-header">
             <h2 className="home-section-heading">Terbaru di NeedHelp</h2>
             <Link href="/katalog" className="home-section-link">
@@ -341,6 +331,7 @@ function HomeContent() {
             )}
           </div>
         </section>
+        </div>
       </div>
     </ThreeColumnLayout>
   );
