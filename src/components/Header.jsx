@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { readSession, clearSession, signOutUser, getAuthUser } from "../lib/auth";
@@ -13,9 +13,11 @@ export function Header() {
   const { showToast } = useToast();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [session, setSession] = useState(null);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const profileDropdownRef = useRef(null);
 
   const syncAuthAndNotifs = () => {
     const localSess = readSession();
@@ -46,6 +48,8 @@ export function Header() {
 
   useEffect(() => {
     syncAuthAndNotifs();
+    setMenuOpen(false);
+    setProfileDropdownOpen(false);
 
     const handleStorageChange = () => {
       syncAuthAndNotifs();
@@ -58,13 +62,25 @@ export function Header() {
   }, [pathname]);
 
   useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         setMenuOpen(false);
+        setProfileDropdownOpen(false);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const handleLogout = async (e) => {
@@ -219,25 +235,91 @@ export function Header() {
               </Link>
             </li>
 
-            <li className="nav-profile-item">
+            <li className="nav-profile-item" ref={profileDropdownRef}>
               {session ? (
-                <div className="profile-dropdown-wrapper">
-                  <Link href="/profil" className="profile-chip-link" onClick={closeMenu}>
-                    <span className="user-profile-avatar" title={`Akun: ${session.name}`}>
-                      {userInitial}
-                    </span>
-                    <span className="profile-name-text">
-                      {session.name ? session.name.split(" ")[0] : "Akun"}
-                    </span>
-                  </Link>
+                <div className="profile-dropdown-container">
                   <button
                     type="button"
-                    onClick={handleLogout}
-                    className="logout-text-btn"
-                    title="Keluar dari akun"
+                    className={`profile-nav-trigger-btn ${profileDropdownOpen ? "active" : ""}`}
+                    onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                    aria-expanded={profileDropdownOpen}
+                    aria-haspopup="true"
+                    aria-label={`Menu Akun: ${session.name || "Pengguna"}`}
                   >
-                    Keluar
+                    <span className="user-profile-avatar" aria-hidden="true">
+                      {userInitial}
+                    </span>
+                    <span className="profile-trigger-label">
+                      <span className="profile-name-text">
+                        {session.name ? session.name.split(" ")[0] : "Saya"}
+                      </span>
+                      <span className="profile-caret" aria-hidden="true">▾</span>
+                    </span>
                   </button>
+
+                  {profileDropdownOpen && (
+                    <div className="profile-menu-popover" role="menu" aria-label="Menu Pengguna">
+                      <div className="profile-popover-header">
+                        <div className="popover-avatar-circle" aria-hidden="true">
+                          {userInitial}
+                        </div>
+                        <div className="popover-user-details">
+                          <div className="popover-user-name" title={session.name}>
+                            {session.name || "Pengguna"}
+                          </div>
+                          {session.email && (
+                            <div className="popover-user-email" title={session.email}>
+                              {session.email}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="popover-divider" />
+
+                      <Link
+                        href="/profil"
+                        className="popover-menu-link"
+                        role="menuitem"
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          closeMenu();
+                        }}
+                      >
+                        <span className="popover-link-icon" aria-hidden="true">👤</span>
+                        <span className="popover-link-label">Lihat Profil Saya</span>
+                      </Link>
+
+                      <Link
+                        href="/aktivitas"
+                        className="popover-menu-link"
+                        role="menuitem"
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          closeMenu();
+                        }}
+                      >
+                        <span className="popover-link-icon" aria-hidden="true">🤝</span>
+                        <span className="popover-link-label">Aktivitas & Kesepakatan</span>
+                      </Link>
+
+                      <div className="popover-divider" />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          setProfileDropdownOpen(false);
+                          closeMenu();
+                          handleLogout(e);
+                        }}
+                        className="popover-logout-btn"
+                        role="menuitem"
+                      >
+                        <span className="popover-link-icon" aria-hidden="true">🚪</span>
+                        <span>Keluar</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link href="/login" className="login-pill-btn" onClick={closeMenu}>

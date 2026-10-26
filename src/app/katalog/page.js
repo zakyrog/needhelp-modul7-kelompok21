@@ -271,30 +271,59 @@ function CatalogContent() {
         {/* Kategori Utama (4 Kategori Sah Sesuai Spesifikasi) */}
         <div className="panel-categories-row" role="group" aria-label="Filter 4 Kategori Aktivitas">
           <span className="panel-categories-label" id="cat-filter-label">Kategori Utama:</span>
-          {Object.entries(CATEGORY_LABELS).map(([catKey, catLabel]) => {
-            const isSelected = categories.includes(catKey);
-            return (
-              <button
-                key={catKey}
-                type="button"
-                className={`cat-chip-btn ${isSelected ? "selected" : ""}`}
-                onClick={() => handleCategoryToggle(catKey)}
-                aria-pressed={isSelected}
-                aria-describedby="cat-filter-label"
-              >
-                {isSelected ? "✓ " : ""}{catLabel}
-              </button>
-            );
-          })}
+          <div className="panel-categories-chips">
+            {Object.entries(CATEGORY_LABELS).map(([catKey, catLabel]) => {
+              const isSelected = categories.includes(catKey);
+              return (
+                <button
+                  key={catKey}
+                  type="button"
+                  className={`cat-chip-btn ${isSelected ? "selected" : ""}`}
+                  onClick={() => handleCategoryToggle(catKey)}
+                  aria-pressed={isSelected}
+                  aria-describedby="cat-filter-label"
+                >
+                  {isSelected ? "✓ " : ""}{catLabel}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Status Hasil Pencarian */}
         <div className="panel-results-summary">
-          <span>
-            Ditemukan <strong>{filteredAndSortedPosts.length}</strong> postingan aktif
-            {region ? ` di wilayah ${REGION_LABELS[region] || region}` : ""}
-            {query ? ` untuk kata kunci "${query}"` : ""}
-          </span>
+          <div className="results-count-wrap">
+            <span className="results-count-text">
+              Ditemukan <strong>{filteredAndSortedPosts.length}</strong> postingan aktif
+              {region ? ` di wilayah ${REGION_LABELS[region] || region}` : ""}
+              {query ? ` untuk kata kunci "${query}"` : ""}
+            </span>
+          </div>
+
+          {hasActiveFilters && (
+            <div className="active-filter-chips">
+              {postType !== "all" && (
+                <span className="filter-badge-pill">
+                  {postType === "butuh" ? "🆘 Butuh" : "✨ Bisa"}
+                </span>
+              )}
+              {region && (
+                <span className="filter-badge-pill">
+                  📍 {REGION_LABELS[region] || region}
+                </span>
+              )}
+              {compensation && (
+                <span className="filter-badge-pill">
+                  💰 {compensation}
+                </span>
+              )}
+              {categories.map((c) => (
+                <span key={c} className="filter-badge-pill">
+                  🏷️ {CATEGORY_LABELS[c] || c}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -2997,8 +2997,8 @@ body.catalog-page [data-catalog-pagination][hidden] {
   display: none !important;
 }
 
-/* === Header navigasi konsisten (satu implementasi untuk semua halaman) === */
-body > header.site-header {
+/* === Legacy Modul 7 Header (Hanya untuk halaman statis non-sticky lama) === */
+body > header.site-header:not(.sticky-header) {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -3012,27 +3012,27 @@ body > header.site-header {
   box-sizing: border-box;
 }
 
-.site-brand {
+header.site-header:not(.sticky-header) .site-brand {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
 }
 
-.site-brand img {
+header.site-header:not(.sticky-header) .site-brand img {
   display: block;
   width: 160px;
   height: 40px;
   object-fit: contain;
 }
 
-.site-nav {
+header.site-header:not(.sticky-header) .site-nav {
   flex: 1;
   display: flex;
   justify-content: center;
   min-width: 0;
 }
 
-.site-nav ul {
+header.site-header:not(.sticky-header) .site-nav ul {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -3041,7 +3041,7 @@ body > header.site-header {
   list-style: none;
 }
 
-.site-nav a {
+header.site-header:not(.sticky-header) .site-nav a {
   display: inline-block;
   padding: 8px 16px;
   border-radius: 20px;
@@ -3053,17 +3053,17 @@ body > header.site-header {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.site-nav a:hover,
-.site-nav a[aria-current="page"] {
+header.site-header:not(.sticky-header) .site-nav a:hover,
+header.site-header:not(.sticky-header) .site-nav a[aria-current="page"] {
   background: #e6f9f8;
   color: #439a91;
 }
 
-.site-nav a[aria-current="page"] {
+header.site-header:not(.sticky-header) .site-nav a[aria-current="page"] {
   font-weight: 600;
 }
 
-.header-right-actions {
+header.site-header:not(.sticky-header) .header-right-actions {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -3071,13 +3071,13 @@ body > header.site-header {
   margin-left: auto;
 }
 
-.search-box-wrapper {
+header.site-header:not(.sticky-header) .search-box-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.search-box-wrapper .search-icon {
+header.site-header:not(.sticky-header) .search-box-wrapper .search-icon {
   position: absolute;
   left: 12px;
   top: 50%;
@@ -3087,7 +3087,7 @@ body > header.site-header {
   pointer-events: none;
 }
 
-.site-header .search-box-wrapper input[type="search"] {
+header.site-header:not(.sticky-header) .search-box-wrapper input[type="search"] {
   width: 200px;
   height: 38px;
   padding: 0 14px 0 42px;
@@ -3099,11 +3099,11 @@ body > header.site-header {
   outline: none;
 }
 
-.site-header .search-box-wrapper input[type="search"]:focus {
+header.site-header:not(.sticky-header) .search-box-wrapper input[type="search"]:focus {
   border-color: #439a91;
 }
 
-.icon-action-btn {
+header.site-header:not(.sticky-header) .icon-action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3117,19 +3117,19 @@ body > header.site-header {
   text-decoration: none;
 }
 
-.icon-action-btn img {
+header.site-header:not(.sticky-header) .icon-action-btn img {
   display: block;
   width: 18px;
   height: 18px;
 }
 
-.icon-action-btn:hover,
-.icon-action-btn[aria-current="page"] {
+header.site-header:not(.sticky-header) .icon-action-btn:hover,
+header.site-header:not(.sticky-header) .icon-action-btn[aria-current="page"] {
   background: #e6f9f8;
   border-color: #b2dfdb;
 }
 
-.user-profile-badge {
+header.site-header:not(.sticky-header) .user-profile-badge {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3145,127 +3145,127 @@ body > header.site-header {
 }
 
 @media (max-width: 1024px) {
-  body > header.site-header {
+  body > header.site-header:not(.sticky-header) {
     flex-wrap: wrap;
     padding: 12px 20px;
     gap: 12px;
   }
 
-  .site-nav {
+  header.site-header:not(.sticky-header) .site-nav {
     order: 3;
     flex-basis: 100%;
     overflow-x: auto;
   }
 
-  .site-nav ul {
+  header.site-header:not(.sticky-header) .site-nav ul {
     justify-content: center;
   }
 
-  .header-right-actions {
+  header.site-header:not(.sticky-header) .header-right-actions {
     gap: 8px;
   }
 
-  .site-header .search-box-wrapper input[type="search"] {
+  header.site-header:not(.sticky-header) .search-box-wrapper input[type="search"] {
     width: 150px;
   }
 }
 
 @media (max-width: 760px) {
-  .menu-toggle {
+  header.site-header:not(.sticky-header) .menu-toggle {
     display: inline-block;
     order: 2;
   }
 
-  .site-nav {
+  header.site-header:not(.sticky-header) .site-nav {
     display: none;
   }
 
-  .site-nav[data-open="true"] {
+  header.site-header:not(.sticky-header) .site-nav[data-open="true"] {
     display: flex;
   }
 
-  .site-nav ul {
+  header.site-header:not(.sticky-header) .site-nav ul {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .site-nav a {
+  header.site-header:not(.sticky-header) .site-nav a {
     display: block;
     text-align: center;
   }
 
-  .header-right-actions {
+  header.site-header:not(.sticky-header) .header-right-actions {
     order: 1;
   }
 }
 
 @media (max-width: 600px) {
-  body > header.site-header {
+  body > header.site-header:not(.sticky-header) {
     flex-wrap: wrap;
   }
 
-  .menu-toggle {
+  header.site-header:not(.sticky-header) .menu-toggle {
     order: 1;
     margin-left: auto;
   }
 
-  .header-right-actions {
+  header.site-header:not(.sticky-header) .header-right-actions {
     order: 2;
     flex: 1 1 100%;
     margin-left: 0;
   }
 
-  .search-box-wrapper {
+  header.site-header:not(.sticky-header) .search-box-wrapper {
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  .site-header .search-box-wrapper input[type="search"] {
+  header.site-header:not(.sticky-header) .search-box-wrapper input[type="search"] {
     width: 100%;
   }
 }
 
 @media (max-width: 520px) {
-  body > header.site-header {
+  body > header.site-header:not(.sticky-header) {
     padding: 12px;
     gap: 8px;
   }
 
-  .site-brand img {
+  header.site-header:not(.sticky-header) .site-brand img {
     width: 110px;
     height: 28px;
   }
 
-  .header-right-actions {
+  header.site-header:not(.sticky-header) .header-right-actions {
     gap: 6px;
   }
 
-  .site-header .search-box-wrapper input[type="search"] {
+  header.site-header:not(.sticky-header) .search-box-wrapper input[type="search"] {
     width: 100%;
     padding-left: 38px;
   }
 
-  .search-box-wrapper .search-icon {
+  header.site-header:not(.sticky-header) .search-box-wrapper .search-icon {
     left: 9px;
     width: 14px;
     height: 14px;
   }
 
-  .icon-action-btn {
+  header.site-header:not(.sticky-header) .icon-action-btn {
     width: 32px;
     height: 32px;
   }
 
-  .icon-action-btn img {
+  header.site-header:not(.sticky-header) .icon-action-btn img {
     width: 16px;
     height: 16px;
   }
 
-  .icon-action-btn[aria-label="Pesan"] {
+  header.site-header:not(.sticky-header) .icon-action-btn[aria-label="Pesan"] {
     display: none;
   }
 
-  .user-profile-badge {
+  header.site-header:not(.sticky-header) .user-profile-badge {
     width: 32px;
     height: 32px;
   }
