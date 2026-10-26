@@ -109,13 +109,14 @@ export function Header() {
     return null;
   }
 
+  const isKatalogPage = pathname === "/katalog";
   const userInitial = session?.name ? session.name.charAt(0).toUpperCase() : "P";
   const userShortName = session?.name ? session.name.split(" ")[0] : "Saya";
 
   return (
     <header className="site-header sticky-header">
       <div className="header-inner-container">
-        {/* Brand Logo & Global Search */}
+        {/* Brand Logo & Global Search (Hanya tampil di luar halaman Feed & Cari untuk mencegah pencarian ganda) */}
         <div className="header-left-cluster">
           <Link href="/" className="site-brand" aria-label="NeedHelp Jogja - Beranda" onClick={closeMenu}>
             <img
@@ -127,17 +128,19 @@ export function Header() {
             />
           </Link>
 
-          <form className="global-search-bar" onSubmit={handleSearchSubmit} role="search">
-            <span className="search-icon" aria-hidden="true">🔍</span>
-            <input
-              type="search"
-              name="q"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari bantuan atau keahlian di Yogyakarta..."
-              aria-label="Cari bantuan atau keahlian di Yogyakarta"
-            />
-          </form>
+          {!isKatalogPage && (
+            <form className="global-search-bar" onSubmit={handleSearchSubmit} role="search">
+              <span className="search-icon" aria-hidden="true">🔍</span>
+              <input
+                type="search"
+                name="q"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari bantuan, keahlian, atau kegiatan..."
+                aria-label="Cari bantuan, keahlian, atau kegiatan"
+              />
+            </form>
+          )}
         </div>
 
         {/* Desktop Quick Action Icons & Profile (Mengikuti Gambar Referensi) */}

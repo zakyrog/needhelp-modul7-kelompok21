@@ -108,7 +108,7 @@ export function CatalogCard({ post, backUrl = "/katalog" }) {
             <span className={`post-nature-pill ${isNeed ? "pill-butuh" : "pill-bisa"}`}>
               {isNeed ? "Saya Butuh" : "Saya Bisa"}
             </span>
-            <span className="post-category-pill">
+            <span className={`post-category-pill badge-category-${category || "bantuan"}`}>
               {CATEGORY_LABELS[category] || category}
             </span>
             {isExample && (

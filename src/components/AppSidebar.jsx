@@ -7,9 +7,29 @@ import { readSession, getAuthUser, getUserProfile } from "../lib/auth";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    const localSess = readSession();
+    if (localSess) {
+      return {
+        id: localSess.id || "local-user",
+        email: localSess.email,
+        user_metadata: { full_name: localSess.name },
+      };
+    }
+    return null;
+  });
+  const [profile, setProfile] = useState(() => {
+    const localSess = readSession();
+    if (localSess) {
+      return {
+        full_name: localSess.name,
+        rating_average: 0.0,
+        rating_count: 0,
+      };
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(false);
   const [safetyModalOpen, setSafetyModalOpen] = useState(false);
 
   useEffect(() => {
@@ -151,7 +171,7 @@ export function AppSidebar() {
                 <h3 className="sidebar-user-name" title={displayName}>
                   {displayName}
                 </h3>
-                <p className="sidebar-user-sub">{subtitle}</p>
+                <span className="sidebar-profile-cta">Lihat profil &rarr;</span>
               </div>
             </Link>
           ) : (
@@ -161,7 +181,7 @@ export function AppSidebar() {
               </div>
               <div className="sidebar-user-info">
                 <h3 className="sidebar-user-name">NeedHelp Jogja</h3>
-                <p className="sidebar-user-sub">Masuk untuk saling bantu</p>
+                <span className="sidebar-profile-cta">Masuk / Daftar &rarr;</span>
               </div>
             </Link>
           )}

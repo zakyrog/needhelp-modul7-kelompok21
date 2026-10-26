@@ -12,11 +12,11 @@ export function QuickPostBox() {
         <Link
           href="/buat-postingan?nature=butuh"
           className="prompt-option-item option-butuh"
-          aria-label="Saya Butuh Bantuan - Ceritakan kebutuhanmu"
+          aria-label="Saya Butuh Bantuan - Minta bantuan dari komunitas"
         >
           <div className="option-info-group">
             <div className="option-icon-circle icon-butuh" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
                 <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
                 <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
@@ -25,7 +25,7 @@ export function QuickPostBox() {
             </div>
             <div className="option-text-cluster">
               <span className="option-title title-butuh">Saya Butuh Bantuan</span>
-              <span className="option-desc desc-butuh">Ceritakan kebutuhanmu</span>
+              <span className="option-desc desc-butuh">Minta bantuan dari komunitas</span>
             </div>
           </div>
           <div className="option-arrow-pill arrow-butuh" aria-hidden="true">
@@ -37,20 +37,20 @@ export function QuickPostBox() {
         <Link
           href="/buat-postingan?nature=bisa"
           className="prompt-option-item option-bisa"
-          aria-label="Saya Bisa Membantu - Tawarkan kemampuanmu"
+          aria-label="Saya Bisa Membantu - Tawarkan waktu, keahlian, atau bantuan"
         >
           <div className="option-info-group">
             <div className="option-icon-circle icon-bisa" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 14h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16" />
-                <path d="m7 20 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9" />
-                <path d="m2 15 6 6" />
-                <path d="M19.5 8.5c.7-.7 1.8-.7 2.5 0s.7 1.8 0 2.5l-2.5 2.5" />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
             <div className="option-text-cluster">
               <span className="option-title title-bisa">Saya Bisa Membantu</span>
-              <span className="option-desc desc-bisa">Tawarkan kemampuanmu</span>
+              <span className="option-desc desc-bisa">Tawarkan waktu, keahlian, atau bantuan</span>
             </div>
           </div>
           <div className="option-arrow-pill arrow-bisa" aria-hidden="true">

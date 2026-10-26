@@ -1,11 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchPublicPosts, filterPosts, REGION_LABELS, CATEGORY_LABELS } from "../../lib/data.js";
+import {
+  fetchPublicPosts,
+  filterPosts,
+  REGION_LABELS,
+  CATEGORY_LABELS,
+  COMPENSATION_LABELS,
+} from "../../lib/data.js";
 import { EXAMPLE_POSTS_FIXTURE } from "../../data/examplePostsFixture.js";
 import { ThreeColumnLayout } from "../../components/ThreeColumnLayout";
-import { QuickPostBox } from "../../components/QuickPostBox";
 import { CatalogCard } from "../../components/CatalogCard";
 import { EmptyState } from "../../components/EmptyState";
 import { SkeletonList } from "../../components/Skeleton";
@@ -19,27 +25,26 @@ function CatalogContent() {
   const initialType = searchParams.get("type") || "all";
   const initialRegion = searchParams.get("region") || searchParams.get("location") || "";
   const initialCompensation = searchParams.get("compensation") || "";
+  const initialCategory = searchParams.get("category") || "";
   const initialSort = searchParams.get("sort") || "terbaru";
   const initialPage = Math.max(1, Number(searchParams.get("page")) || 1);
-  const initialCategories = searchParams.getAll("category");
 
+  const [searchInput, setSearchInput] = useState(initialQ);
   const [query, setQuery] = useState(initialQ);
   const [postType, setPostType] = useState(initialType);
-  const [categories, setCategories] = useState(initialCategories);
+  const [category, setCategory] = useState(initialCategory);
   const [region, setRegion] = useState(initialRegion);
   const [compensation, setCompensation] = useState(initialCompensation);
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
 
-  const [allPosts, setAllPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [allPosts, setAllPosts] = useState(() => EXAMPLE_POSTS_FIXTURE);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // 2. Mengambil data dari API / database
   useEffect(() => {
     let isCancelled = false;
-    setLoading(true);
-    setError(null);
 
     fetchPublicPosts()
       .then((data) => {
@@ -51,25 +56,27 @@ function CatalogContent() {
             const additions = EXAMPLE_POSTS_FIXTURE.filter((p) => !existingIds.has(p.id));
             setAllPosts([...data, ...additions]);
           }
-          setLoading(false);
         }
       })
       .catch((err) => {
         if (!isCancelled) {
           console.warn("Gagal memuat postingan publik, menggunakan postingan komunitas Yogyakarta:", err);
           setAllPosts(EXAMPLE_POSTS_FIXTURE);
-          setLoading(false);
         }
       });
 
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   // 3. Sinkronisasi state ketika URL searchParams berubah
   useEffect(() => {
-    setQuery(searchParams.get("q") || "");
+    const qFromUrl = searchParams.get("q") || "";
+    setSearchInput(qFromUrl);
+    setQuery(qFromUrl);
     setPostType(searchParams.get("type") || "all");
-    setCategories(searchParams.getAll("category"));
+    setCategory(searchParams.get("category") || "");
     setRegion(searchParams.get("region") || searchParams.get("location") || "");
     setCompensation(searchParams.get("compensation") || "");
     setSort(searchParams.get("sort") || "terbaru");
@@ -81,22 +88,37 @@ function CatalogContent() {
     const params = new URLSearchParams();
     const qVal = overrides.query !== undefined ? overrides.query : query;
     const typeVal = overrides.postType !== undefined ? overrides.postType : postType;
+    const catVal = overrides.category !== undefined ? overrides.category : category;
     const regVal = overrides.region !== undefined ? overrides.region : region;
     const compVal = overrides.compensation !== undefined ? overrides.compensation : compensation;
     const sortVal = overrides.sort !== undefined ? overrides.sort : sort;
     const pageVal = overrides.page !== undefined ? overrides.page : page;
-    const catVals = overrides.categories !== undefined ? overrides.categories : categories;
 
     if (qVal) params.set("q", qVal);
     if (typeVal && typeVal !== "all") params.set("type", typeVal);
+    if (catVal) params.set("category", catVal);
     if (regVal) params.set("region", regVal);
     if (compVal) params.set("compensation", compVal);
     if (sortVal && sortVal !== "terbaru") params.set("sort", sortVal);
     if (pageVal > 1) params.set("page", String(pageVal));
-    catVals.forEach((c) => params.append("category", c));
 
     const qs = params.toString();
     router.replace(`/katalog${qs ? `?${qs}` : ""}`);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const trimmed = searchInput.trim();
+    setQuery(trimmed);
+    setPage(1);
+    updateURL({ query: trimmed, page: 1 });
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setQuery("");
+    setPage(1);
+    updateURL({ query: "", page: 1 });
   };
 
   const handleTypeSelect = (type) => {
@@ -105,19 +127,17 @@ function CatalogContent() {
     updateURL({ postType: type, page: 1 });
   };
 
+  const handleCategorySelect = (catId) => {
+    const next = category === catId ? "" : catId;
+    setCategory(next);
+    setPage(1);
+    updateURL({ category: next, page: 1 });
+  };
+
   const handleRegionChange = (newRegion) => {
     setRegion(newRegion);
     setPage(1);
     updateURL({ region: newRegion, page: 1 });
-  };
-
-  const handleCategoryToggle = (cat) => {
-    const next = categories.includes(cat)
-      ? categories.filter((c) => c !== cat)
-      : [...categories, cat];
-    setCategories(next);
-    setPage(1);
-    updateURL({ categories: next, page: 1 });
   };
 
   const handleCompensationChange = (newComp) => {
@@ -126,10 +146,17 @@ function CatalogContent() {
     updateURL({ compensation: newComp, page: 1 });
   };
 
-  const handleReset = () => {
+  const handleSortChange = (newSort) => {
+    setSort(newSort);
+    setPage(1);
+    updateURL({ sort: newSort, page: 1 });
+  };
+
+  const handleResetFilters = () => {
+    setSearchInput("");
     setQuery("");
     setPostType("all");
-    setCategories([]);
+    setCategory("");
     setRegion("");
     setCompensation("");
     setSort("terbaru");
@@ -139,277 +166,313 @@ function CatalogContent() {
 
   // 5. Filter & Sorting
   const filteredAndSortedPosts = useMemo(() => {
-    if (loading || error) return [];
+    if (loading && allPosts.length === 0) return [];
 
+    const categoriesArray = category ? [category] : [];
     const filtered = filterPosts(allPosts, {
       query,
       type: postType,
-      categories,
+      categories: categoriesArray,
       location: region,
       compensation,
     });
 
     const sorted = [...filtered];
-    if (sort === "jadwal") {
+    if (sort === "jadwal" || sort === "deadline") {
       sorted.sort((a, b) =>
         `${a.date || a.planned_date || "9999-12-31"}T${a.time || a.start_time || "23:59"}`.localeCompare(
           `${b.date || b.planned_date || "9999-12-31"}T${b.time || b.start_time || "23:59"}`
         )
       );
+    } else if (sort === "terlama") {
+      sorted.sort((a, b) =>
+        (a.created_at || a.createdAt || "").localeCompare(b.created_at || b.createdAt || "")
+      );
     } else {
+      // default: terbaru
       sorted.sort((a, b) =>
         (b.created_at || b.createdAt || "").localeCompare(a.created_at || a.createdAt || "")
       );
     }
 
     return sorted;
-  }, [loading, error, allPosts, query, postType, categories, region, compensation, sort]);
-
-  // Pagination (6 postingan per halaman)
-  const pageSize = 6;
-  const pageCount = Math.max(1, Math.ceil(filteredAndSortedPosts.length / pageSize));
-  const activePage = Math.min(page, pageCount);
-  const startIndex = (activePage - 1) * pageSize;
-  const visiblePosts = filteredAndSortedPosts.slice(startIndex, startIndex + pageSize);
+  }, [loading, error, allPosts, query, postType, category, region, compensation, sort]);
 
   const hasActiveFilters = Boolean(
-    query || postType !== "all" || region || compensation || categories.length > 0
+    query || postType !== "all" || category || region || compensation || sort !== "terbaru"
   );
+
+  const categoriesData = [
+    {
+      id: "bantuan",
+      label: "Bantuan Fisik",
+      icon: "📦",
+      theme: "cat-theme-peach",
+    },
+    {
+      id: "ditemani",
+      label: "Ditemani",
+      icon: "👥",
+      theme: "cat-theme-lavender",
+    },
+    {
+      id: "pendampingan",
+      label: "Pendampingan",
+      icon: "🎓",
+      theme: "cat-theme-blue",
+    },
+    {
+      id: "explore",
+      label: "Explore",
+      icon: "🧭",
+      theme: "cat-theme-mint",
+    },
+  ];
 
   return (
     <ThreeColumnLayout>
-      {/* 1. Quick Post Box di puncak feed */}
-      <QuickPostBox />
+      <div className="catalog-feed-page-wrapper">
+        {/* 1. Header Bar: Judul Feed & Cari + Tombol Buat Posting */}
+        <header className="catalog-top-header">
+          <div className="catalog-header-text">
+            <h1 className="catalog-page-title">Feed & Cari</h1>
+            <p className="catalog-page-subtitle">Temukan bantuan yang sesuai kebutuhanmu.</p>
+          </div>
+          <Link href="/buat-postingan" className="button button-primary catalog-create-btn">
+            <span className="create-btn-plus" aria-hidden="true">+</span> Buat posting
+          </Link>
+        </header>
 
-      {/* 2. Filter & Navigation Header */}
-      <section className="catalog-control-panel-card" aria-label="Panel Kontrol Feed">
-        <div className="panel-top-row">
-          <div className="feed-filter-tabs-bar" role="tablist">
+        {/* 2. Satu Kolom Pencarian Utama */}
+        <form className="catalog-primary-search-bar" onSubmit={handleSearchSubmit} role="search">
+          <label htmlFor="catalog-main-search-input" className="sr-only">
+            Cari bantuan, keahlian, atau kegiatan
+          </label>
+          <div className="search-input-wrapper">
+            <span className="search-icon-symbol" aria-hidden="true">🔍</span>
+            <input
+              id="catalog-main-search-input"
+              type="search"
+              className="primary-search-input"
+              placeholder="Cari bantuan, keahlian, atau kegiatan..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Cari bantuan, keahlian, atau kegiatan"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                className="search-clear-btn"
+                onClick={handleClearSearch}
+                aria-label="Hapus kata kunci pencarian"
+                title="Hapus pencarian"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button type="submit" className="button button-primary search-submit-action-btn">
+            Cari
+          </button>
+        </form>
+
+        {/* 3. Panel Filter: Tab Jenis Posting, 4 Kategori, Wilayah & Imbalan */}
+        <section className="catalog-filter-controls-card" aria-label="Filter dan Kategori Bantuan">
+          {/* Tab Jenis: Semua / Saya Butuh / Saya Bisa */}
+          <div className="nature-segmented-tabs" role="tablist" aria-label="Pilih Jenis Posting">
             <button
               type="button"
               role="tab"
               aria-selected={postType === "all"}
-              className={`filter-tab-btn ${postType === "all" ? "active" : ""}`}
+              className={`segmented-tab-btn tab-all ${postType === "all" ? "active" : ""}`}
               onClick={() => handleTypeSelect("all")}
             >
-              Semua
+              <span className="tab-icon" aria-hidden="true">🗂️</span>
+              <span className="tab-text">Semua</span>
+              {postType === "all" && <span className="tab-active-check" aria-hidden="true">✓</span>}
             </button>
             <button
               type="button"
               role="tab"
               aria-selected={postType === "butuh"}
-              className={`filter-tab-btn tab-butuh ${postType === "butuh" ? "active" : ""}`}
+              className={`segmented-tab-btn tab-butuh ${postType === "butuh" ? "active" : ""}`}
               onClick={() => handleTypeSelect("butuh")}
             >
-              🆘 Saya Butuh
+              <span className="tab-icon" aria-hidden="true">✋</span>
+              <span className="tab-text">Saya Butuh</span>
+              {postType === "butuh" && <span className="tab-active-check" aria-hidden="true">✓</span>}
             </button>
             <button
               type="button"
               role="tab"
               aria-selected={postType === "bisa"}
-              className={`filter-tab-btn tab-bisa ${postType === "bisa" ? "active" : ""}`}
+              className={`segmented-tab-btn tab-bisa ${postType === "bisa" ? "active" : ""}`}
               onClick={() => handleTypeSelect("bisa")}
             >
-              ✨ Saya Bisa
+              <span className="tab-icon" aria-hidden="true">🤝</span>
+              <span className="tab-text">Saya Bisa</span>
+              {postType === "bisa" && <span className="tab-active-check" aria-hidden="true">✓</span>}
             </button>
           </div>
 
-          <div className="sort-box">
-            <label htmlFor="catalog-sort" className="sort-label">Urutan:</label>
-            <select
-              id="catalog-sort"
-              value={sort}
-              onChange={(e) => {
-                setSort(e.target.value);
-                setPage(1);
-                updateURL({ sort: e.target.value, page: 1 });
-              }}
-              className="sort-select"
-            >
-              <option value="terbaru">Terbaru Diunggah</option>
-              <option value="jadwal">Jadwal Terdekat</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Baris Filter Dropdown & Kategori */}
-        <div className="panel-filter-row">
-          <div className="filter-dropdown-group">
-            <select
-              value={region}
-              onChange={(e) => handleRegionChange(e.target.value)}
-              aria-label="Pilih Wilayah DIY"
-              className="filter-select"
-            >
-              <option value="">📍 Semua 5 Wilayah DIY</option>
-              <option value="sleman">Sleman</option>
-              <option value="kota">Kota Yogyakarta</option>
-              <option value="bantul">Bantul</option>
-              <option value="kulonprogo">Kulon Progo</option>
-              <option value="gunungkidul">Gunungkidul</option>
-            </select>
-
-            <select
-              value={compensation}
-              onChange={(e) => handleCompensationChange(e.target.value)}
-              aria-label="Pilih Jenis Imbalan"
-              className="filter-select"
-            >
-              <option value="">💰 Semua Jenis Imbalan</option>
-              <option value="tarif">Tarif Pasti</option>
-              <option value="nego">Nego di Chat</option>
-              <option value="patungan">Patungan Biaya</option>
-              <option value="bayarsendiri">Bayar Sendiri-sendiri</option>
-              <option value="traktir">Traktir Makan/Minum</option>
-              <option value="sukarela">Sukarela (Tanpa Imbalan)</option>
-            </select>
-          </div>
-
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="btn-reset-filters"
-            >
-              ✕ Reset Filter
-            </button>
-          )}
-        </div>
-
-        {/* Kategori Utama (4 Kategori Sah Sesuai Spesifikasi) */}
-        <div className="panel-categories-row" role="group" aria-label="Filter 4 Kategori Aktivitas">
-          <span className="panel-categories-label" id="cat-filter-label">Kategori Utama:</span>
-          <div className="panel-categories-chips">
-            {Object.entries(CATEGORY_LABELS).map(([catKey, catLabel]) => {
-              const isSelected = categories.includes(catKey);
-              return (
-                <button
-                  key={catKey}
-                  type="button"
-                  className={`cat-chip-btn ${isSelected ? "selected" : ""}`}
-                  onClick={() => handleCategoryToggle(catKey)}
-                  aria-pressed={isSelected}
-                  aria-describedby="cat-filter-label"
-                >
-                  {isSelected ? "✓ " : ""}{catLabel}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Status Hasil Pencarian */}
-        <div className="panel-results-summary">
-          <div className="results-count-wrap">
-            <span className="results-count-text">
-              Ditemukan <strong>{filteredAndSortedPosts.length}</strong> postingan aktif
-              {region ? ` di wilayah ${REGION_LABELS[region] || region}` : ""}
-              {query ? ` untuk kata kunci "${query}"` : ""}
-            </span>
-          </div>
-
-          {hasActiveFilters && (
-            <div className="active-filter-chips">
-              {postType !== "all" && (
-                <span className="filter-badge-pill">
-                  {postType === "butuh" ? "🆘 Butuh" : "✨ Bisa"}
-                </span>
-              )}
-              {region && (
-                <span className="filter-badge-pill">
-                  📍 {REGION_LABELS[region] || region}
-                </span>
-              )}
-              {compensation && (
-                <span className="filter-badge-pill">
-                  💰 {compensation}
-                </span>
-              )}
-              {categories.map((c) => (
-                <span key={c} className="filter-badge-pill">
-                  🏷️ {CATEGORY_LABELS[c] || c}
-                </span>
-              ))}
+          {/* Baris 4 Kategori Utama */}
+          <div className="category-selection-section">
+            <span className="category-section-label">Kategori</span>
+            <div className="category-cards-grid" role="group" aria-label="4 Kategori Utama">
+              {categoriesData.map((cat) => {
+                const isSelected = category === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={`category-select-card ${cat.theme} ${isSelected ? "selected" : ""}`}
+                    onClick={() => handleCategorySelect(cat.id)}
+                    aria-pressed={isSelected}
+                  >
+                    <div className="cat-icon-circle" aria-hidden="true">
+                      {cat.icon}
+                    </div>
+                    <span className="cat-card-name">{cat.label}</span>
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* 3. Feed List */}
-      <section className="feed-stream" aria-label="Daftar Postingan Bantuan">
-        {loading ? (
-          <SkeletonList count={4} />
-        ) : error ? (
-          <div className="feed-error-card">
-            <p>Terjadi kesalahan saat memuat data: {error}</p>
-            <button
-              type="button"
-              className="button button-sm button-primary"
-              onClick={() => window.location.reload()}
-            >
-              Coba Lagi
-            </button>
           </div>
-        ) : visiblePosts.length > 0 ? (
-          visiblePosts.map((post) => (
-            <CatalogCard key={post.id} post={post} backUrl="/katalog" />
-          ))
-        ) : (
-          <EmptyState
-            icon="📍"
-            title={region ? `Belum ada postingan di ${REGION_LABELS[region] || region}` : "Tidak ada postingan yang sesuai"}
-            description={
-              region
-                ? `Wilayah ${REGION_LABELS[region] || region} belum memiliki permohonan atau penawaran aktif. Jadilah yang pertama membuat postingan di sini!`
-                : "Coba sesuaikan kata kunci atau bersihkan filter untuk melihat postingan lainnya."
-            }
-            actionText={region ? `+ Buat Postingan di ${REGION_LABELS[region] || region}` : "Reset Seluruh Filter"}
-            onAction={region ? () => router.push(`/buat-postingan?region=${region}`) : handleReset}
-          />
-        )}
-      </section>
 
-      {/* 4. Pagination */}
-      {pageCount > 1 && (
-        <nav className="pagination-bar" aria-label="Navigasi Halaman Postingan">
-          <button
-            type="button"
-            className="pagination-btn"
-            disabled={activePage <= 1}
-            onClick={() => {
-              const prev = activePage - 1;
-              setPage(prev);
-              updateURL({ page: prev });
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          >
-            &larr; Sebelumnya
-          </button>
-          <span className="pagination-info">
-            Halaman {activePage} dari {pageCount}
+          {/* Baris Filter Wilayah & Imbalan (Sejajar dengan Ikon Pin dan Dompet) */}
+          <div className="filter-dropdowns-row">
+            {/* Filter Wilayah */}
+            <div className="filter-select-box-wrap">
+              <div className="filter-box-icon" aria-hidden="true">📍</div>
+              <div className="filter-box-content">
+                <label htmlFor="select-region" className="filter-box-label">Wilayah</label>
+                <select
+                  id="select-region"
+                  className="filter-native-select"
+                  value={region}
+                  onChange={(e) => handleRegionChange(e.target.value)}
+                  aria-label="Pilih Wilayah"
+                >
+                  <option value="">Semua wilayah</option>
+                  <option value="sleman">Sleman</option>
+                  <option value="kota">Kota Yogyakarta</option>
+                  <option value="bantul">Bantul</option>
+                  <option value="kulonprogo">Kulon Progo</option>
+                  <option value="gunungkidul">Gunungkidul</option>
+                </select>
+              </div>
+              <span className="filter-box-chevron" aria-hidden="true">▾</span>
+            </div>
+
+            {/* Filter Imbalan (Ikon DOMPET) */}
+            <div className="filter-select-box-wrap">
+              <div className="filter-box-icon icon-wallet" aria-hidden="true">👛</div>
+              <div className="filter-box-content">
+                <label htmlFor="select-compensation" className="filter-box-label">Imbalan</label>
+                <select
+                  id="select-compensation"
+                  className="filter-native-select"
+                  value={compensation}
+                  onChange={(e) => handleCompensationChange(e.target.value)}
+                  aria-label="Pilih Bentuk Imbalan"
+                >
+                  <option value="">Semua imbalan</option>
+                  <option value="tarif">Tarif Pasti</option>
+                  <option value="sukarela">Sukarela</option>
+                  <option value="nego">Nego di Chat</option>
+                  <option value="bayarsendiri">Bayar Sendiri-sendiri</option>
+                  <option value="patungan">Patungan</option>
+                  <option value="traktir">Traktir</option>
+                </select>
+              </div>
+              <span className="filter-box-chevron" aria-hidden="true">▾</span>
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                className="filter-reset-action-btn"
+                onClick={handleResetFilters}
+                aria-label="Reset seluruh filter"
+              >
+                ✕ Reset filter
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* 4. Baris Jumlah Hasil & Pengurutan (Dipisahkan dari filter) */}
+        <div className="catalog-results-header-bar">
+          <span className="results-count-text">
+            <strong>{filteredAndSortedPosts.length} posting</strong> ditemukan
           </span>
-          <button
-            type="button"
-            className="pagination-btn"
-            disabled={activePage >= pageCount}
-            onClick={() => {
-              const next = activePage + 1;
-              setPage(next);
-              updateURL({ page: next });
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          >
-            Berikutnya &rarr;
-          </button>
-        </nav>
-      )}
+
+          <div className="sort-control-right">
+            <label htmlFor="catalog-sort-select" className="sort-label-text">
+              Urutkan:
+            </label>
+            <select
+              id="catalog-sort-select"
+              value={sort}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="catalog-sort-dropdown"
+              aria-label="Urutkan postingan"
+            >
+              <option value="terbaru">Terbaru</option>
+              <option value="terlama">Terlama</option>
+              <option value="deadline">Tenggat Terdekat</option>
+            </select>
+          </div>
+        </div>
+
+        {/* 5. Daftar Postingan Feed */}
+        {loading && allPosts.length === 0 ? (
+          <SkeletonList count={3} />
+        ) : error && allPosts.length === 0 ? (
+          <EmptyState
+            icon="⚠️"
+            title="Terjadi kesalahan"
+            description={error}
+            actionText="Muat Ulang"
+            onAction={() => window.location.reload()}
+          />
+        ) : filteredAndSortedPosts.length === 0 ? (
+          <EmptyState
+            icon="🔎"
+            title="Tidak ada postingan yang sesuai"
+            description="Coba ubah kata kunci pencarian, ganti filter wilayah atau kategori yang kamu pilih."
+            actionText="Reset Filter"
+            onAction={handleResetFilters}
+          />
+        ) : (
+          <div className="feed-posts-container" role="feed" aria-label="Daftar Postingan">
+            {filteredAndSortedPosts.map((post) => (
+              <CatalogCard key={post.id} post={post} backUrl="/katalog" />
+            ))}
+          </div>
+        )}
+      </div>
     </ThreeColumnLayout>
   );
 }
 
 export default function CatalogPage() {
   return (
-    <Suspense fallback={<div className="skeleton-container" style={{ maxWidth: "1200px", margin: "40px auto", padding: "0 16px" }}><SkeletonList count={4} /></div>}>
+    <Suspense
+      fallback={
+        <ThreeColumnLayout>
+          <div className="catalog-feed-page-wrapper">
+            <div className="catalog-top-header">
+              <div className="catalog-title-group">
+                <h1 className="catalog-page-title">Feed &amp; Cari</h1>
+                <p className="catalog-page-subtitle">Temukan bantuan yang sesuai kebutuhanmu.</p>
+              </div>
+            </div>
+            <SkeletonList count={3} />
+          </div>
+        </ThreeColumnLayout>
+      }
+    >
       <CatalogContent />
     </Suspense>
   );
