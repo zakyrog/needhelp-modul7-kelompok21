@@ -58,20 +58,21 @@ export function CatalogCard({ post, backUrl = "/katalog" }) {
   const authorInitial = authorName.charAt(0).toUpperCase();
 
   const isNeed = nature === "butuh";
-  const detailUrl = `/detail-postingan?id=${encodeURIComponent(id)}&back=${encodeURIComponent(backUrl)}`;
+  const isExample = Boolean(post.isExample || (typeof id === "string" && id.startsWith("demo-post-")));
+  const detailUrl = `/detail-postingan?id=${encodeURIComponent(id)}&back=${encodeURIComponent(backUrl)}${isExample ? "&demo=1" : ""}`;
 
   // Format kompensasi
-  const compLabel = COMPENSATION_LABELS[compType] || compType;
+  const compLabel = COMPENSATION_LABELS[compType] || "Sesuai Kesepakatan";
   let compFormatted = compLabel;
   if (compType === "tarif" && amount) {
-    compFormatted = `${formatRupiah(amount)}${compNote ? ` (${compNote})` : ""}`;
+    compFormatted = `${formatRupiah(amount)}${compNote ? ` ${compNote}` : ""}`;
   } else if (compNote) {
-    compFormatted = `${compLabel} • ${compNote}`;
+    compFormatted = compNote;
   }
 
   // Format waktu dan tanggal
-  const dateFormatted = date ? formatDate(date) : "Jadwal fleksibel";
-  const relativeTime = formatRelativeTime(post.created_at || post.date);
+  const dateFormatted = post.scheduleLabel || (date ? formatDate(date) : "Jadwal fleksibel");
+  const relativeTime = isExample ? "Data Contoh" : formatRelativeTime(post.created_at || post.date);
 
   // Status kuota
   const isFull = status === "kuota_penuh" || remainingQuota <= 0;
@@ -110,6 +111,11 @@ export function CatalogCard({ post, backUrl = "/katalog" }) {
             <span className="post-category-pill">
               {CATEGORY_LABELS[category] || category}
             </span>
+            {isExample && (
+              <span className="post-demo-badge" title="Data ilustrasi mode pratinjau">
+                Data Contoh
+              </span>
+            )}
           </div>
         </div>
       </header>

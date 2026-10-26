@@ -7,6 +7,8 @@ import { ThreeColumnLayout } from "../../components/ThreeColumnLayout";
 import { CATEGORY_LABELS, REGION_LABELS, COMPENSATION_LABELS, formatRupiah, formatDate } from "../../lib/data";
 import { validatePost, sanitizeString } from "../../lib/validation";
 import { useToast } from "../../components/Toast";
+import { CatalogCard } from "../../components/CatalogCard";
+import { EXAMPLE_POSTS_FIXTURE } from "../../data/examplePostsFixture";
 
 function DevPreviewContent() {
   const searchParams = useSearchParams();
@@ -173,6 +175,12 @@ function DevPreviewContent() {
             className={`preview-nav-tab ${view === "rating" ? "active" : ""}`}
           >
             ⭐ Rating & Ulasan
+          </Link>
+          <Link
+            href="/dev-preview?enable=1&view=feed-examples"
+            className={`preview-nav-tab ${view === "feed-examples" ? "active" : ""}`}
+          >
+            🌟 Contoh Feed (12 Post)
           </Link>
         </nav>
       </aside>
@@ -575,6 +583,37 @@ function DevPreviewContent() {
             </form>
           )}
         </article>
+      )}
+
+      {/* 5. VIEW: Contoh Feed 12 Postingan Yogyakarta */}
+      {view === "feed-examples" && (
+        <div>
+          <article className="feed-card" style={{ padding: "20px 24px", marginBottom: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+              <div>
+                <h1 style={{ fontSize: "18px", fontWeight: "700", margin: "0 0 6px" }}>
+                  12 Contoh Postingan Komunitas Yogyakarta
+                </h1>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--color-text-muted)", maxWidth: "580px" }}>
+                  Sesuai PRD dan arahan desain NeedHelp: 4 kategori utama (Bantuan Fisik, Ditemani, Pendampingan, Explore), dua jenis postingan (Saya Butuh & Saya Bisa), dengan variasi imbalan dan catatan khusus yang aman.
+                </p>
+              </div>
+              <Link
+                href="/?preview=1"
+                className="button button-outline"
+                style={{ fontSize: "13px", padding: "8px 14px", textDecoration: "none" }}
+              >
+                Buka di Beranda Utama &rarr;
+              </Link>
+            </div>
+          </article>
+
+          <div className="feed-posts-container" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {EXAMPLE_POSTS_FIXTURE.map((post) => (
+              <CatalogCard key={post.id} post={post} backUrl="/dev-preview?enable=1&view=feed-examples" />
+            ))}
+          </div>
+        </div>
       )}
     </ThreeColumnLayout>
   );

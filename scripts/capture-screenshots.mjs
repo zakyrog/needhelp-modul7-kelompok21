@@ -1,8 +1,12 @@
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const outputDir = path.resolve('docs', 'screenshots');
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
 
 const pages = [
   // Desktop - Beranda Publik
@@ -27,6 +31,12 @@ const pages = [
   { name: '03-desktop-1440-buat-postingan-preview.png', url: 'http://localhost:3000/dev-preview?enable=1&view=buat-postingan', width: 1440, height: 900 },
   { name: '05-desktop-1440-aktivitas-preview.png', url: 'http://localhost:3000/dev-preview?enable=1&view=aktivitas', width: 1440, height: 900 },
   { name: '12-desktop-1440-rating-preview.png', url: 'http://localhost:3000/dev-preview?enable=1&view=rating', width: 1440, height: 900 },
+  { name: '13-desktop-1440-feed-examples-tab.png', url: 'http://localhost:3000/dev-preview?enable=1&view=feed-examples', width: 1440, height: 900 },
+
+  // Mode Pratinjau 12 Contoh Postingan Komunitas Yogyakarta
+  { name: '01-desktop-1440-preview-feed.png', url: 'http://localhost:3000/?preview=1', width: 1440, height: 900 },
+  { name: '03-desktop-1440-detail-demo.png', url: 'http://localhost:3000/detail-postingan?id=demo-post-1&demo=1', width: 1440, height: 900 },
+  { name: '09-mobile-390-preview-feed.png', url: 'http://localhost:3000/?preview=1', width: 390, height: 844 },
 
   // Tablet 1024px & 768px
   { name: '07-tablet-1024-beranda.png', url: 'http://localhost:3000/', width: 1024, height: 768 },
@@ -46,12 +56,23 @@ for (const p of pages) {
   console.log(`-> Capturing ${p.name} (${p.width}x${p.height}) from ${p.url}`);
   try {
     const isMobile = p.width <= 768;
-    const mobileArgs = isMobile
-      ? ` --user-agent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1" --enable-viewport --force-device-scale-factor=1`
-      : '';
-    const cmd = `"${chromePath}" --headless=new --hide-scrollbars --window-size=${p.width},${p.height}${mobileArgs} --screenshot="${outPath}" "${p.url}"`;
-    execSync(cmd, { stdio: 'ignore', timeout: 15000 });
-    console.log(`   ✅ Saved: ${p.name}`);
+    const args = [
+      '--headless=new',
+      '--disable-gpu',
+      '--hide-scrollbars',
+      `--window-size=${p.width},${p.height}`,
+      `--screenshot=${outPath}`,
+      p.url,
+    ];
+    if (isMobile) {
+      args.push('--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1');
+    }
+    const res = spawnSync(chromePath, args, { timeout: 15000 });
+    if (res.error) {
+      console.warn(`   ⚠️ Warning: failed to capture ${p.name}:`, res.error.message);
+    } else {
+      console.log(`   ✅ Saved: ${p.name}`);
+    }
   } catch (err) {
     console.warn(`   ⚠️ Warning: failed to capture ${p.name}:`, err.message);
   }

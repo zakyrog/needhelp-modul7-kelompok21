@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchPublicPosts, REGION_LABELS, CATEGORY_LABELS } from "../lib/data.js";
+import { fetchPublicPosts } from "../lib/data.js";
+import { EXAMPLE_POSTS_FIXTURE } from "../data/examplePostsFixture.js";
 import { ThreeColumnLayout } from "../components/ThreeColumnLayout";
 import { QuickPostBox } from "../components/QuickPostBox";
 import { CatalogCard } from "../components/CatalogCard";
@@ -13,6 +14,9 @@ import { SkeletonList } from "../components/Skeleton";
 function HomeFeedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Mode pratinjau data contoh (nonaktif secara default)
+  const isPreview = searchParams.get("preview") === "1";
 
   // Membaca initial filter dari URL jika ada
   const initialType = searchParams.get("type") || "all";
@@ -34,6 +38,16 @@ function HomeFeedContent() {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setError(null);
+
+    if (isPreview) {
+      // Menggunakan data contoh fixture untuk mode preview (12 ide bantuan mahasiswa & warga Yogyakarta)
+      setPosts(EXAMPLE_POSTS_FIXTURE);
+      setLoading(false);
+      return;
+    }
+
+    // Mode normal: mengambil postingan riil dari database Supabase
     fetchPublicPosts()
       .then((data) => {
         if (isMounted) {
@@ -51,7 +65,7 @@ function HomeFeedContent() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isPreview]);
 
   // Filter logika lengkap
   const filteredPosts = useMemo(() => {
@@ -121,17 +135,41 @@ function HomeFeedContent() {
     { id: "explore", label: "Explore", icon: "🧭" },
   ];
 
-  const countButuh = posts.filter((p) => p.nature === "butuh").length;
-  const countBisa = posts.filter((p) => p.nature === "bisa").length;
-
   return (
     <ThreeColumnLayout>
+      {/* Banner Khusus Mode Preview (Hanya tampil jika ?preview=1) */}
+      {isPreview && (
+        <aside className="preview-mode-banner" role="status" aria-label="Penanda Mode Pratinjau">
+          <div className="banner-left-info">
+            <span className="banner-badge">MODE PREVIEW — DATA CONTOH</span>
+            <span className="banner-text">
+              Menampilkan 12 contoh postingan ilustrasi kebutuhan & penawaran mahasiswa dan warga Yogyakarta. Data ini fiktif untuk evaluasi antarmuka dan tidak disimpan ke database.
+            </span>
+          </div>
+          <Link href="/" className="banner-close-btn" title="Kembali ke feed asli">
+            ✕ Kembali ke Feed Asli
+          </Link>
+        </aside>
+      )}
+
       {/* 1. Judul Halaman Beranda & Deskripsi */}
       <header className="home-feed-header">
-        <h1 className="home-page-title">Beranda</h1>
-        <p className="home-page-subtitle">
-          Temukan bantuan dan bagikan kemampuanmu di Yogyakarta.
-        </p>
+        <div className="home-feed-title-row">
+          <div>
+            <h1 className="home-page-title">Beranda</h1>
+            <p className="home-page-subtitle">
+              Temukan bantuan dan bagikan kemampuanmu di Yogyakarta.
+            </p>
+          </div>
+
+          {!isPreview && (
+            <div className="preview-toggle-hint">
+              <Link href="/?preview=1" className="link-see-examples" title="Buka mode pratinjau 12 contoh postingan nyata">
+                💡 Lihat contoh posting &rarr;
+              </Link>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* 2. Kartu Pilihan Buat Post: Apa yang ingin kamu lakukan? */}
@@ -288,11 +326,11 @@ function HomeFeedContent() {
           </div>
         ) : filteredPosts.length > 0 ? (
           <>
-            {filteredPosts.slice(0, 8).map((post) => (
-              <CatalogCard key={post.id} post={post} backUrl="/" />
+            {filteredPosts.map((post) => (
+              <CatalogCard key={post.id} post={post} backUrl={isPreview ? "/?preview=1" : "/"} />
             ))}
 
-            {filteredPosts.length > 8 && (
+            {!isPreview && filteredPosts.length > 8 && (
               <div className="feed-more-footer text-center" style={{ margin: "20px 0 32px" }}>
                 <Link
                   href="/katalog"
@@ -308,9 +346,13 @@ function HomeFeedContent() {
           <EmptyState
             icon="🔍"
             title="Tidak ada postingan yang sesuai"
-            description="Coba ubah filter atau bersihkan kata kunci pencarian untuk melihat postingan lainnya."
-            actionText="Reset Seluruh Filter"
-            onAction={handleResetFilters}
+            description={
+              isPreview
+                ? "Tidak ada contoh postingan yang cocok dengan kombinasi filter yang dipilih."
+                : "Belum ada postingan aktif pada filter ini. Jadilah yang pertama membuat permohonan bantuan atau menawarkan keahlian di Jogja!"
+            }
+            actionText={isPreview ? "Reset Seluruh Filter" : "+ Buat Postingan Sekarang"}
+            onAction={isPreview ? handleResetFilters : () => router.push("/buat-postingan")}
           />
         )}
       </div>

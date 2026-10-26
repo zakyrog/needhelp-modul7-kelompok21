@@ -68,6 +68,33 @@ Pada sesi ini, telah diselesaikan implementasi komprehensif mengikuti gambar ref
   6. Bagian bawah: Sisi kiri memuat informasi kuota (`👥 Dibutuhkan 1 orang`) atau panduan chat (`💬 Diskusikan kebutuhan lewat chat`), sisi kanan memuat tombol solid toska **`Lihat detail →`**.
 * Seluruh data menggunakan data asli aplikasi/database tanpa menanam data palsu.
 
+### G. 12 Contoh Postingan Nyata Komunitas Yogyakarta & Mode Preview Terisolasi
+* **Penyajian Data Contoh Fixture ([`src/data/examplePostsFixture.js`](file:///C:/needhelp-modul7-kelompok21-main/src/data/examplePostsFixture.js)):**
+  * Memuat 12 contoh postingan otentik untuk mahasiswa dan warga Yogyakarta:
+    1. *Bantu antre pesanan kuliner di Kotabaru* (Saya Butuh • Bantuan Fisik • Kotabaru, Kota Jogja • Rp35.000/sesi)
+    2. *Bisa bantu ambil dan antar barang sekitar kampus* (Saya Bisa • Bantuan Fisik • Gejayan, Sleman • Sesuai kesepakatan jarak)
+    3. *Butuh bantuan pindahan kos di Pogung* (Saya Butuh • Bantuan Fisik • Pogung, Sleman • Rp75.000/orang)
+    4. *Cari teman nugas di perpustakaan* (Saya Butuh • Ditemani • Perpustakaan Umum, Kota Jogja • Sukarela)
+    5. *Bisa menemani jalan pagi di area Bantul* (Saya Bisa • Ditemani • Area Publik Bantul • Sukarela)
+    6. *Cari teman datang ke pameran seni* (Saya Butuh • Ditemani • Galeri Seni, Kota Jogja • Sukarela)
+    7. *Bisa bantu belajar Excel dari dasar* (Saya Bisa • Pendampingan • Depok, Sleman • Rp40.000/sesi)
+    8. *Bantu foto produk camilan untuk usaha rumahan* (Saya Butuh • Pendampingan • Kasihan, Bantul • Rp60.000/sesi)
+    9. *Bisa bantu foto OOTD pakai HP* (Saya Bisa • Pendampingan • Kotabaru, Kota Jogja • Rp45.000/sesi)
+    10. *Cari teman jelajah Kotagede sambil foto* (Saya Butuh • Explore • Kotagede, Kota Jogja • Sukarela)
+    11. *Bisa menemani mengenal area Wates* (Saya Bisa • Explore • Wates, Kulon Progo • Sukarela)
+    12. *Cari teman eksplor kuliner di Wonosari* (Saya Butuh • Explore • Wonosari, Gunungkidul • Sukarela)
+  * **Kesesuaian PRD:** Tepat 4 kategori utama (`bantuan`, `ditemani`, `pendampingan`, `explore`) tanpa menambah kategori semu baru. Dua jenis postingan seimbang (*Saya Butuh* & *Saya Bisa*).
+  * **Isolasi Mutlak (Non-Database):** Seluruh data contoh murni fixture lokal di memori frontend. Tidak ada data contoh yang pernah dikirim atau mencemari database Supabase. Feed publik tetap menjaga `EmptyState` asli jika belum ada postingan pengguna riil.
+  * **Akses & Penanda Visual Berlabel:**
+    * Diakses melalui parameter `/?preview=1` atau klik tautan halus `💡 Lihat contoh posting →` pada judul Beranda.
+    * Menampilkan banner peringatan kuning di bagian atas: `⚠️ MODE PREVIEW — DATA CONTOH: Menampilkan 12 contoh postingan ilustrasi kebutuhan & penawaran mahasiswa dan warga Yogyakarta. Data ini fiktif untuk evaluasi antarmuka dan tidak disimpan ke database.` disertai tombol `✕ Kembali ke Feed Asli`.
+    * Setiap kartu diberi lencana penanda `Data Contoh`.
+* **Detail Postingan & Kotak Peringatan Aman ([`src/app/detail-postingan/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/detail-postingan/page.js)):**
+  * Mendukung resolusi ID contoh (misal `demo-post-1`) dengan penanda banner mode preview.
+  * Menampilkan kotak callout khusus toska **Catatan Detail & Aturan Kesepakatan** (misal instruksi out-of-pocket biaya, batas waktu antre, atau prinsip bayar masing-masing).
+* **Integrasi Tab Pratinjau Pengembang ([`src/app/dev-preview/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/dev-preview/page.js)):**
+  * Ditambahkan tab ke-4: `🌟 Contoh Feed (12 Post)` pada bilah navigasi `/dev-preview?enable=1&view=feed-examples`.
+
 ---
 
 ## 2. Halaman & Viewport yang Sudah Diperiksa Secara Visual
@@ -85,22 +112,17 @@ Tangkapan layar resolusi tinggi disimpan pada folder [`docs/screenshots/`](file:
 | **Katalog Desktop (1440px)** | [`docs/screenshots/02-desktop-1440-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/02-desktop-1440-katalog.png) | Layout 2-kolom terintegrasi selaras dengan kartu postingan baru. |
 | **Chat Desktop (1440px)** | [`docs/screenshots/04-desktop-1440-chat.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/04-desktop-1440-chat.png) | Halaman pesan berfungsi normal. |
 | **Profil Desktop (1440px)** | [`docs/screenshots/06-desktop-1440-profil.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/06-desktop-1440-profil.png) | Layout 2-kolom sidebar profil selaras. |
-  * Menggantinya dengan kartu informasi fitur riil: **5 Kab/Kota DIY**, **2 Arah (Saya Butuh & Saya Bisa)**, dan **Kesepakatan Bersama**.
-  * Menambahkan banner pemberitahuan redirect kontekstual (`🔒 Silakan masuk atau daftar akun terlebih dahulu untuk melanjutkan ke halaman yang Anda tuju`).
-* **Penghapusan Indikator Palsu di Chat ([`src/app/chat/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/chat/page.js)):**
-  * Menghilangkan green pulsing dot dan label palsu `Online • Terverifikasi Komunitas`.
-  * Menggantinya dengan status kontekstual yang sah: `💬 Obrolan Langsung • Anggota NeedHelp Jogja`.
+| **Mode Preview Feed (1440px)** | [`docs/screenshots/01-desktop-1440-preview-feed.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/01-desktop-1440-preview-feed.png) | **Mode Preview 12 Postingan:** Banner kuning penanda data contoh terisolasi, filter 4 kategori & wilayah responsif, kartu berlabel `Data Contoh`. |
+| **Detail Postingan Demo (1440px)** | [`docs/screenshots/03-desktop-1440-detail-demo.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/03-desktop-1440-detail-demo.png) | Menampilkan banner data contoh, kotak callout toska `Catatan Detail & Aturan Kesepakatan`, dan aksi aman tanpa mutasi DB. |
+| **Mobile Mode Preview (390px)** | [`docs/screenshots/09-mobile-390-preview-feed.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/09-mobile-390-preview-feed.png) | Tata letak kolom tunggal responsif, banner pratinjau adaptif, dan navigasi bawah tetap utuh. |
+| **Tab Contoh Feed Dev-Preview (1440px)** | [`docs/screenshots/13-desktop-1440-feed-examples-tab.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/13-desktop-1440-feed-examples-tab.png) | Tab ke-4 pada `/dev-preview?enable=1&view=feed-examples` merender seluruh 12 kartu contoh secara mandiri. |
 
-### E. Mode Pratinjau UI Privat Terisolasi & Berlabel ([`src/app/dev-preview/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/dev-preview/page.js))
-* Membangun rute pengujian visual khusus `/dev-preview` yang memenuhi 4 syarat ketat dari pengguna:
-  1. **Terpisah:** Rute mandiri di luar rute utama aplikasi.
-  2. **Nonaktif secara default:** Hanya dapat diakses dengan parameter otorisasi eksplisit `?enable=1`.
-  3. **Berlabel tegas:** Menampilkan banner kuning di atas halaman bertuliskan `⚠️ PRATINJAU UI LOKAL BERLABEL: Seluruh mutasi hanya berjalan di memori peramban tanpa koneksi tulis ke Supabase`.
-  4. **Tanpa mutasi database:** Formulir divalidasi dengan logika `validatePost` asli, namun aksi submit hanya memicu feedback lokal tanpa mengirim mutasi ke Supabase.
-* Menyediakan pratinjau visual lengkap untuk 3 halaman privat:
-  * Form Buat Postingan (`?view=buat-postingan`) dengan dua pintu setara (Saya Butuh vs Saya Bisa), 4 kategori, 5 wilayah DIY, dan 6 opsi imbalan.
-  * Dashboard Aktivitas (`?view=aktivitas`) dengan tab status, detail titik temu, dan simulasi konfirmasi selesai dua pihak.
-  * Formulir Rating (`?view=rating`) dengan selektor 1-5 bintang interaktif dan validasi ulasan 10-500 karakter.
+---
+
+## 3. Keamanan, Otorisasi RLS & Tata Kelola Data
+* **Pembersihan Klaim Kosong & Kredensial:** Seluruh data contoh terisolasi murni sebagai fixture lokal (`src/data/examplePostsFixture.js`) dan tidak pernah dikirim ke database Supabase.
+* **Proteksi Rute Server:** Halaman `/buat-postingan` dan `/aktivitas` tetap dilindungi di sisi server (redirect otomatis ke login bagi pengunjung tamu).
+* **Otorisasi RPC:** Fungsi `agree_to_deal` dan `confirm_activity_completion` tetap terlindungi dengan keamanan SECURITY DEFINER dan pengecekan pengguna yang ketat.
 
 ---
 

@@ -14,6 +14,7 @@ import {
   formatRupiah,
   formatDateTime,
 } from "../../lib/data.js";
+import { getExamplePostById } from "../../data/examplePostsFixture.js";
 import { createClient } from "../../utils/supabase/client";
 import { ThreeColumnLayout } from "../../components/ThreeColumnLayout";
 import { EmptyState } from "../../components/EmptyState";
@@ -25,9 +26,16 @@ function DetailPostContent() {
   const { showToast } = useToast();
 
   const id = searchParams.get("id");
-  const backUrl = searchParams.get("back") || "/katalog";
+  const isDemoParam = searchParams.get("demo") === "1";
+  const backUrl = searchParams.get("back") || (isDemoParam ? "/?preview=1" : "/");
 
-  const [post, setPost] = useState(() => (id ? getPost(id) || getPublicPost(id) : null));
+  const [post, setPost] = useState(() => {
+    if (!id) return null;
+    if (id.startsWith("demo-post-") || isDemoParam) {
+      return getExamplePostById(id) || null;
+    }
+    return getPost(id) || getPublicPost(id);
+  });
   const [loading, setLoading] = useState(!post);
 
   useEffect(() => {
@@ -38,6 +46,16 @@ function DetailPostContent() {
     }
 
     async function loadPostData() {
+      // 0. Coba ambil dari contoh demo fixture jika ID diawali demo-post- atau ada param demo=1
+      if (id.startsWith("demo-post-") || isDemoParam) {
+        const demoPost = getExamplePostById(id);
+        if (demoPost && isMounted) {
+          setPost(demoPost);
+          setLoading(false);
+          return;
+        }
+      }
+
       // 1. Coba ambil dari Supabase
       try {
         const supabase = createClient();
@@ -164,8 +182,9 @@ function DetailPostContent() {
     : (post.author?.rating ? 8 : 0);
   const authorId = post.author_id || post.authorId || "";
 
+  const isExample = Boolean(post.isExample || (id && id.startsWith("demo-post-")) || isDemoParam);
   const timeFormatted = endTime ? `${time.slice(0, 5)} - ${endTime.slice(0, 5)} WIB` : `${time.slice(0, 5)} WIB`;
-  const dateFormatted = formatDate(date);
+  const dateFormatted = post.scheduleLabel || (date ? formatDate(date) : "Jadwal fleksibel");
 
   // Kompensasi text
   const compLabel = COMPENSATION_LABELS[compType] || compType;
@@ -188,6 +207,21 @@ function DetailPostContent() {
 
   return (
     <ThreeColumnLayout>
+      {/* Banner Khusus Mode Preview jika postingan adalah data contoh */}
+      {isExample && (
+        <aside className="preview-mode-banner" role="status" aria-label="Penanda Mode Pratinjau">
+          <div className="banner-left-info">
+            <span className="banner-badge">MODE PREVIEW — DATA CONTOH</span>
+            <span className="banner-text">
+              Ini adalah postingan contoh untuk demonstrasi fitur NeedHelp Yogyakarta. Data ini fiktif untuk evaluasi antarmuka dan tidak disimpan ke database.
+            </span>
+          </div>
+          <Link href="/?preview=1" className="banner-close-btn" title="Kembali ke feed contoh">
+            &larr; Kembali ke Feed Contoh
+          </Link>
+        </aside>
+      )}
+
       <nav aria-label="Jejak Navigasi" style={{ marginBottom: "12px" }}>
         <Link href={backUrl} className="detail-back-link" style={{ fontSize: "13px", fontWeight: "600", textDecoration: "none", color: "var(--color-action-primary)" }}>
           &larr; Kembali ke Feed
@@ -206,6 +240,11 @@ function DetailPostContent() {
           <span className="post-region-badge">
             📍 {REGION_LABELS[region] || region}
           </span>
+          {isExample && (
+            <span className="post-demo-badge" title="Data ilustrasi mode pratinjau">
+              Data Contoh
+            </span>
+          )}
           {isNeed && (
             <span className={`quota-pill ${isFull ? "quota-full" : "quota-available"}`}>
               {isFull ? "Kuota Terpenuhi" : `Sisa Kuota: ${remainingQuota} dari ${quota} orang`}
@@ -239,7 +278,7 @@ function DetailPostContent() {
         </div>
 
         {/* Description */}
-        <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "20px" }}>
           <h2 style={{ fontSize: "15px", fontWeight: "700", margin: "0 0 8px 0", color: "var(--color-text-primary)" }}>
             {isNeed ? "Rincian Kebutuhan Bantuan:" : "Rincian Keahlian yang Ditawarkan:"}
           </h2>
@@ -247,6 +286,19 @@ function DetailPostContent() {
             {description}
           </div>
         </div>
+
+        {/* Catatan Khusus & Ketentuan Aman (Khusus Postingan Contoh & Detail) */}
+        {post.detailNote && (
+          <div className="detail-note-callout">
+            <div className="detail-note-header">
+              <span className="detail-note-icon" aria-hidden="true">💡</span>
+              <strong className="detail-note-title">Catatan Detail & Aturan Kesepakatan:</strong>
+            </div>
+            <p className="detail-note-body">
+              {post.detailNote}
+            </p>
+          </div>
+        )}
 
         {/* Meta Info Grid */}
         <div className="feed-card-meta-grid" style={{ padding: "16px", gap: "10px", marginBottom: "24px" }}>
@@ -275,7 +327,16 @@ function DetailPostContent() {
 
         {/* Action Buttons */}
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--color-border-subtle)", paddingTop: "18px" }}>
-          {isFull ? (
+          {isExample ? (
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={() => showToast("ℹ️ Ini adalah data contoh mode pratinjau. Fitur kesepakatan chat aktif pada postingan pengguna nyata di feed.", "info")}
+              style={{ padding: "10px 24px", fontSize: "14px", fontWeight: "600" }}
+            >
+              💬 Kirim Pesan & Sepakati (Demo)
+            </button>
+          ) : isFull ? (
             <div className="badge-closed" style={{ padding: "8px 16px", fontSize: "13px" }}>
               ⛔ Bantuan ini sudah terpenuhi kuotanya.
             </div>
