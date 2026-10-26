@@ -127,7 +127,7 @@ Semua halaman telah diperiksa secara visual melalui tangkapan layar Chrome Headl
 2. `3ab6612`: *style(feed): replace oversized banner with compact 4-category intro card and clean catalog labeling*
 3. `da9850d`: *feat(preview): add isolated labeled local dev preview for private forms, activities, and ratings*
 4. `9819613`: *fix(layout): neutralize legacy catalog CSS overrides, enforce center column flex width, and capture full visual verification suite*
-5. `feat/phase-2-ui-features`: *fix(ui): polish header navbar dropdown and catalog filter panel 4-row layout*
+5. `0bd7dc1`: *fix(ui): polish header navbar dropdown and catalog filter panel 4-row layout*
 
 ### Cara Menjalankan Aplikasi:
 * Menjalankan server lokal: `npm run dev` (buka [http://localhost:3000](http://localhost:3000)).
