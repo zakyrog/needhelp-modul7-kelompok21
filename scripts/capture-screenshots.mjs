@@ -5,12 +5,17 @@ const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const outputDir = path.resolve('docs', 'screenshots');
 
 const pages = [
-  // Desktop 1440px - Publik
+  // Desktop - Beranda Publik
   { name: '01-desktop-1440-beranda.png', url: 'http://localhost:3000/', width: 1440, height: 900 },
+  { name: '01-desktop-1280-beranda.png', url: 'http://localhost:3000/', width: 1280, height: 800 },
   { name: '01-desktop-1152-zoom125-beranda.png', url: 'http://localhost:3000/', width: 1152, height: 864 },
+  
+  // Desktop - Katalog Publik
   { name: '02-desktop-1440-katalog.png', url: 'http://localhost:3000/katalog', width: 1440, height: 900 },
   { name: '02-desktop-1280-katalog.png', url: 'http://localhost:3000/katalog', width: 1280, height: 800 },
   { name: '02-desktop-1152-zoom125-katalog.png', url: 'http://localhost:3000/katalog', width: 1152, height: 864 },
+  
+  // Fitur Lain Desktop
   { name: '04-desktop-1440-chat.png', url: 'http://localhost:3000/chat', width: 1440, height: 900 },
   { name: '06-desktop-1440-profil.png', url: 'http://localhost:3000/profil', width: 1440, height: 900 },
   
@@ -23,8 +28,9 @@ const pages = [
   { name: '05-desktop-1440-aktivitas-preview.png', url: 'http://localhost:3000/dev-preview?enable=1&view=aktivitas', width: 1440, height: 900 },
   { name: '12-desktop-1440-rating-preview.png', url: 'http://localhost:3000/dev-preview?enable=1&view=rating', width: 1440, height: 900 },
 
-  // Tablet 1024px
+  // Tablet 1024px & 768px
   { name: '07-tablet-1024-beranda.png', url: 'http://localhost:3000/', width: 1024, height: 768 },
+  { name: '07-tablet-768-beranda.png', url: 'http://localhost:3000/', width: 768, height: 1024 },
   { name: '08-tablet-1024-katalog.png', url: 'http://localhost:3000/katalog', width: 1024, height: 768 },
 
   // Mobile 390px

@@ -2194,3 +2194,1154 @@
     width: 100% !important;
   }
 }
+
+/* ====================================================================
+   MODUL 8 REVISI BERANDA: 2-KOLOM (DESKTOP ACUAN REFERENSI) & KOMPONEN
+   ==================================================================== */
+
+/* 1. Kontainer Layout 2-Kolom Terpusat */
+.two-column-layout-wrapper {
+  max-width: 1240px;
+  margin: 24px auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.two-column-layout-wrapper .layout-col-left {
+  width: 268px;
+  flex: 0 0 268px;
+  position: sticky;
+  top: calc(var(--header-height, 64px) + 20px);
+  align-self: flex-start;
+}
+
+.two-column-layout-wrapper .layout-col-center {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 2. Header Desktop Actions & Search */
+.header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  background: transparent;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.header-icon-btn:hover {
+  background: #f1f5f9;
+  color: #0d9488;
+}
+
+.header-icon-btn.active {
+  color: #0d9488;
+  background: #e6f4f1;
+}
+
+.notif-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-notif-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+}
+
+.mobile-dropdown-drawer {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border-subtle);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  padding: 12px 16px;
+  z-index: 1100;
+}
+
+.mobile-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-nav-list a {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mobile-nav-list a.active {
+  background: #e6f4f1;
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.mobile-logout-item {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.mobile-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  color: #dc2626;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 3. Sidebar Kiri (Navigasi & Profil) */
+.app-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.sidebar-main-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.sidebar-profile-header {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sidebar-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.sidebar-avatar-circle {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #0d9488;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-avatar-circle.guest-avatar {
+  background: #f0fdf9;
+  color: #0d9488;
+  font-size: 20px;
+  border: 1px solid #ccfbf1;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-user-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f2e33;
+  margin: 0 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.sidebar-user-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-nav-list {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-nav-item {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #334155;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.sidebar-nav-item:hover {
+  background: #f1f5f9;
+  color: #0f2e33;
+}
+
+.sidebar-nav-item.active {
+  background: #e6f4f1;
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.sidebar-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  color: inherit;
+}
+
+.sidebar-nav-label {
+  flex: 1;
+}
+
+/* Card 2: Bantu dengan Aman (Terpisah 16px) */
+.sidebar-safety-card {
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.safety-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.safety-icon-wrap {
+  color: #0d9488;
+  display: flex;
+}
+
+.safety-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f2e33;
+  margin: 0;
+}
+
+.safety-card-desc {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+
+.safety-card-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0d9488;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.safety-card-link-btn:hover {
+  text-decoration: underline;
+}
+
+.sidebar-footer-links {
+  margin-top: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.sidebar-footer-link {
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.sidebar-footer-link:hover {
+  color: #64748b;
+  text-decoration: underline;
+}
+
+.sidebar-footer-text {
+  color: #94a3b8;
+}
+
+.footer-dot {
+  color: #cbd5e1;
+}
+
+/* 4. Area Buat Posting: Apa yang ingin kamu lakukan? */
+.home-feed-header {
+  margin-bottom: 4px;
+}
+
+.home-page-title {
+  font-size: 30px;
+  font-weight: 800;
+  color: #0f2e33;
+  letter-spacing: -0.5px;
+  margin: 0 0 4px;
+}
+
+.home-page-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0 0 16px;
+}
+
+.post-action-prompt-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  margin-bottom: 20px;
+}
+
+.prompt-card-heading {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f2e33;
+  margin: 0 0 16px;
+}
+
+.prompt-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.prompt-option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.prompt-option-item:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+.option-info-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.option-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.option-text-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.option-title {
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.option-desc {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.option-arrow-pill {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.prompt-option-item:hover .option-arrow-pill {
+  transform: translateX(3px);
+}
+
+/* Option Butuh */
+.prompt-option-item.option-butuh {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.prompt-option-item.option-butuh:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+  box-shadow: 0 4px 6px -1px rgba(225, 29, 72, 0.08);
+}
+
+.option-icon-circle.icon-butuh {
+  background: #fee2e2;
+  color: #e11d48;
+}
+
+.option-title.title-butuh {
+  color: #be123c;
+}
+
+.option-desc.desc-butuh {
+  color: #9f1239;
+  opacity: 0.85;
+}
+
+.option-arrow-pill.arrow-butuh {
+  background: #fee2e2;
+  color: #be123c;
+}
+
+/* Option Bisa */
+.prompt-option-item.option-bisa {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.prompt-option-item.option-bisa:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.08);
+}
+
+.option-icon-circle.icon-bisa {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.option-title.title-bisa {
+  color: #065f46;
+}
+
+.option-desc.desc-bisa {
+  color: #047857;
+  opacity: 0.85;
+}
+
+.option-arrow-pill.arrow-bisa {
+  background: #dcfce7;
+  color: #065f46;
+}
+
+/* 5. Filter & Kontrol Feed */
+.feed-controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.filter-controls-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.nature-pill-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nature-tab-btn {
+  border: none;
+  background: transparent;
+  padding: 7px 18px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nature-tab-btn:hover {
+  background: #f1f5f9;
+  color: #0f2e33;
+}
+
+.nature-tab-btn.active {
+  background: #e6f4f1;
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.nature-tab-btn.active.active-butuh {
+  background: #ffe4e6;
+  color: #be123c;
+  font-weight: 600;
+}
+
+.nature-tab-btn.active.active-bisa {
+  background: #dcfce7;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.filter-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.select-sort-pill {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 7px 16px;
+  font-size: 13.5px;
+  color: #334155;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.select-sort-pill:focus,
+.select-sort-pill:hover {
+  border-color: #cbd5e1;
+}
+
+.btn-filter-toggle {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 7px 16px;
+  font-size: 13.5px;
+  color: #334155;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  transition: all 0.15s;
+}
+
+.btn-filter-toggle:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.btn-filter-toggle.active {
+  border-color: #0d9488;
+  color: #0d9488;
+  background: #e6f4f1;
+}
+
+.active-filter-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0d9488;
+}
+
+.filter-controls-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.category-chips-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-chip-btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.category-chip-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.category-chip-btn.active {
+  background: #e6f4f1;
+  border-color: #0d9488;
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.select-region-pill {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: #334155;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.select-region-pill:focus,
+.select-region-pill:hover {
+  border-color: #cbd5e1;
+}
+
+.advanced-filter-drawer {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-top: 4px;
+}
+
+.drawer-inner-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.drawer-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.drawer-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.drawer-input {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0f2e33;
+}
+
+.drawer-reset-btn {
+  background: #fef2f2;
+  border: 1px solid #fecdd3;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.drawer-reset-btn:hover {
+  background: #fee2e2;
+}
+
+/* 6. Post Feed Card (Format Gambar Referensi) */
+.post-feed-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  margin-bottom: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.post-feed-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.card-author-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.card-avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.card-avatar-circle.avatar-need {
+  background: #0d9488;
+}
+
+.card-avatar-circle.avatar-offer {
+  background: #334155;
+}
+
+.card-author-meta-block {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.author-identity-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.author-name-text {
+  font-weight: 700;
+  color: #0f2e33;
+}
+
+.meta-sep {
+  color: #cbd5e1;
+}
+
+.author-location-text {
+  color: #64748b;
+}
+
+.author-time-text {
+  color: #94a3b8;
+}
+
+.author-rating-text {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.card-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.post-nature-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+.post-nature-pill.pill-butuh {
+  background: #fee2e2;
+  color: #be123c;
+}
+
+.post-nature-pill.pill-bisa {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.post-category-pill {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+.card-post-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f2e33;
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+
+.card-post-title .title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.card-post-title .title-link:hover {
+  color: #0d9488;
+}
+
+.card-post-description {
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.card-meta-chips-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.meta-chip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: #475569;
+}
+
+.card-post-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.footer-status-section {
+  font-size: 13.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quota-status-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quota-status-text.status-full {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.offer-chat-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-detail-action-btn {
+  background: #0d9488;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.card-detail-action-btn:hover {
+  background: #0f766e;
+}
+
+/* 7. Modal Panduan Aman */
+.safety-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.safety-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 520px;
+  width: 100%;
+  overflow: hidden;
+  animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.safety-modal-header {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.safety-modal-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.safety-modal-icon {
+  font-size: 20px;
+}
+
+.safety-modal-heading {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f2e33;
+  margin: 0;
+}
+
+.safety-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.safety-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f2e33;
+}
+
+.safety-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.safety-point strong {
+  display: block;
+  font-size: 14px;
+  color: #0f2e33;
+  margin-bottom: 4px;
+}
+
+.safety-point p {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.safety-modal-footer {
+  padding: 14px 20px 18px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* 8. Media Queries Responsif (Desktop Zoom, Tablet, & Mobile) */
+@media (max-width: 1024px) {
+  .two-column-layout-wrapper {
+    gap: 18px;
+    padding: 0 16px;
+  }
+  .two-column-layout-wrapper .layout-col-left {
+    width: 240px;
+    flex: 0 0 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .two-column-layout-wrapper {
+    flex-direction: column;
+    padding: 0 14px;
+    margin: 16px auto;
+  }
+
+  .two-column-layout-wrapper .layout-col-center {
+    order: 1;
+    width: 100%;
+  }
+
+  .two-column-layout-wrapper .layout-col-left {
+    order: 2;
+    width: 100%;
+    flex: none;
+    position: static;
+    margin-top: 24px;
+  }
+
+  .sidebar-main-card {
+    display: none;
+  }
+
+  .sidebar-safety-card {
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+
+  .prompt-options-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .filter-controls-row-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nature-pill-tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nature-tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 7px 8px;
+    font-size: 13px;
+  }
+
+  .filter-actions-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .select-sort-pill {
+    flex: 1;
+  }
+
+  .filter-controls-row-bottom {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .category-chips-group {
+    width: 100%;
+  }
+
+  .select-region-pill {
+    width: 100%;
+  }
+
+  .card-post-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-detail-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .menu-toggle {
+    display: block !important;
+  }
+}
+

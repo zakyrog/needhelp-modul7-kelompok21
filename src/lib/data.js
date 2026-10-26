@@ -441,6 +441,25 @@ export function formatMessageTime(iso) {
   return `${String(date.getHours()).padStart(2, "0")}.${String(date.getMinutes()).padStart(2, "0")} WIB`;
 }
 
+export function formatRelativeTime(iso) {
+  if (!iso) return "Baru saja";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Baru saja";
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return "Baru saja";
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "Baru saja";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} menit lalu`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} jam lalu`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 7) return `${diffDay} hari lalu`;
+  if (diffDay < 30) return `${Math.floor(diffDay / 7)} minggu lalu`;
+  return formatDate(iso.slice(0, 10));
+}
+
 export function filterPosts(posts, filters = {}) {
   const query = (filters.query || "").trim().toLowerCase();
   const categories = Array.isArray(filters.categories)

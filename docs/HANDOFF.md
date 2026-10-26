@@ -1,53 +1,90 @@
 # Dokumen Serah Terima (HANDOFF) — NeedHelp Jogja
 **Proyek:** NeedHelp Jogja (Kelompok 21 / Modul 8 Upgrade)  
 **Cabang Git:** `feat/phase-2-ui-features`  
-**Waktu Pembaruan:** 26 Oktober 2026, 10:15 WIB  
-**Status Sesi Mandiri:** Selesai & Terverifikasi (Perapian Header/Navbar Dropdown, Panel Filter 4-Baris Katalog, Quick Post Setara, & 17 Tangkapan Layar Responsif)
+**Waktu Pembaruan:** 26 Oktober 2026, 12:38 WIB  
+**Status Sesi Mandiri:** Selesai & Terverifikasi Penuh (Revisi Total Beranda Acuan Gambar Referensi: Layout 2-Kolom Terpusat, Sidebar Navigasi & Kartu Keamanan Terpisah, Dua Pintu Setara "Apa yang ingin kamu lakukan?", Kontrol Filter Beranda & Post Feed Card Baru, serta 19 Tangkapan Layar Multi-Resolusi)
 
 ---
 
 ## 1. Perubahan yang Benar-Benar Selesai
 
-Pada sesi ini, dilakukan serangkaian perbaikan konkret dan terukur berdasarkan instruksi dan Taste Skill:
+Pada sesi ini, telah diselesaikan implementasi komprehensif mengikuti gambar referensi beranda desktop:
 
-### A. Perapian Header / Navbar & Menu Akun Dropdown
-* **Menu Profil Dropdown LinkedIn-Style ([`src/components/Header.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/Header.jsx)):**
-  * Memindahkan tombol teks "Keluar" dari deretan navigasi utama ke dalam menu popover akun (`.profile-menu-popover`).
-  * Trigger navigasi profil kini berbentuk tombol ringkas (`.profile-nav-trigger-btn`) yang menampilkan avatar, nama ringkas, dan panah dropdown (caret).
-  * Menu popover menampilkan info nama lengkap, email, link ke "👤 Lihat Profil Saya", link ke "🤝 Aktivitas & Kesepakatan", divider visual, dan tombol "🚪 Keluar".
-  * Dilengkapi penutup otomatis saat klik di luar area (*click outside listener*) dan saat tombol keyboard `Escape` ditekan.
-* **Pengaturan Ruang & Breakpoint Responsif Bebas Tumpukan:**
-  * Ruang antara logo, kolom pencarian (`.header-search-bar`), navigasi, dan menu profil terbagi proporsional.
-  * Pada layar 1280px dan 1152px (desktop zoom 125%), lebar input pencarian menyusut secara bertahap (`flex: 1`, min-width adaptif) dan gap navigasi memadat tanpa membuat elemen melompat ke baris kedua atau menimpa feed.
-  * Header sticky tetap berada di `z-index: 1000` dengan `overflow: visible` sehingga bayangan dan popover dropdown tidak terpotong.
-* **Isolasi CSS Warisan Modul 7 ([`src/styles/base.css`](file:///C:/needhelp-modul7-kelompok21-main/src/styles/base.css)):**
-  * Memberi selektor `:not(.sticky-header)` pada aturan lama `body > header.site-header` yang sebelumnya memaksakan padding besar 16px 40px dan mempersempit area header.
+### A. Transformasi Tata Letak 2-Kolom Terpusat (Tanpa Panel Kanan Permanen)
+* **Kontainer & Proporsi Layar ([`src/styles/three-column.css`](file:///C:/needhelp-modul7-kelompok21-main/src/styles/three-column.css)):**
+  * Kontainer utama terpusat dengan `max-width: 1240px` (rentang ideal 1200–1280px), padding `0 20px`, margin `24px auto`.
+  * Lebar sidebar desktop tepat `268px` (`flex: 0 0 268px`) dengan jarak pemisah `24px` (`gap: 24px`).
+  * Area konten utama feed mengambil seluruh sisa ruang secara fleksibel (`flex: 1 1 0%`, `min-width: 0`).
+  * Panel kanan permanen telah dihilangkan dari tata letak beranda. Informasi pendukungnya dipindahkan ke tempat yang semestinya (kartu keamanan ke sidebar kiri, wilayah ke filter dropdown, dan footer ke bawah sidebar).
+  * Sidebar bersifat sticky halus dengan offset header: `top: calc(var(--header-height) + 20px)` dan tinggi alami tanpa memaksa mengikuti panjang feed.
 
-### B. Perapian Quick Post & Struktur 4-Baris Panel Filter Katalog ([`src/app/katalog/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/katalog/page.js) & [`src/styles/three-column.css`](file:///C:/needhelp-modul7-kelompok21-main/src/styles/three-column.css))
-* **Kotak Quick Post Rapi & Ergonomis:**
-  * Bagian atas: avatar inisial/ikon + pemicu input placeholder "Butuh bantuan apa atau keahlian apa yang ingin kamu bagikan hari ini?".
-  * Bagian bawah: dua tombol aksi setara `+ Saya Butuh Bantuan` (latar lembut merah pudar `#fff5f5`) dan `+ Saya Bisa Membantu` (latar lembut toska pudar `#f0fdf9`).
-* **Panel Kontrol Filter 4 Baris Jelas:**
-  * **Baris 1 (`.panel-top-row`):** Tab sifat postingan di sisi kiri (`Semua`, `🆘 Saya Butuh`, `✨ Saya Bisa`) dan dropdown pengurutan di sisi kanan (`Urutan: [Terbaru Diunggah / Terlama / Tenggat Terdekat]`).
-  * **Baris 2 (`.panel-filter-row`):** Dropdown Wilayah DIY (`📍 Semua 5 Wilayah DIY`), Dropdown Imbalan (`💰 Semua Jenis Imbalan`), dan tombol `✕ Reset Filter` (muncul saat filter aktif).
-  * **Baris 3 (`.panel-categories-row`):** Label tegas `Kategori Utama:` beserta 4 tombol chip kategori sah (`Bantuan Fisik`, `Ditemani`, `Pendampingan`, `Explore`).
-  * **Baris 4 (`.panel-results-summary`):** Ringkasan jumlah ("Ditemukan X postingan aktif") dan chip lencana filter yang sedang aktif.
+### B. Header / Navbar Minimalis Bersih Acuan Referensi
+* **Komposisi 1 Baris Seimbang ([`src/components/Header.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/Header.jsx)):**
+  * Sisi Kiri: Logo resmi NeedHelp Jogja.
+  * Sisi Tengah: Kolom pencarian pill-shaped (`border-radius: 9999px`, latar `#f8fafc`, placeholder transparan `"Cari bantuan atau keahlian di Yogyakarta..."`).
+  * Sisi Kanan: Ikon tombol Pesan (`💬` ke `/chat`), ikon tombol Notifikasi (`🔔` ke `/notifikasi` dengan dot merah penanda belum dibaca), dan Menu Akun Popover (Avatar inisial, nama pendek terpotong rapi dengan ellipsis, dan panah `▾`).
+  * Tombol Keluar terintegrasi di dalam dropdown akun, dapat diakses dan ditutup dengan keyboard (`Escape`) atau klik di luar area.
+  * Pada layar mobile (< 768px), tombol menu hamburger tetap menyediakan drawer navigasi penuh.
 
-### C. Penyelarasan RPC & Skema Database Supabase
-* **Penyelarasan Nama RPC Kesepakatan:** Memastikan pemanggilan RPC di kode antarmuka [`src/app/chat/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/chat/page.js) dan skrip pengujian [`scripts/test-suite.mjs`](file:///C:/needhelp-modul7-kelompok21-main/scripts/test-suite.mjs) menggunakan nama prosedur SQL yang sah dari [`supabase/schema.sql`](file:///C:/needhelp-modul7-kelompok21-main/supabase/schema.sql):
-  * Prosedur: `public.agree_to_deal(p_deal_id UUID, p_target_version INTEGER)`.
-  * Dokumentasi dan kode diselaraskan dari penyebutan lama `agree_deal_atomic` menjadi `agree_to_deal`.
-  * Parameter revisi: `revise_deal(p_deal_id, p_target_version, p_scheduled_date, p_scheduled_time, p_meetup_location, p_compensation_type, p_compensation_value)`.
-  * Parameter pembatalan: `cancel_deal(p_deal_id, p_cancellation_reason)`.
-  * Parameter penyelesaian: `confirm_activity_completion(p_activity_id)`.
+### C. Sidebar Kiri: Kartu Profil/Navigasi & Kartu Keamanan Terpisah ([`src/components/AppSidebar.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/AppSidebar.jsx))
+* **Kartu 1 (Profil & Navigasi Utama):**
+  * Ringkasan profil ringkas di bagian atas: Avatar lingkaran inisial warna toska, nama tebal (`sewididu` / pengguna asli), dan subtitle (`Warga Yogyakarta`).
+  * Daftar 5 rute navigasi utama:
+    1. **🏠 Beranda** (`/`) &mdash; berstatus aktif dengan latar toska lembut `#e6f4f1` dan teks toska gelap `#0d9488`.
+    2. **🔍 Feed & Cari** (`/katalog`)
+    3. **📄 Aktivitas** (`/aktivitas`)
+    4. **💬 Pesan** (`/chat`)
+    5. **👤 Profil Saya** (`/profil`)
+  * Tinggi area klik 48px, teks 15-16px, ikon garis 22px, padding nyaman 16-18px.
+* **Kartu 2 (Bantu dengan Aman &mdash; Terpisah 16px):**
+  * Ikon perisai centang warna toska, judul tebal **Bantu dengan aman**, deskripsi *"Pilih tempat umum untuk bertemu. Gunakan kesepakatan di chat."*
+  * Tombol interaktif **`Lihat panduan →`** yang membuka modal dialog popup berisi 3 prinsip aman (titik temu publik, kartu chat, konfirmasi bersama).
+* **Footer Micro Links:**
+  * Di bawah kartu kedua: `Bantuan • Privasi • Ketentuan` dalam teks abu-abu lembut.
 
-### D. Penghapusan Seluruh Indikator Palsu, Rating Palsu, dan Badge Tanpa Otorisasi
-* **Penghapusan Rating Fiktif (`5.0` Default & Ulasan Palsu):**
-  * Pada [`CatalogCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/CatalogCard.jsx), [`detail-postingan/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/detail-postingan/page.js), [`ProfileMiniCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/ProfileMiniCard.jsx), dan [`profil/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/profil/page.js):
-    * Menghilangkan fallback fiktif yang memberikan nilai `5.0` dan 3–5 ulasan pada akun tanpa reputasi.
-    * Akun dengan `rating_count === 0` kini secara jujur dan transparan menampilkan badge: **`⭐ Anggota Baru`** atau **`Belum ada ulasan`**.
-* **Penghapusan Statistik Fiktif di Halaman Login ([`src/app/login/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/login/page.js)):**
-  * Menghilangkan angka klaim palsu (`2.1k+ Permintaan`, `850+ Relawan`, `4.8★ Rating`).
+### D. Area Buat Posting: "Apa yang ingin kamu lakukan?" ([`src/components/QuickPostBox.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/QuickPostBox.jsx))
+* Menghilangkan bentuk input teks semu/palsu.
+* Menampilkan kartu ringkas berisi dua pilihan aksi sejajar (*side-by-side* di desktop, bertumpuk di ponsel):
+  1. **Saya Butuh Bantuan:** Latar lembut merah/rose (`#fff1f2`), garis batas merah pudar (`#fecdd3`), ikon tangan melambai (`✋`), judul tebal **Saya Butuh Bantuan**, subjudul *"Ceritakan kebutuhanmu"*, dan tombol lingkaran panah kanan `→`.
+  2. **Saya Bisa Membantu:** Latar lembut hijau/mint (`#f0fdf4`), garis batas hijau pudar (`#bbf7d0`), ikon tangan merengkuh (`🤲`), judul tebal **Saya Bisa Membantu**, subjudul *"Tawarkan kemampuanmu"*, dan tombol lingkaran panah kanan `→`.
+* Kedua kartu dapat diklik sepenuhnya, memiliki efek hover halus, focus-ring jelas, dan terhubung langsung ke formulir dengan prefill nature (`/buat-postingan?nature=butuh` & `nature=bisa`).
+
+### E. Kontrol Filter Beranda & Dropdown Pengurutan ([`src/app/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/page.js))
+* **Baris Pertama:**
+  * Sisi kiri: Tab pill `Semua`, `Saya Butuh`, dan `Saya Bisa` (dengan state aktif toska/merah/hijau).
+  * Sisi kanan: Dropdown pill `[Terbaru ▾]` (opsi: Terbaru, Terlama, Tenggat Terdekat) serta tombol `[⚙️ Filter]` dengan indikator titik dot aktif.
+* **Baris Kedua:**
+  * Sisi kiri: 4 Kategori utama berbentuk chip pill (`📦 Bantuan Fisik`, `👥 Ditemani`, `📋 Pendampingan`, `🧭 Explore`) yang dapat diaktifkan/dinonaktifkan secara instan.
+  * Sisi kanan: Dropdown pill `[📍 Semua wilayah ▾]` (Sleman, Kota Jogja, Bantul, Kulon Progo, Gunungkidul).
+* **Drawer Filter Tambahan:** Memuat input pencarian kata kunci judul/lokasi dan tombol `✕ Reset Seluruh Filter`.
+
+### F. Kartu Postingan Feed yang Disempurnakan ([`src/components/CatalogCard.jsx`](file:///C:/needhelp-modul7-kelompok21-main/src/components/CatalogCard.jsx))
+* Mengikuti anatomi gambar referensi:
+  1. Baris atas: Avatar inisial (`W` toska atau `N` slate), nama pembuat (misal `Warga Jogja`), titik pemisah, nama wilayah (`Sleman`), titik pemisah, waktu relatif publikasi (`2 jam lalu`, `1 hari lalu` via helper `formatRelativeTime`).
+  2. Lencana jenis & kategori: `Saya Butuh` (merah muda) / `Saya Bisa` (hijau muda) berdampingan dengan `Bantuan Fisik` / kategori terkait.
+  3. Judul kebutuhan atau penawaran tebal terbaca jernih.
+  4. Ringkasan deskripsi (teks ~15px, jarak baris 1.55 yang nyaman).
+  5. Baris metadata kegiatan: `📍 Titik Lokasi`, `📅 Jadwal Kegiatan`, `🏷️ Nominal/Jenis Imbalan`.
+  6. Bagian bawah: Sisi kiri memuat informasi kuota (`👥 Dibutuhkan 1 orang`) atau panduan chat (`💬 Diskusikan kebutuhan lewat chat`), sisi kanan memuat tombol solid toska **`Lihat detail →`**.
+* Seluruh data menggunakan data asli aplikasi/database tanpa menanam data palsu.
+
+---
+
+## 2. Halaman & Viewport yang Sudah Diperiksa Secara Visual
+
+Tangkapan layar resolusi tinggi disimpan pada folder [`docs/screenshots/`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/):
+
+| Viewport & Halaman | Berkas Tangkapan Layar | Hasil Pemeriksaan Visual |
+|---|---|---|
+| **Beranda Desktop (1440px)** | [`docs/screenshots/01-desktop-1440-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/01-desktop-1440-beranda.png) | **Sempurna sesuai gambar referensi:** 2 kolom, navbar 1 baris, sidebar dengan menu aktif & kartu keamanan terpisah, kartu dua pintu merah/hijau, 4 kategori chip & wilayah dropdown, feed kartu baru. |
+| **Beranda Desktop (1280px)** | [`docs/screenshots/01-desktop-1280-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/01-desktop-1280-beranda.png) | Komposisi tetap stabil dalam batas kontainer 1240px tanpa desak-desakan. |
+| **Beranda Desktop Zoom 125% (1152px)** | [`docs/screenshots/01-desktop-1152-zoom125-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/01-desktop-1152-zoom125-beranda.png) | Tidak ada elemen bertumpuk atau keluar wadah pada skala zoom desktop 125%. |
+| **Tablet Beranda (1024px)** | [`docs/screenshots/07-tablet-1024-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/07-tablet-1024-beranda.png) | Sidebar 240px adaptif, feed tetap luas dan proporsional. |
+| **Tablet Beranda (768px)** | [`docs/screenshots/07-tablet-768-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/07-tablet-768-beranda.png) | Susunan 1 kolom, feed dan kartu buat posting menjadi fokus di atas, navigasi bawah aktif. |
+| **Mobile Beranda (390px)** | [`docs/screenshots/09-mobile-390-beranda.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/09-mobile-390-beranda.png) | Kolom tunggal, kartu dua pintu tersusun vertikal ergonomis, chip kategori adaptif, tombol navigasi bawah tetap (*Mobile Bottom Nav*). |
+| **Katalog Desktop (1440px)** | [`docs/screenshots/02-desktop-1440-katalog.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/02-desktop-1440-katalog.png) | Layout 2-kolom terintegrasi selaras dengan kartu postingan baru. |
+| **Chat Desktop (1440px)** | [`docs/screenshots/04-desktop-1440-chat.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/04-desktop-1440-chat.png) | Halaman pesan berfungsi normal. |
+| **Profil Desktop (1440px)** | [`docs/screenshots/06-desktop-1440-profil.png`](file:///C:/needhelp-modul7-kelompok21-main/docs/screenshots/06-desktop-1440-profil.png) | Layout 2-kolom sidebar profil selaras. |
   * Menggantinya dengan kartu informasi fitur riil: **5 Kab/Kota DIY**, **2 Arah (Saya Butuh & Saya Bisa)**, dan **Kesepakatan Bersama**.
   * Menambahkan banner pemberitahuan redirect kontekstual (`🔒 Silakan masuk atau daftar akun terlebih dahulu untuk melanjutkan ke halaman yang Anda tuju`).
 * **Penghapusan Indikator Palsu di Chat ([`src/app/chat/page.js`](file:///C:/needhelp-modul7-kelompok21-main/src/app/chat/page.js)):**
@@ -128,6 +165,7 @@ Semua halaman telah diperiksa secara visual melalui tangkapan layar Chrome Headl
 3. `da9850d`: *feat(preview): add isolated labeled local dev preview for private forms, activities, and ratings*
 4. `9819613`: *fix(layout): neutralize legacy catalog CSS overrides, enforce center column flex width, and capture full visual verification suite*
 5. `0bd7dc1`: *fix(ui): polish header navbar dropdown and catalog filter panel 4-row layout*
+6. `feat/phase-2-ui-features`: *feat(ui): redesign homepage into 2-column layout matching reference design with modern feed and sidebar*
 
 ### Cara Menjalankan Aplikasi:
 * Menjalankan server lokal: `npm run dev` (buka [http://localhost:3000](http://localhost:3000)).

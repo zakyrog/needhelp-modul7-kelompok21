@@ -1,21 +1,20 @@
 "use client";
 
 import React from "react";
-import { ProfileMiniCard } from "./ProfileMiniCard";
-import { CommunityTipsWidget } from "./CommunityTipsWidget";
+import { AppSidebar } from "./AppSidebar";
 
 export function ThreeColumnLayout({
   children,
   leftSlot = null,
   rightSlot = null,
   hideLeft = false,
-  hideRight = false,
+  hideRight = true, // Menghilangkan panel kanan sebagai kolom permanen sesuai spesifikasi
 }) {
   return (
-    <div className="three-column-grid-wrapper">
+    <div className={`two-column-layout-wrapper three-column-grid-wrapper ${!hideRight && rightSlot ? "has-right-col" : ""}`}>
       {!hideLeft && (
         <aside className="layout-col layout-col-left">
-          {leftSlot || <ProfileMiniCard />}
+          {leftSlot || <AppSidebar />}
         </aside>
       )}
 
@@ -23,9 +22,9 @@ export function ThreeColumnLayout({
         {children}
       </main>
 
-      {!hideRight && (
+      {!hideRight && rightSlot && (
         <aside className="layout-col layout-col-right">
-          {rightSlot || <CommunityTipsWidget />}
+          {rightSlot}
         </aside>
       )}
     </div>

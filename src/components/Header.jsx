@@ -110,6 +110,7 @@ export function Header() {
   }
 
   const userInitial = session?.name ? session.name.charAt(0).toUpperCase() : "P";
+  const userShortName = session?.name ? session.name.split(" ")[0] : "Saya";
 
   return (
     <header className="site-header sticky-header">
@@ -133,202 +134,198 @@ export function Header() {
               name="q"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari bantuan atau keahlian di Jogja..."
-              aria-label="Cari bantuan"
+              placeholder="Cari bantuan atau keahlian di Yogyakarta..."
+              aria-label="Cari bantuan atau keahlian di Yogyakarta"
             />
           </form>
         </div>
 
-        {/* Mobile Hamburger Button */}
-        <button
-          type="button"
-          className="menu-toggle"
-          aria-controls="main-nav"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((prev) => !prev)}
-        >
-          {menuOpen ? "✕ Tutup" : "☰ Menu"}
-        </button>
+        {/* Desktop Quick Action Icons & Profile (Mengikuti Gambar Referensi) */}
+        <div className="header-right-actions">
+          {/* Chat Icon Link */}
+          <Link
+            href="/chat"
+            className={`header-icon-btn ${pathname === "/chat" ? "active" : ""}`}
+            aria-label="Kotak Masuk Pesan"
+            title="Pesan"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </Link>
 
-        {/* Main Navigation (LinkedIn-Style Vertical Icons & Text) */}
-        <nav
-          id="main-nav"
-          className="site-nav"
-          aria-label="Navigasi Utama"
-          data-open={String(menuOpen)}
-        >
-          <ul className="nav-items-list">
-            <li>
-              <Link
-                href="/"
-                className={`nav-link-item ${pathname === "/" ? "active" : ""}`}
-                aria-current={pathname === "/" ? "page" : undefined}
-                onClick={closeMenu}
-              >
-                <span className="nav-icon">🏠</span>
-                <span className="nav-label">Beranda</span>
-              </Link>
-            </li>
+          {/* Notifikasi Bell Link */}
+          <Link
+            href="/notifikasi"
+            className={`header-icon-btn ${pathname === "/notifikasi" ? "active" : ""}`}
+            aria-label="Pemberitahuan & Notifikasi"
+            title="Notifikasi"
+          >
+            <span className="notif-wrap">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unreadNotifCount > 0 && <span className="header-notif-dot" aria-label={`${unreadNotifCount} notifikasi baru`} />}
+            </span>
+          </Link>
 
-            <li>
-              <Link
-                href="/katalog"
-                className={`nav-link-item ${pathname === "/katalog" ? "active" : ""}`}
-                aria-current={pathname === "/katalog" ? "page" : undefined}
-                onClick={closeMenu}
+          {/* Account Profile Trigger & Dropdown */}
+          {session ? (
+            <div className="profile-dropdown-container" ref={profileDropdownRef}>
+              <button
+                type="button"
+                className={`profile-nav-trigger-btn ${profileDropdownOpen ? "active" : ""}`}
+                onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                aria-expanded={profileDropdownOpen}
+                aria-haspopup="true"
+                aria-label={`Menu Akun: ${session.name || "Pengguna"}`}
               >
-                <span className="nav-icon">📋</span>
-                <span className="nav-label">Feed & Cari</span>
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/buat-postingan"
-                className={`nav-link-item nav-btn-highlight ${pathname === "/buat-postingan" ? "active" : ""}`}
-                aria-current={pathname === "/buat-postingan" ? "page" : undefined}
-                onClick={closeMenu}
-              >
-                <span className="nav-icon">➕</span>
-                <span className="nav-label">Buat Post</span>
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/aktivitas"
-                className={`nav-link-item ${pathname === "/aktivitas" ? "active" : ""}`}
-                aria-current={pathname === "/aktivitas" ? "page" : undefined}
-                onClick={closeMenu}
-              >
-                <span className="nav-icon">🤝</span>
-                <span className="nav-label">Aktivitas</span>
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/chat"
-                className={`nav-link-item ${pathname === "/chat" ? "active" : ""}`}
-                aria-current={pathname === "/chat" ? "page" : undefined}
-                onClick={closeMenu}
-              >
-                <span className="nav-icon">💬</span>
-                <span className="nav-label">Pesan</span>
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/notifikasi"
-                className={`nav-link-item ${pathname === "/notifikasi" ? "active" : ""}`}
-                aria-current={pathname === "/notifikasi" ? "page" : undefined}
-                onClick={closeMenu}
-              >
-                <span className="nav-icon" style={{ position: "relative" }}>
-                  🔔
-                  {unreadNotifCount > 0 && (
-                    <span className="badge-notif-count">{unreadNotifCount}</span>
-                  )}
+                <span className="user-profile-avatar" aria-hidden="true">
+                  {userInitial}
                 </span>
-                <span className="nav-label">Notif</span>
-              </Link>
-            </li>
+                <span className="profile-name-text" title={session.name}>
+                  {userShortName}
+                </span>
+                <span className="profile-caret" aria-hidden="true">▾</span>
+              </button>
 
-            <li className="nav-profile-item" ref={profileDropdownRef}>
-              {session ? (
-                <div className="profile-dropdown-container">
+              {profileDropdownOpen && (
+                <div className="profile-menu-popover" role="menu" aria-label="Menu Pengguna">
+                  <div className="profile-popover-header">
+                    <div className="popover-avatar-circle" aria-hidden="true">
+                      {userInitial}
+                    </div>
+                    <div className="popover-user-details">
+                      <div className="popover-user-name" title={session.name}>
+                        {session.name || "Pengguna"}
+                      </div>
+                      {session.email && (
+                        <div className="popover-user-email" title={session.email}>
+                          {session.email}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="popover-divider" />
+
+                  <Link
+                    href="/profil"
+                    className="popover-menu-link"
+                    role="menuitem"
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      closeMenu();
+                    }}
+                  >
+                    <span className="popover-link-icon" aria-hidden="true">👤</span>
+                    <span className="popover-link-label">Lihat Profil Saya</span>
+                  </Link>
+
+                  <Link
+                    href="/aktivitas"
+                    className="popover-menu-link"
+                    role="menuitem"
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      closeMenu();
+                    }}
+                  >
+                    <span className="popover-link-icon" aria-hidden="true">🤝</span>
+                    <span className="popover-link-label">Aktivitas & Kesepakatan</span>
+                  </Link>
+
+                  <div className="popover-divider" />
+
                   <button
                     type="button"
-                    className={`profile-nav-trigger-btn ${profileDropdownOpen ? "active" : ""}`}
-                    onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                    aria-expanded={profileDropdownOpen}
-                    aria-haspopup="true"
-                    aria-label={`Menu Akun: ${session.name || "Pengguna"}`}
+                    onClick={(e) => {
+                      setProfileDropdownOpen(false);
+                      closeMenu();
+                      handleLogout(e);
+                    }}
+                    className="popover-logout-btn"
+                    role="menuitem"
                   >
-                    <span className="user-profile-avatar" aria-hidden="true">
-                      {userInitial}
-                    </span>
-                    <span className="profile-trigger-label">
-                      <span className="profile-name-text">
-                        {session.name ? session.name.split(" ")[0] : "Saya"}
-                      </span>
-                      <span className="profile-caret" aria-hidden="true">▾</span>
-                    </span>
+                    <span className="popover-link-icon" aria-hidden="true">🚪</span>
+                    <span>Keluar</span>
                   </button>
-
-                  {profileDropdownOpen && (
-                    <div className="profile-menu-popover" role="menu" aria-label="Menu Pengguna">
-                      <div className="profile-popover-header">
-                        <div className="popover-avatar-circle" aria-hidden="true">
-                          {userInitial}
-                        </div>
-                        <div className="popover-user-details">
-                          <div className="popover-user-name" title={session.name}>
-                            {session.name || "Pengguna"}
-                          </div>
-                          {session.email && (
-                            <div className="popover-user-email" title={session.email}>
-                              {session.email}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="popover-divider" />
-
-                      <Link
-                        href="/profil"
-                        className="popover-menu-link"
-                        role="menuitem"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          closeMenu();
-                        }}
-                      >
-                        <span className="popover-link-icon" aria-hidden="true">👤</span>
-                        <span className="popover-link-label">Lihat Profil Saya</span>
-                      </Link>
-
-                      <Link
-                        href="/aktivitas"
-                        className="popover-menu-link"
-                        role="menuitem"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          closeMenu();
-                        }}
-                      >
-                        <span className="popover-link-icon" aria-hidden="true">🤝</span>
-                        <span className="popover-link-label">Aktivitas & Kesepakatan</span>
-                      </Link>
-
-                      <div className="popover-divider" />
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          setProfileDropdownOpen(false);
-                          closeMenu();
-                          handleLogout(e);
-                        }}
-                        className="popover-logout-btn"
-                        role="menuitem"
-                      >
-                        <span className="popover-link-icon" aria-hidden="true">🚪</span>
-                        <span>Keluar</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <Link href="/login" className="login-pill-btn" onClick={closeMenu}>
-                  Masuk
-                </Link>
               )}
-            </li>
-          </ul>
-        </nav>
+            </div>
+          ) : (
+            <Link href="/login" className="login-pill-btn" onClick={closeMenu}>
+              Masuk
+            </Link>
+          )}
+
+          {/* Mobile Hamburger Button */}
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-controls="mobile-nav"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? "Tutup Menu" : "Buka Menu Navigasi"}
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
+        </div>
+
+        {/* Mobile Navigation Drawer (Hanya aktif di ponsel saat hamburger diklik) */}
+        {menuOpen && (
+          <nav
+            id="mobile-nav"
+            className="mobile-dropdown-drawer"
+            aria-label="Navigasi Seluler"
+          >
+            <ul className="mobile-nav-list">
+              <li>
+                <Link href="/" className={pathname === "/" ? "active" : ""} onClick={closeMenu}>
+                  🏠 Beranda
+                </Link>
+              </li>
+              <li>
+                <Link href="/katalog" className={pathname === "/katalog" ? "active" : ""} onClick={closeMenu}>
+                  📋 Feed & Cari
+                </Link>
+              </li>
+              <li>
+                <Link href="/buat-postingan" className={pathname === "/buat-postingan" ? "active" : ""} onClick={closeMenu}>
+                  ➕ Buat Postingan Baru
+                </Link>
+              </li>
+              <li>
+                <Link href="/aktivitas" className={pathname === "/aktivitas" ? "active" : ""} onClick={closeMenu}>
+                  🤝 Aktivitas & Kegiatan
+                </Link>
+              </li>
+              <li>
+                <Link href="/chat" className={pathname === "/chat" ? "active" : ""} onClick={closeMenu}>
+                  💬 Kotak Masuk Pesan
+                </Link>
+              </li>
+              <li>
+                <Link href="/notifikasi" className={pathname === "/notifikasi" ? "active" : ""} onClick={closeMenu}>
+                  🔔 Notifikasi {unreadNotifCount > 0 && `(${unreadNotifCount})`}
+                </Link>
+              </li>
+              <li>
+                <Link href="/profil" className={pathname === "/profil" ? "active" : ""} onClick={closeMenu}>
+                  👤 Profil Saya
+                </Link>
+              </li>
+              {session && (
+                <li className="mobile-logout-item">
+                  <button type="button" onClick={handleLogout} className="mobile-logout-btn">
+                    🚪 Keluar ({session.name ? session.name.split(" ")[0] : "Akun"})
+                  </button>
+                </li>
+              )}
+            </ul>
+          </nav>
+        )}
       </div>
     </header>
   );
