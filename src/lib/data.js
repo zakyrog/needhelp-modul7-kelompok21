@@ -25,11 +25,132 @@ export const COMPENSATION_LABELS = {
   tarif: "Tarif Pasti",
   nego: "Nego di Chat",
   patungan: "Patungan",
+  bayarsendiri: "Bayar Sendiri-sendiri",
   traktir: "Traktir",
   sukarela: "Sukarela",
 };
 
 export const PEOPLE = {
+  "dimas-prasetyo": {
+    id: "dimas-prasetyo",
+    name: "Dimas Prasetyo",
+    bio: "Mahasiswa Perantau di Gondokusuman",
+    avatar: "/assets/images/avatar-dimas.svg",
+    initial: "D",
+    avatarClass: "avatar-teal",
+    rating: "4.9 / 5.0 (dari 6 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
+  "nadia-putri": {
+    id: "nadia-putri",
+    name: "Nadia Putri",
+    bio: "Mahasiswi Sistem Informasi Depok",
+    avatar: "/assets/images/avatar-nadia.svg",
+    initial: "N",
+    avatarClass: "avatar-blue",
+    rating: "5.0 / 5.0 (dari 14 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
+  "annisa-rahma": {
+    id: "annisa-rahma",
+    name: "Annisa Rahma",
+    bio: "Mahasiswi S1 di Kota Jogja",
+    avatar: "/assets/images/avatar-annisa.svg",
+    initial: "A",
+    avatarClass: "avatar-purple",
+    rating: "4.8 / 5.0 (dari 9 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
+  "fajar-sidik": {
+    id: "fajar-sidik",
+    name: "Fajar Sidik",
+    bio: "Mahasiswa Fotografi & Konten Kreatif",
+    avatar: "/assets/images/avatar-fajar.svg",
+    initial: "F",
+    avatarClass: "avatar-green",
+    rating: "4.9 / 5.0 (dari 11 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
+  "warga-jogja": {
+    id: "warga-jogja",
+    name: "Warga Jogja",
+    bio: "Penghuni Kos Pogung Baru, Sleman",
+    avatar: "/assets/images/avatar-warga.svg",
+    initial: "W",
+    avatarClass: "avatar-teal",
+    rating: "4.9 / 5.0 (dari 8 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
+  "danang-pradipta": {
+    id: "danang-pradipta",
+    name: "Danang Pradipta",
+    bio: "Warga Asli Wates Kulon Progo",
+    avatar: "/assets/images/avatar-danang.svg",
+    initial: "D",
+    avatarClass: "avatar-blue",
+    rating: "5.0 / 5.0 (dari 7 ulasan)",
+    verification: "Identitas Warga Terverifikasi",
+  },
+  "ibu-retno": {
+    id: "ibu-retno",
+    name: "Ibu Retno",
+    bio: "Pelaku UMKM Camilan Kasihan Bantul",
+    avatar: "/assets/images/avatar-retno.svg",
+    initial: "R",
+    avatarClass: "avatar-purple",
+    rating: "4.9 / 5.0 (dari 15 ulasan)",
+    verification: "Identitas UMKM Terverifikasi",
+  },
+  "rizky-ramadhan": {
+    id: "rizky-ramadhan",
+    name: "Rizky Ramadhan",
+    bio: "Mahasiswa Tingkat Akhir di Gejayan",
+    avatar: "/assets/images/avatar-rizky.svg",
+    initial: "R",
+    avatarClass: "avatar-green",
+    rating: "4.8 / 5.0 (dari 10 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
+  "maya-anggraeni": {
+    id: "maya-anggraeni",
+    name: "Maya Anggraeni",
+    bio: "Pencinta Wisata Heritage & Fotografi",
+    avatar: "/assets/images/avatar-maya.svg",
+    initial: "M",
+    avatarClass: "avatar-teal",
+    rating: "4.9 / 5.0 (dari 8 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
+  "bagus-nugroho": {
+    id: "bagus-nugroho",
+    name: "Bagus Nugroho",
+    bio: "Penggiat Komunitas Jalan Pagi Bantul",
+    avatar: "/assets/images/avatar-bagus.svg",
+    initial: "B",
+    avatarClass: "avatar-green",
+    rating: "5.0 / 5.0 (dari 12 ulasan)",
+    verification: "Identitas Komunitas Terverifikasi",
+  },
+  "yoga-pratama": {
+    id: "yoga-pratama",
+    name: "Yoga Pratama",
+    bio: "Penggemar Kuliner Gunungkidul",
+    avatar: "/assets/images/avatar-yoga.svg",
+    initial: "Y",
+    avatarClass: "avatar-blue",
+    rating: "4.9 / 5.0 (dari 6 ulasan)",
+    verification: "Identitas Warga Terverifikasi",
+  },
+  "clara-sinta": {
+    id: "clara-sinta",
+    name: "Clara Sinta",
+    bio: "Pencinta Seni Rupa & Desain Visual",
+    avatar: "/assets/images/avatar-clara.svg",
+    initial: "C",
+    avatarClass: "avatar-purple",
+    rating: "4.9 / 5.0 (dari 10 ulasan)",
+    verification: "Identitas Kampus Terverifikasi",
+  },
   "sari-wijaya": {
     id: "sari-wijaya",
     name: "Sari Wijaya",
@@ -438,6 +559,25 @@ export function formatMessageTime(iso) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
   return `${String(date.getHours()).padStart(2, "0")}.${String(date.getMinutes()).padStart(2, "0")} WIB`;
+}
+
+export function formatRelativeTime(iso) {
+  if (!iso) return "Baru saja";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Baru saja";
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return "Baru saja";
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "Baru saja";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} menit lalu`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} jam lalu`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 7) return `${diffDay} hari lalu`;
+  if (diffDay < 30) return `${Math.floor(diffDay / 7)} minggu lalu`;
+  return formatDate(iso.slice(0, 10));
 }
 
 export function filterPosts(posts, filters = {}) {

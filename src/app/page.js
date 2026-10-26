@@ -1,169 +1,342 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { getPublicPosts, fetchPublicPosts } from "../lib/data.js";
-import { PostCard } from "../components/PostCard";
+import { useRouter } from "next/navigation";
+import {
+  fetchPublicPosts,
+  getActivities,
+  getUserPosts,
+  CATEGORY_LABELS,
+  REGION_LABELS,
+  formatRupiah,
+  formatRelativeTime,
+} from "../lib/data.js";
+import { getAuthUser, readSession } from "../lib/auth.js";
+import { EXAMPLE_POSTS_FIXTURE } from "../data/examplePostsFixture.js";
+import { ThreeColumnLayout } from "../components/ThreeColumnLayout";
+import { QuickPostBox } from "../components/QuickPostBox";
 
-export default function HomePage() {
-  const [posts, setPosts] = useState(() => getPublicPosts().slice(0, 3));
+function HomeContent() {
+  const router = useRouter();
+
+  const [session, setSession] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [latestPosts, setLatestPosts] = useState(() => EXAMPLE_POSTS_FIXTURE.slice(0, 2));
+  const [userActivities, setUserActivities] = useState(() => {
+    try {
+      const allActs = getActivities();
+      return allActs.filter((a) => a.status === "menunggu" || a.status === "berlangsung" || a.status === "terjadwal").slice(0, 2);
+    } catch {
+      return [];
+    }
+  });
+  const [userActivePosts, setUserActivePosts] = useState(() => {
+    try {
+      const myPosts = getUserPosts();
+      return myPosts.filter((p) => p.status === "aktif" || !p.status).slice(0, 2);
+    } catch {
+      return [];
+    }
+  });
+  const [loadingPosts, setLoadingPosts] = useState(false);
 
   useEffect(() => {
-    fetchPublicPosts()
-      .then((data) => setPosts(data.slice(0, 3)))
-      .catch(() => setPosts(getPublicPosts().slice(0, 3)));
+    let isMounted = true;
+
+    // 1. Memeriksa status sesi pengguna (Auth / Local)
+    async function checkAuth() {
+      try {
+        const authUser = await getAuthUser();
+        if (authUser && isMounted) {
+          setSession({
+            id: authUser.id,
+            email: authUser.email,
+            name: authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || "Pengguna",
+          });
+        } else {
+          const localSess = readSession();
+          if (localSess && isMounted) {
+            setSession(localSess);
+          }
+        }
+      } catch {
+        // Fallback
+      } finally {
+        if (isMounted) setLoadingSession(false);
+      }
+    }
+
+    // 2. Memuat postingan publik terbaru untuk cuplikan (maksimal 2-3 posting)
+    async function loadFeed() {
+      try {
+        const publicPosts = await fetchPublicPosts();
+        if (isMounted) {
+          const source = publicPosts && publicPosts.length > 0 ? publicPosts : EXAMPLE_POSTS_FIXTURE;
+          setLatestPosts(source.slice(0, 2));
+          setLoadingPosts(false);
+        }
+      } catch {
+        if (isMounted) {
+          setLatestPosts(EXAMPLE_POSTS_FIXTURE.slice(0, 2));
+          setLoadingPosts(false);
+        }
+      }
+    }
+
+    // 3. Memuat aktivitas nyata dan postingan aktif pengguna
+    function loadUserData() {
+      try {
+        const allActs = getActivities();
+        // Aktivitas yang perlu ditindaklanjuti (menunggu respon, berlangsung, atau terjadwal)
+        const actionable = allActs.filter(
+          (act) => act.status === "menunggu" || act.status === "berlangsung" || act.status === "terjadwal"
+        );
+        setUserActivities(actionable.slice(0, 2));
+
+        const myPosts = getUserPosts();
+        const active = myPosts.filter((p) => p.status === "aktif" || !p.status);
+        setUserActivePosts(active.slice(0, 2));
+      } catch {
+        // Fallback
+      }
+    }
+
+    checkAuth();
+    loadFeed();
+    loadUserData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
+  const getCategoryColorClass = (cat) => {
+    switch (cat) {
+      case "ditemani":
+        return "badge-category-ditemani";
+      case "pendampingan":
+        return "badge-category-pendampingan";
+      case "explore":
+        return "badge-category-explore";
+      case "bantuan":
+      default:
+        return "badge-category-bantuan";
+    }
+  };
+
   return (
-    <main>
-      <section className="hero-section">
-        <div className="hero-decorations">
-          <div className="circle-large" />
-          <div className="circle-small" />
-        </div>
+    <ThreeColumnLayout>
+      <div className="home-dashboard-wrapper">
+        {/* 1. Header Judul & Deskripsi Beranda */}
+        <header className="home-header-block">
+          <h1 className="home-title">Beranda</h1>
+          <p className="home-subtitle">Mulai bantuanmu, lanjutkan kegiatanmu.</p>
+        </header>
 
-        <div className="hero-content">
-          <div className="online-badge">
-            <span className="dot" />
-            128 orang online sedang mencari bantuan
-          </div>
-          <h1>Butuh bantuan atau teman hari ini?</h1>
-          <p>
-            Temukan orang di sekitar yang bisa membantu, atau tawarkan bantuanmu
-            kepada mereka yang membutuhkan.
-          </p>
-          <div className="hero-actions">
-            <Link href="/buat-postingan" className="button button-primary">
-              Buat Permintaan
+        {/* 2. Container Stack untuk Semua Kartu Seksi Utama (Gap Konsisten) */}
+        <div className="home-sections-stack">
+          {/* Kartu 1: Aksi Dua Pintu: Apa yang ingin kamu lakukan? */}
+          <QuickPostBox />
+
+          {/* Kartu 2: Bagian: Perlu ditindaklanjuti */}
+          <section className="home-section-card" aria-label="Aktivitas Perlu Ditindaklanjuti">
+            <div className="home-section-header">
+              <h2 className="home-section-heading">Perlu ditindaklanjuti</h2>
+              <Link href="/aktivitas" className="home-section-link">
+                Lihat aktivitas &rarr;
+              </Link>
+            </div>
+
+            <div className="home-section-body">
+              {userActivities.length > 0 ? (
+                <div className="actionable-items-list">
+                  {userActivities.map((act) => (
+                    <div key={act.id} className="actionable-item-row">
+                      <div
+                        className={`actionable-icon-box ${act.status === "berlangsung" ? "icon-box-doc" : "icon-box-check"}`}
+                        aria-hidden="true"
+                      >
+                        {act.status === "berlangsung" ? "📄" : "✅"}
+                      </div>
+                      <div className="actionable-text-cluster">
+                        <strong className="actionable-title">{act.title || "Kesepakatan bantuan"}</strong>
+                        <span className="actionable-subtitle">
+                          {act.note || (act.status === "berlangsung" ? "Menunggu tanggapanmu" : "Konfirmasi kegiatan selesai")}
+                        </span>
+                      </div>
+                      <Link
+                        href={`/aktivitas?id=${act.id}`}
+                        className="actionable-pill-btn"
+                      >
+                        {act.status === "berlangsung" ? "Lihat kesepakatan" : "Buka kegiatan"}
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : session ? (
+                <div className="home-empty-notice">
+                  <span className="notice-icon-box" aria-hidden="true">📋</span>
+                  <div className="notice-content">
+                    <p className="notice-text">Tidak ada kegiatan yang perlu ditindaklanjuti saat ini.</p>
+                    <Link href="/aktivitas" className="notice-link">Buka riwayat aktivitas &rarr;</Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="home-guest-callout">
+                  <div className="guest-icon-box" aria-hidden="true">🔒</div>
+                  <div className="guest-text-box">
+                    <strong className="guest-title">Masuk untuk melihat tindak lanjut kegiatanmu</strong>
+                    <p className="guest-desc">Pantau status kesepakatan, obrolan bantuan, dan konfirmasi selesai.</p>
+                  </div>
+                  <Link href="/login" className="button button-primary button-sm">
+                    Masuk Akun
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Kartu 3: Bagian: Posting aktifmu */}
+          <section className="home-section-card" aria-label="Ringkasan Posting Aktif">
+            <div className="home-section-header">
+              <h2 className="home-section-heading">Posting aktifmu</h2>
+              <Link href={session ? "/aktivitas" : "/login"} className="home-section-link">
+                Kelola posting &rarr;
+              </Link>
+            </div>
+
+            <div className="home-section-body">
+              {userActivePosts.length > 0 ? (
+                <div className="user-active-posts-list">
+                  {userActivePosts.map((post) => {
+                    const isNeed = post.nature === "butuh";
+                    return (
+                      <div key={post.id} className="active-post-row">
+                        <div className={`active-post-icon-box ${isNeed ? "icon-box-need" : "icon-box-offer"}`} aria-hidden="true">
+                          {isNeed ? "📦" : "📷"}
+                        </div>
+                        <div className="active-post-text-cluster">
+                          <Link href={`/detail-postingan?id=${post.id}`} className="active-post-title-link">
+                            <strong className="active-post-title">{post.title}</strong>
+                          </Link>
+                          <span className="active-post-meta">
+                            {post.address || "Area Yogyakarta"} • {post.scheduleLabel || "Jadwal fleksibel"}
+                          </span>
+                        </div>
+                        <div className="active-post-badges-cluster">
+                          <span className={`post-nature-pill ${isNeed ? "pill-butuh" : "pill-bisa"}`}>
+                            {isNeed ? "Saya Butuh" : "Saya Bisa"}
+                          </span>
+                          <span className="post-status-pill-green">
+                            Aktif
+                          </span>
+                          <Link href={`/detail-postingan?id=${post.id}`} className="post-more-btn" title="Lihat detail">
+                            •••
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="home-empty-notice">
+                  <span className="notice-icon-box" aria-hidden="true">📝</span>
+                  <div className="notice-content">
+                    <p className="notice-text">Kamu belum memiliki postingan aktif.</p>
+                    <Link href="/buat-postingan" className="notice-link">Buat postingan pertamamu &rarr;</Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Kartu 4: Bagian: Terbaru di NeedHelp (Cuplikan 2-3 posting dengan link Lihat semua) */}
+          <section className="home-section-card" aria-label="Postingan Komunitas Terbaru">
+          <div className="home-section-header">
+            <h2 className="home-section-heading">Terbaru di NeedHelp</h2>
+            <Link href="/katalog" className="home-section-link">
+              Lihat semua &rarr;
             </Link>
-            <Link href="/katalog" className="button button-outline">
-              Tawarkan Bantuan
-            </Link>
           </div>
+
+          <div className="home-section-body">
+            {loadingPosts ? (
+              <div className="home-cards-skeleton-grid">
+                <div className="skeleton-compact-card" />
+                <div className="skeleton-compact-card" />
+              </div>
+            ) : (
+              <div className="home-latest-cards-grid">
+                {latestPosts.map((post) => {
+                  const isNeed = post.nature === "butuh";
+                  const authorName = post.profiles?.full_name || post.authorName || "Warga Jogja";
+                  const authorInitial = authorName.charAt(0).toUpperCase();
+                  const regionLabel = REGION_LABELS[post.region] || post.region || "Kota Yogyakarta";
+                  const categoryLabel = CATEGORY_LABELS[post.category] || post.category;
+                  const relativeTime = formatRelativeTime(post.created_at || post.date);
+                  const amount = post.amount;
+                  const compNote = post.compensation_note || post.compensationNote || "";
+                  let compFormatted = "Sukarela";
+                  if (post.compensation_type === "tarif" && amount) {
+                    compFormatted = `${formatRupiah(amount)}${compNote ? `/${compNote.replace(/per\s*/i, "")}` : ""}`;
+                  } else if (compNote) {
+                    compFormatted = compNote;
+                  }
+
+                  return (
+                    <article key={post.id} className="home-compact-post-card">
+                      <header className="compact-card-header">
+                        <div className="compact-author-group">
+                          <div className={`compact-avatar-circle ${isNeed ? "avatar-need" : "avatar-offer"}`} aria-hidden="true">
+                            {authorInitial}
+                          </div>
+                          <div className="compact-author-meta">
+                            <span className="compact-author-name">{authorName}</span>
+                            <span className="compact-location-time">{regionLabel} • {relativeTime}</span>
+                          </div>
+                        </div>
+                        <span className={`compact-category-pill ${getCategoryColorClass(post.category)}`}>
+                          {categoryLabel}
+                        </span>
+                      </header>
+
+                      <h3 className="compact-card-title">
+                        <Link href={`/detail-postingan?id=${post.id}`} className="compact-title-link">
+                          {post.title}
+                        </Link>
+                      </h3>
+
+                      <p className="compact-card-summary">
+                        {post.summary || post.description?.slice(0, 110) || "Belajar bareng sambil menyelesaikan tugas masing-masing."}
+                      </p>
+
+                      <footer className="compact-card-footer">
+                        <div className="compact-footer-meta">
+                          <span className="compact-meta-chip">
+                            📍 {post.address || regionLabel}
+                          </span>
+                          <span className="compact-meta-chip font-medium">
+                            🏷️ {compFormatted}
+                          </span>
+                        </div>
+                        <Link href={`/detail-postingan?id=${post.id}`} className="button button-outline button-xs compact-detail-btn">
+                          Lihat detail
+                        </Link>
+                      </footer>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
         </div>
-      </section>
-
-      <section className="container category-section">
-        <h2>Kategori populer</h2>
-        <div className="category-grid">
-          <Link href="/katalog?category=pendampingan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-les-privat.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Les Privat</h3>
-            <p>48 aktif</p>
-          </Link>
-
-          <Link href="/katalog?category=bantuan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-kebersihan.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Jasa Kebersihan</h3>
-            <p>22 aktif</p>
-          </Link>
-
-          <Link href="/katalog?category=bantuan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-kurir.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Kurir / Titip</h3>
-            <p>35 aktif</p>
-          </Link>
-
-          <Link href="/katalog?category=bantuan" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-teknis.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Teknis</h3>
-            <p>18 aktif</p>
-          </Link>
-
-          <Link href="/katalog" className="category-card">
-            <div className="category-icon">
-              <img
-                src="/assets/images/icon-lainnya.svg"
-                alt=""
-                width="20"
-                height="20"
-              />
-            </div>
-            <h3>Lainnya</h3>
-            <p>15 aktif</p>
-          </Link>
-        </div>
-      </section>
-
-      <section className="container request-section">
-        <div className="section-header">
-          <h2>Permintaan terbaru di sekitar kamu</h2>
-          <Link href="/katalog" className="see-all">
-            Lihat semua &rarr;
-          </Link>
-        </div>
-
-        <div className="cards-grid">
-          {posts.length > 0 ? (
-            posts.map((post, idx) => (
-              <PostCard key={post.id} post={post} index={idx} />
-            ))
-          ) : (
-            <p className="empty-state">Belum ada postingan aktif saat ini.</p>
-          )}
-        </div>
-      </section>
-
-      <section className="container table-section" hidden>
-        <h2>Statistik Komunitas NeedHelp</h2>
-        <table>
-          <caption>
-            Ringkasan Capaian dan Aktivitas Komunitas Kota Yogyakarta
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Indikator</th>
-              <th scope="col">Capaian Saat Ini</th>
-              <th scope="col">Keterangan</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Permintaan Dibantu</th>
-              <td>2.100+</td>
-              <td>Kebutuhan terselesaikan</td>
-            </tr>
-            <tr>
-              <th scope="row">Relawan Aktif</th>
-              <td>850+</td>
-              <td>Mahasiswa dan pekerja muda</td>
-            </tr>
-            <tr>
-              <th scope="row">Rating Komunitas</th>
-              <td>4.8 / 5.0</td>
-              <td>Tingkat kepuasan interaksi</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-    </main>
+      </div>
+    </ThreeColumnLayout>
   );
+}
+
+export default function HomePage() {
+  return <HomeContent />;
 }

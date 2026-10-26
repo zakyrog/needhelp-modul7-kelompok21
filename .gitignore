@@ -10,4 +10,5 @@ out/
 .env
 .env.*
 !.env.example
+.test-credentials.local.json
 *.log
