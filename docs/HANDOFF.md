@@ -95,7 +95,8 @@ Tangkapan layar resolusi tinggi disimpan pada folder [`docs/screenshots/`](file:
 4. `9819613`: *fix(layout): neutralize legacy catalog CSS overrides, enforce center column flex width, and capture full visual verification suite*
 5. `0bd7dc1`: *fix(ui): polish header navbar dropdown and catalog filter panel 4-row layout*
 6. `ef0d3c7`: *feat(ui): redesign homepage into 2-column layout matching reference design with modern feed and sidebar*
-7. `36efbb0`: *feat(ui): revise Beranda and Feed & Cari to match reference mockup with distinct page roles* (akan disimpan)
+7. `9b4e6a0`: *feat(ui): revise Beranda and Feed & Cari to match reference mockup with distinct page roles*
+8. `5110387`: *style(home): enforce exact vertical spacing and single stack container for Beranda sections*
 
 ---
 
