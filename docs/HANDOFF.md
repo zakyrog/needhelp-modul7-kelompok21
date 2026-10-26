@@ -165,7 +165,7 @@ Semua halaman telah diperiksa secara visual melalui tangkapan layar Chrome Headl
 3. `da9850d`: *feat(preview): add isolated labeled local dev preview for private forms, activities, and ratings*
 4. `9819613`: *fix(layout): neutralize legacy catalog CSS overrides, enforce center column flex width, and capture full visual verification suite*
 5. `0bd7dc1`: *fix(ui): polish header navbar dropdown and catalog filter panel 4-row layout*
-6. `feat/phase-2-ui-features`: *feat(ui): redesign homepage into 2-column layout matching reference design with modern feed and sidebar*
+6. `ef0d3c7`: *feat(ui): redesign homepage into 2-column layout matching reference design with modern feed and sidebar*
 
 ### Cara Menjalankan Aplikasi:
 * Menjalankan server lokal: `npm run dev` (buka [http://localhost:3000](http://localhost:3000)).
