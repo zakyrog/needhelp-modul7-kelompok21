@@ -3,7 +3,8 @@
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { writeSession, CURRENT_USER } from "../../lib/auth.js";
+import { writeSession, signInWithPassword, CURRENT_USER } from "../../lib/auth.js";
+import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { validateLogin } from "../../lib/validation.js";
 import { Modal } from "../../components/Modal";
 import { useToast } from "../../components/Toast";
@@ -14,25 +15,31 @@ function LoginForm() {
   const { showToast } = useToast();
 
   const nextParam = searchParams.get("next") || "/";
+  const supabaseMode = isSupabaseConfigured();
 
-  const [email, setEmail] = useState("demo@needhelp.test");
-  const [password, setPassword] = useState("NeedHelp123!");
+  const [email, setEmail] = useState(supabaseMode ? "" : "demo@needhelp.test");
+  const [password, setPassword] = useState(supabaseMode ? "" : "NeedHelp123!");
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [modalContent, setModalContent] = useState(null);
 
   const infoTexts = {
     forgot: {
       title: "Lupa password",
-      body: "Pemulihan password belum tersedia pada prototipe ini. Gunakan akun demo demo@needhelp.test dengan password NeedHelp123!.",
+      body: supabaseMode
+        ? "Gunakan fitur 'Reset Password' di dashboard Supabase atau hubungi administrator."
+        : "Pemulihan password belum tersedia pada prototipe ini. Gunakan akun demo demo@needhelp.test dengan password NeedHelp123!.",
     },
     google: {
       title: "Login dengan Google",
-      body: "Login Google belum diaktifkan karena prototipe hanya memakai sesi demo di browser. Silakan masuk dengan akun demo.",
+      body: "Login Google belum diaktifkan. Silakan masuk dengan email dan password.",
     },
     register: {
       title: "Daftar akun",
-      body: "Pendaftaran akun belum tersedia pada prototipe ini. Gunakan akun demo untuk mencoba alur utama.",
+      body: supabaseMode
+        ? "Pendaftaran akun baru dapat dilakukan melalui halaman registrasi terpisah atau dashboard Supabase."
+        : "Pendaftaran akun belum tersedia pada prototipe ini. Gunakan akun demo untuk mencoba alur utama.",
     },
   };
 
@@ -42,8 +49,10 @@ function LoginForm() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
     const validationErrors = validateLogin(email, password);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -52,23 +61,43 @@ function LoginForm() {
     }
 
     setErrors({});
+    setSubmitting(true);
+
     try {
-      writeSession(rememberMe, {
-        id: CURRENT_USER.id,
-        email: CURRENT_USER.email,
-        name: CURRENT_USER.name,
-        at: new Date().toISOString(),
-      });
-      showToast("Berhasil masuk ke akun demo!", "success");
+      if (supabaseMode) {
+        // --- Jalur Supabase Auth ---
+        const { user, error } = await signInWithPassword(email, password);
+
+        if (error || !user) {
+          setErrors({
+            general: error || "Email atau password salah.",
+          });
+          setSubmitting(false);
+          return;
+        }
+
+        showToast("Berhasil masuk!", "success");
+      } else {
+        // --- Jalur Demo ---
+        writeSession(rememberMe, {
+          id: CURRENT_USER.id,
+          email: CURRENT_USER.email,
+          name: CURRENT_USER.name,
+          at: new Date().toISOString(),
+        });
+        showToast("Berhasil masuk ke akun demo!", "success");
+      }
+
       const destination =
         nextParam.startsWith("/") && !nextParam.startsWith("//")
           ? nextParam
           : "/";
       router.push(destination);
-    } catch {
+    } catch (err) {
       setErrors({
-        general: "Gagal menyimpan sesi browser lokal.",
+        general: err.message || "Gagal menyimpan sesi.",
       });
+      setSubmitting(false);
     }
   };
 
@@ -84,7 +113,7 @@ function LoginForm() {
               height="40"
             />
           </Link>
-          <div className="quote-icon">“</div>
+          <div className="quote-icon">"</div>
           <h1>
             Platform yang mempertemukan niat baik dengan kebutuhan nyata — di
             sekitarmu.
@@ -140,9 +169,10 @@ function LoginForm() {
                     setErrors((prev) => ({ ...prev, email: undefined }));
                   }
                 }}
-                placeholder="demo@needhelp.test"
+                placeholder={supabaseMode ? "Contoh: nama@email.com" : "Contoh: demo@needhelp.test"}
                 aria-invalid={Boolean(errors.email)}
                 aria-describedby={errors.email ? "user-email-error" : undefined}
+                disabled={submitting}
               />
               {errors.email && (
                 <small id="user-email-error" className="field-error" role="alert">
@@ -165,11 +195,12 @@ function LoginForm() {
                     setErrors((prev) => ({ ...prev, password: undefined }));
                   }
                 }}
-                placeholder="••••••••••"
+                placeholder="Contoh: Masukkan kata sandi"
                 aria-invalid={Boolean(errors.password)}
                 aria-describedby={
                   errors.password ? "user-password-error" : undefined
                 }
+                disabled={submitting}
               />
               {errors.password && (
                 <small
@@ -190,6 +221,7 @@ function LoginForm() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={submitting}
               />
               Ingat saya
             </label>
@@ -202,8 +234,8 @@ function LoginForm() {
             </button>
           </div>
 
-          <button className="button button-primary" type="submit">
-            Masuk
+          <button className="button button-primary" type="submit" disabled={submitting}>
+            {submitting ? "Masuk..." : "Masuk"}
           </button>
 
           <div className="divider">
@@ -214,24 +246,33 @@ function LoginForm() {
             className="button button-secondary"
             type="button"
             onClick={() => handleOpenInfo("google")}
+            disabled={submitting}
           >
             Lanjutkan dengan Google
           </button>
 
           <p className="register">
             Belum punya akun?{" "}
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => handleOpenInfo("register")}
-            >
-              Daftar sekarang
-            </button>
+            {supabaseMode ? (
+              <Link href="/register" className="text-button">
+                Daftar sekarang
+              </Link>
+            ) : (
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => handleOpenInfo("register")}
+              >
+                Daftar sekarang
+              </button>
+            )}
           </p>
 
-          <p style={{ marginTop: "16px", fontSize: "11px", color: "var(--color-text-muted)", textAlign: "center" }}>
-            💡 Mode Demo: Gunakan akun <code>demo@needhelp.test</code> / <code>NeedHelp123!</code>
-          </p>
+          {!supabaseMode && (
+            <p style={{ marginTop: "16px", fontSize: "11px", color: "var(--color-text-muted)", textAlign: "center" }}>
+              💡 Mode Demo: Gunakan akun <code>demo@needhelp.test</code> / <code>NeedHelp123!</code>
+            </p>
+          )}
         </form>
       </section>
 

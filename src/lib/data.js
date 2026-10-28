@@ -1,4 +1,5 @@
 import INITIAL_POSTS from "../data/posts.js";
+import { isSupabaseConfigured, getSupabase } from "./supabase.js";
 
 export const CURRENT_USER = {
   id: "demo-user",
@@ -64,6 +65,112 @@ export const PEOPLE = {
 
 // Seed posts diekspor untuk kompatibilitas mundur
 export const DEMO_POSTS = INITIAL_POSTS;
+
+// ---------------------------------------------------------------------------
+// Supabase → App Mapping Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Menghitung label waktu relatif dari timestamp ISO.
+ * @param {string} isoString - Timestamp ISO 8601
+ * @returns {string} Label waktu relatif dalam bahasa Indonesia
+ */
+function computeTimeLabel(isoString) {
+  if (!isoString) return "Baru saja";
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "Baru saja";
+
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMinutes < 1) return "Baru saja";
+  if (diffMinutes < 60) return `${diffMinutes} menit lalu`;
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  if (diffDays === 1) return "Kemarin";
+  if (diffDays < 7) return `${diffDays} hari lalu`;
+  return formatDate(isoString);
+}
+
+/**
+ * Memetakan baris hasil query Supabase (snake_case + JOIN profiles)
+ * ke format objek post yang diharapkan aplikasi (camelCase).
+ *
+ * @param {Object} row - Baris dari Supabase query
+ * @param {string|null} currentUserId - UUID user yang sedang login via Supabase Auth
+ * @returns {Object} Objek post dalam format aplikasi
+ */
+export function mapSupabasePostToApp(row, currentUserId) {
+  if (!row) return null;
+
+  // Handle profiles yang mungkin null (user dihapus atau JOIN gagal)
+  const profile = row.profiles || {};
+
+  return {
+    id: String(row.id),
+    nature: row.nature,
+    title: row.title,
+    summary: row.summary || (row.description ? row.description.slice(0, 150) : ""),
+    description: row.description || "",
+    category: row.category,
+    region: row.region,
+    address: row.address || "",
+    destination: row.destination || "",
+    date: row.date ? String(row.date) : "",
+    time: row.time ? String(row.time).slice(0, 5) : "",
+    endTime: row.end_time ? String(row.end_time).slice(0, 5) : "",
+    compensation: row.compensation,
+    amount: row.amount != null ? Number(row.amount) : null,
+    compensationNote: row.compensation_note || "",
+    authorId: String(row.author_id),
+    authorName: profile.name || row.author_name || "Pengguna NeedHelp",
+    authorBio: profile.bio || "Pengguna komunitas NeedHelp",
+    authorAvatar: profile.avatar_url || "/assets/images/avatar-user.svg",
+    authorInitial: profile.initial || (profile.name ? profile.name.charAt(0).toUpperCase() : "N"),
+    avatarClass: profile.avatar_class || "avatar-blue",
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+    timeLabel: computeTimeLabel(row.created_at),
+    owned: currentUserId ? String(row.author_id) === String(currentUserId) : false,
+    isDemo: Boolean(row.is_demo),
+  };
+}
+
+/**
+ * Cache terakhir dari fetchPosts untuk lookup sync getPost().
+ * @type {Object[]}
+ */
+let _lastFetchedPosts = [];
+
+/**
+ * Mengambil data profiles untuk sekumpulan author_id dari Supabase.
+ * Mengembalikan Map<authorId, profileData>.
+ * Dilakukan sebagai query terpisah untuk menghindari ketergantungan
+ * pada FK langsung antara posts dan profiles (yang mungkin belum ada
+ * di schema cache Supabase).
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} supabase
+ * @param {string[]} authorIds - Daftar UUID penulis
+ * @returns {Promise<Map<string, Object>>}
+ */
+async function fetchProfilesForAuthors(supabase, authorIds) {
+  const uniqueIds = [...new Set(authorIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, name, bio, avatar_url, initial, avatar_class")
+    .in("id", uniqueIds);
+
+  if (error || !data) return new Map();
+
+  const map = new Map();
+  for (const profile of data) {
+    map.set(profile.id, profile);
+  }
+  return map;
+}
 
 let cachedSeedPosts = null;
 
@@ -281,54 +388,483 @@ export function getSeedPosts() {
 }
 
 /**
- * Mengambil seluruh postingan (localStorage user + sumber JSON).
- * Mendukung simulasi error terkontrol untuk QA-06 via param URL atau window.__SIMULATE_FETCH_ERROR__.
+ * Mengambil seluruh postingan.
+ * - Jika Supabase terkonfigurasi: query dari Supabase (termasuk JOIN profiles).
+ *   Gagal → throw error (tidak fallback ke seed/localStorage).
+ * - Jika Supabase tidak terkonfigurasi: localStorage user + seed JSON (mode demo).
  */
 export async function fetchPosts({ simulateError = false } = {}) {
-  if (typeof window !== "undefined") {
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasSimulateParam =
-      urlParams.get("simulate_error") === "1" || urlParams.get("error") === "1";
-    if (simulateError || hasSimulateParam || window.__SIMULATE_FETCH_ERROR__) {
-      throw new Error(
-        "Simulasi error: Gagal mengambil data dari sumber JSON/API. Silakan periksa koneksi atau klik 'Coba Lagi'.",
-      );
+  // Simulasi error untuk QA testing (mode demo saja)
+  if (!isSupabaseConfigured()) {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasSimulateParam =
+        urlParams.get("simulate_error") === "1" || urlParams.get("error") === "1";
+      if (simulateError || hasSimulateParam || window.__SIMULATE_FETCH_ERROR__) {
+        throw new Error(
+          "Simulasi error: Gagal mengambil data dari sumber JSON/API. Silakan periksa koneksi atau klik 'Coba Lagi'.",
+        );
+      }
     }
+
+    const seed = await fetchSeedPosts();
+    const posts = [...getUserPosts(), ...seed];
+    _lastFetchedPosts = posts;
+    return posts;
   }
 
-  const seed = await fetchSeedPosts();
-  return [...getUserPosts(), ...seed];
+  // --- Jalur Supabase ---
+  try {
+    const supabase = getSupabase();
+
+    // Ambil user yang sedang login via Supabase Auth
+    const { data: { user } } = await supabase.auth.getUser();
+    const currentUserId = user ? user.id : null;
+
+    // Query posts (tanpa embedded JOIN — menghindari error relasi schema cache)
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(
+        `Gagal mengambil postingan dari Supabase: ${error.message}. ` +
+        "Pastikan skema tabel sudah diterapkan dan RLS policies aktif.",
+      );
+    }
+
+    // Ambil profiles secara terpisah untuk enrich data penulis
+    const authorIds = (data || []).map((row) => row.author_id);
+    const profilesMap = await fetchProfilesForAuthors(supabase, authorIds);
+
+    // Gabungkan profile ke setiap row sebelum mapping
+    const enrichedData = (data || []).map((row) => ({
+      ...row,
+      profiles: profilesMap.get(row.author_id) || null,
+    }));
+
+    const posts = enrichedData.map((row) => mapSupabasePostToApp(row, currentUserId));
+    _lastFetchedPosts = posts;
+    return posts;
+  } catch (err) {
+    // Propagasi error — jangan fallback diam-diam
+    throw err;
+  }
 }
 
 export function getPosts() {
   return [...getUserPosts(), ...getSeedPosts()];
 }
 
-export function getPublicPosts() {
-  const cancelledPostIds = new Set(
-    getActivities()
-      .filter((activity) => activity.status === "batal")
-      .map((activity) => activity.postId),
+/**
+ * Menempelkan `activity` pada post jalur demo dari data localStorage/seed.
+ *
+ * Sama seperti jalur Supabase: tidak ada record → { kind: "none" } (aktif),
+ * 'selesai'/'batal' → { kind: "closed" }, status tak dikenal → { kind: "unknown" }.
+ * `isDemo` atau `activityStatus` kosong TIDAK pernah otomatis berarti aktif.
+ *
+ * @param {Object[]} posts
+ * @param {Object[]} [activities]
+ * @returns {Object[]}
+ */
+export function attachDemoActivityStatus(posts, activities = getActivities()) {
+  const statusByPost = new Map(
+    activities.map((activity) => [String(activity.postId), activity.status]),
   );
-  return getPosts().filter((post) => !cancelledPostIds.has(post.id));
+
+  return posts.map((post) => {
+    if (!statusByPost.has(String(post.id))) {
+      return { ...post, activity: { kind: "none", status: null, ambiguous: false } };
+    }
+    const status = statusByPost.get(String(post.id));
+    const kind =
+      status === "selesai" || status === "batal"
+        ? "closed"
+        : KNOWN_ACTIVITY_STATUSES.has(status)
+          ? "active"
+          : "unknown";
+    return { ...post, activity: { kind, status, ambiguous: false } };
+  });
 }
 
+export function getPostWithStatus(id) {
+  const post = getPost(id) || getPublicPost(id);
+  if (!post) return null;
+  return attachDemoActivityStatus([post])[0];
+}
+
+export function getPublicPosts() {
+  return attachDemoActivityStatus(getPosts()).filter(isPostActive);
+}
+
+/**
+ * Mengambil postingan yang masih aktif untuk beranda dan katalog.
+ *
+ * Aturan status (lihat getPostLifecycleStatus): hanya "aktif" yang ditampilkan.
+ * Post dengan aktivitas 'selesai' atau 'batal' tetap ada di database, hanya tidak
+ * ditampilkan. Kegagalan mengambil status aktivitas dilempar sebagai error (tidak
+ * di-fallback diam-diam), supaya post selesai tidak tiba-tiba muncul lagi.
+ *
+ * @param {Object} [options] - Opsi untuk fetchPosts
+ * @returns {Promise<Object[]>}
+ */
 export async function fetchPublicPosts(options) {
   const posts = await fetchPosts(options);
-  const cancelledPostIds = new Set(
-    getActivities()
-      .filter((activity) => activity.status === "batal")
-      .map((activity) => activity.postId),
+
+  if (isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    const withStatus = await injectActivityStatus(supabase, posts);
+    // Hanya post aktif yang disimpan ke cache sync getPost(). Post selesai/batal
+    // tidak boleh muncul lagi lewat back-navigation dari cache ini.
+    const activePosts = withStatus.filter(isPostActive);
+    const byId = new Map(_lastFetchedPosts.map((post) => [post.id, post]));
+    for (const post of withStatus) {
+      if (isPostActive(post)) byId.set(post.id, post);
+      else byId.delete(post.id);
+    }
+    _lastFetchedPosts = [...byId.values()];
+    return activePosts;
+  }
+
+  const demoActivities = getActivities();
+  return attachDemoActivityStatus(posts, demoActivities).filter(isPostActive);
+}
+
+// ---------------------------------------------------------------------------
+// Profile CRUD (Supabase)
+// ---------------------------------------------------------------------------
+
+/**
+ * Mengambil profil user yang sedang login dari Supabase.
+ * @returns {Promise<Object|null>} Objek profil {id, name, bio, avatar_url, initial, avatar_class} atau null
+ */
+export async function fetchCurrentProfile() {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, name, bio, avatar_url, initial, avatar_class")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Memperbarui profil user yang sedang login di Supabase.
+ * Hanya kolom name, bio, avatar_url, initial, avatar_class yang bisa diubah.
+ * RLS profiles_update_own memastikan user hanya bisa update profil sendiri.
+ *
+ * @param {Object} updates - Objek berisi kolom yang ingin diubah
+ * @returns {Promise<{data: Object|null, error: string|null}>}
+ */
+export async function updateProfile(updates) {
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: "Supabase belum dikonfigurasi." };
+  }
+
+  try {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { data: null, error: "Anda harus masuk terlebih dahulu." };
+    }
+
+    // Hanya izinkan kolom yang aman untuk diupdate
+    const allowedFields = ["name", "bio", "avatar_url", "initial", "avatar_class"];
+    const safeUpdates = {};
+    for (const key of allowedFields) {
+      if (updates[key] !== undefined) {
+        safeUpdates[key] = updates[key];
+      }
+    }
+
+    if (Object.keys(safeUpdates).length === 0) {
+      return { data: null, error: "Tidak ada data yang diperbarui." };
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(safeUpdates)
+      .eq("id", user.id)
+      .select("id, name, bio, avatar_url, initial, avatar_class")
+      .single();
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message || "Gagal memperbarui profil." };
+  }
+}
+
+/**
+ * Mengambil satu postingan berdasarkan ID dari Supabase (async).
+ * Gunakan ini untuk halaman detail/sukses ketika Supabase terkonfigurasi.
+ *
+ * @param {string} id - UUID postingan
+ * @returns {Promise<Object|null>} Objek post atau null jika tidak ditemukan
+ */
+export async function fetchPostById(id) {
+  return _fetchPostById(id, { includeActivityStatus: true });
+}
+
+async function _fetchPostById(id, { includeActivityStatus }) {
+  if (!isSupabaseConfigured()) {
+    // Jalur demo: status diambil dari getActivities() (seed + localStorage),
+    // bukan diasumsikan aktif hanya karena ini data demo.
+    return getPostWithStatus(id);
+  }
+
+  try {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    const currentUserId = user ? user.id : null;
+
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(
+        `Gagal mengambil detail postingan dari Supabase: ${error.message}`,
+      );
+    }
+
+    if (!data) return null;
+
+    // Enrich dengan profile penulis
+    const profilesMap = await fetchProfilesForAuthors(supabase, [data.author_id]);
+    const enriched = { ...data, profiles: profilesMap.get(data.author_id) || null };
+    const mapped = mapSupabasePostToApp(enriched, currentUserId);
+
+    if (!includeActivityStatus) return mapped;
+
+    // Status diambil lewat RPC read-only (migration 011) agar tidak bergantung pada
+    // visibilitas baris activities lewat RLS milik pemilik/partner saja.
+    const statusMap = await fetchActivityStatusMap(supabase, [mapped.id]);
+    return { ...mapped, activity: statusMap.get(mapped.id) || { kind: "none" } };
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
+ * Status aktivitas yang diketahui aplikasi. Nilai `status` mengikuti CHECK
+ * constraint activities.status (migration 002): menunggu | berlangsung | selesai | batal.
+ * @type {ReadonlySet<string>}
+ */
+const KNOWN_ACTIVITY_STATUSES = new Set(["menunggu", "berlangsung", "selesai", "batal"]);
+
+/** Maksimum post_id per pemanggilan RPC get_post_activity_status (migration 011). */
+export const ACTIVITY_STATUS_BATCH_SIZE = 100;
+
+/**
+ * Mengklasifikasikan hasil status aktivitas sebuah postingan menjadi kondisi yang
+ * TIDAK saling dianggap sama:
+ *
+ * - { kind: "none" }         tidak ada baris activities (belum ada aktivitas nyata)
+ * - { kind: "active", status }    status 'menunggu' / 'berlangsung'
+ * - { kind: "closed", status }    status 'selesai' / 'batal'
+ * - { kind: "unknown", status? }  RPC tidak mengembalikan baris untuk post ini
+ *                            (tidak dapat dibaca / tidak diketahui), status tak
+ *                            dikenal, atau lebih dari satu status berbeda
+ * - { kind: "error", error }      RPC gagal (tidak pernah dianggap "aktif")
+ *
+ * Pemanggil harus memutuskan sendiri untuk "unknown" dan "error"; keduanya BUKAN
+ * "aktif".
+ *
+ * @param {Object|null|undefined} activity
+ * @returns {{kind:"none"|"active"|"closed"|"unknown"|"error", status?:string|null, error?:Error}}
+ */
+export function classifyActivityStatus(activity) {
+  if (!activity) return { kind: "unknown" };
+  if (activity.kind === "error") return { kind: "error", error: activity.error };
+  if (activity.kind === "none") return { kind: "none" };
+
+  const status = activity.status;
+  if (activity.ambiguous) return { kind: "unknown", status: null };
+  if (status == null) return { kind: "unknown", status: null };
+  if (!KNOWN_ACTIVITY_STATUSES.has(status)) return { kind: "unknown", status };
+
+  if (status === "selesai" || status === "batal") {
+    return { kind: "closed", status };
+  }
+  return { kind: "active", status };
+}
+
+/**
+ * Status siklus hidup postingan dari objek post.
+ *
+ * Status TIDAK disimpan di tabel posts. Sumbernya activities.status, dibaca lewat
+ * RPC read-only get_post_activity_status (migration 011) karena RLS activities
+ * hanya mengizinkan pemilik/partner membaca barisnya.
+ *
+ * "none" dianggap aktif karena memang belum ada aktivitas sama sekali.
+ * "unknown" dan "error" TIDAK dianggap aktif.
+ *
+ * @returns {"aktif"|"selesai"|"batal"|"tidakDikenal"}
+ */
+export function getPostLifecycleStatus(post) {
+  if (!post) return "tidakDikenal";
+  const { kind, status } = classifyActivityStatus(post.activity);
+  switch (kind) {
+    case "none":
+    case "active":
+      return "aktif";
+    case "closed":
+      return status === "selesai" ? "selesai" : "batal";
+    default:
+      return "tidakDikenal";
+  }
+}
+
+/** True bila postingan boleh muncul di beranda/katalog aktif dan menerima pengajuan baru. */
+export function isPostActive(post) {
+  return getPostLifecycleStatus(post) === "aktif";
+}
+
+/**
+ * Mengambil peta status aktivitas lewat RPC get_post_activity_status (migration 011).
+ *
+ * Mengembalikan Map<postId, {kind:"active"|"closed"|"unknown", status, ambiguous}>.
+ * Dua kondisi TIDAK boleh tertukar:
+ * - post_id TIDAK muncul di Map → tidak ada baris activities → { kind: "none" }
+ *   (diputuskan oleh pemanggil, mis. injectActivityStatus).
+ * - RPC gagal (error) → dilempar sebagai Error; TIDAK di-fallback menjadi "aktif"
+ *   dan tidak pernah diperlakukan sama dengan "tidak ada aktivitas".
+ * Baris yang dikembalikan dengan activity_count hilang/NULL/bukan 1 → "unknown".
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} supabase
+ * @param {string[]} postIds
+ * @returns {Promise<Map<string, {kind:string, status:string|null, ambiguous:boolean}>>}
+ */
+async function fetchActivityStatusMap(supabase, postIds) {
+  const map = new Map();
+  const uniqueIds = [...new Set(postIds.filter(Boolean).map(String))];
+  if (uniqueIds.length === 0) return map;
+
+  for (let i = 0; i < uniqueIds.length; i += ACTIVITY_STATUS_BATCH_SIZE) {
+    const batch = uniqueIds.slice(i, i + ACTIVITY_STATUS_BATCH_SIZE);
+
+    const { data, error } = await supabase.rpc("get_post_activity_status", {
+      p_post_ids: batch,
+    });
+
+    if (error) {
+      throw new Error(
+        `Gagal mengambil status aktivitas postingan: ${error.message}. ` +
+        "Status postingan tidak dapat dipastikan, jadi daftar tidak ditampilkan.",
+      );
+    }
+
+    for (const row of data || []) {
+      // Baris yang dikembalikan RPC berarti ADA aktivitas untuk post ini.
+      // Fail-closed: setiap baris dibaca sebagai aktivitas tunggal HANYA bila
+      // activity_count === 1, ambiguous === false, dan status-nya tepercaya.
+      // activity_count hilang/NULL/bukan 1 → "unknown" (tidak aktif).
+      const rawCount = row.activity_count;
+      const hasValidCount =
+        rawCount !== null &&
+        rawCount !== undefined &&
+        rawCount !== "" &&
+        Number.isFinite(Number(rawCount)) &&
+        Number(rawCount) === 1;
+      // `ambiguous` hanya dipercaya bila bernilai boolean literal. Nilai lain
+      // (mis. string "true" dari driver/klien lain) tidak disamakan dengan true,
+      // tetapi juga tidak dianggap aman: dirawat sebagai ambiguitas (fail-closed).
+      const ambiguous =
+        !hasValidCount || row.ambiguous !== false;
+      // Hanya status string yang persis ada di daftar status yang dikenal yang
+      // diterima. Angka, null, kapitalisasi berbeda ("SELESAI"), atau nilai lain
+      // -> "unknown" (tidak aktif, tidak selesai).
+      const status = typeof row.status === "string" ? row.status : null;
+      const knownStatus = status !== null && KNOWN_ACTIVITY_STATUSES.has(status);
+      const kind =
+        ambiguous || !knownStatus
+          ? "unknown"
+          : status === "selesai" || status === "batal"
+            ? "closed"
+            : "active";
+      map.set(String(row.post_id), {
+        kind,
+        status: kind === "unknown" ? null : status,
+        ambiguous,
+      });
+    }
+  }
+
+  return map;
+}
+
+/**
+ * Menempelkan `activity` (hasil klasifikasi mentah) ke sekumpulan post.
+ * Satu aturan status untuk beranda, katalog, detail, dan form pengajuan.
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} supabase
+ * @param {Object[]} posts
+ * @returns {Promise<Object[]>}
+ */
+async function injectActivityStatus(supabase, posts) {
+  if (!Array.isArray(posts) || posts.length === 0) return posts;
+
+  const statusMap = await fetchActivityStatusMap(
+    supabase,
+    posts.map((post) => post.id),
   );
-  return posts.filter((post) => !cancelledPostIds.has(post.id));
+
+  return posts.map((post) => ({
+    ...post,
+    activity: statusMap.get(String(post.id)) || { kind: "none", status: null, ambiguous: false },
+  }));
+}
+
+/**
+ * Mengambil status aktivitas satu post (fresh, tidak dari cache).
+ * Dipakai halaman detail/form agar tidak bergantung pada cache navigasi.
+ *
+ * @param {string} postId
+ * @returns {Promise<{kind:string, status:string|null}|null>} null bila RPC gagal
+ */
+export async function fetchPostActivityStatus(postId) {
+  if (!isSupabaseConfigured()) return null;
+
+  const supabase = getSupabase();
+  try {
+    const statusMap = await fetchActivityStatusMap(supabase, [postId]);
+    return statusMap.get(String(postId)) || { kind: "none", status: null };
+  } catch (err) {
+    return { kind: "error", error: err };
+  }
 }
 
 export function getPost(id) {
+  // Coba cari di cache hasil fetch terakhir (Supabase atau demo)
+  const cached = _lastFetchedPosts.find((post) => post.id === id);
+  if (cached) return cached;
+
+  // Fallback ke lookup sync lama (mode demo)
   return getPosts().find((post) => post.id === id) || null;
 }
 
 export function getPublicPost(id) {
-  return getPublicPosts().find((post) => post.id === id) || null;
+  const post = getPostWithStatus(id);
+  if (!post || !isPostActive(post)) return null;
+  return post;
 }
 
 export function savePost(post) {
@@ -338,7 +874,92 @@ export function savePost(post) {
   return post;
 }
 
+/**
+ * Membuat postingan baru.
+ * - Jika Supabase terkonfigurasi: insert ke Supabase (async, return Promise).
+ *   Memerlukan user yang sudah login via Supabase Auth.
+ *   Gagal → throw error.
+ * - Jika Supabase tidak terkonfigurasi: simpan ke localStorage (sync, return objek langsung).
+ *   Backward-compatible dengan caller yang tidak menggunakan await.
+ */
 export function createPost(values, user = CURRENT_USER, { simulateError = false } = {}) {
+  // --- Jalur Supabase (async) ---
+  if (isSupabaseConfigured()) {
+    // Return Promise agar caller bisa await
+    return (async () => {
+      try {
+        const supabase = getSupabase();
+
+        // Verifikasi user benar-benar terautentikasi via Supabase Auth
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !authUser) {
+          throw new Error(
+            "Gagal membuat postingan: Anda harus masuk terlebih dahulu melalui Supabase Auth. " +
+            "Autentikasi demo tidak dapat digunakan untuk menyimpan postingan ke database produksi.",
+          );
+        }
+
+        const postRow = {
+          nature: values.nature,
+          title: values.title.trim(),
+          summary: values.description.trim().slice(0, 150),
+          description: values.description.trim(),
+          category: values.category,
+          region: values.region,
+          address: values.address.trim(),
+          destination: values.destination?.trim() || "",
+          date: values.date,
+          time: values.time,
+          end_time: null,
+          compensation: values.compensation,
+          amount: values.compensation === "tarif" ? Number(values.amount) : null,
+          compensation_note: values.compensationNote?.trim() || "",
+          author_id: authUser.id,
+          is_demo: false,
+        };
+
+        const { data, error } = await supabase
+          .from("posts")
+          .insert(postRow)
+          .select("*")
+          .single();
+
+        if (error) {
+          throw new Error(
+            `Gagal menyimpan postingan ke Supabase: ${error.message}. ` +
+            "Pastikan RLS policies mengizinkan insert dan skema tabel sudah sesuai.",
+          );
+        }
+
+        if (!data) {
+          throw new Error("Gagal menyimpan postingan: Supabase tidak mengembalikan data.");
+        }
+
+        // Enrich dengan profile penulis
+        const profilesMap = await fetchProfilesForAuthors(supabase, [data.author_id]);
+        const enriched = { ...data, profiles: profilesMap.get(data.author_id) || null };
+
+        // Postingan baru selalu tanpa aktivitas; tandai eksplisit agar
+        // getPostLifecycleStatus tidak perlu menebak.
+        const mappedPost = {
+          ...mapSupabasePostToApp(enriched, authUser.id),
+          activity: { kind: "none", status: null, ambiguous: false },
+        };
+
+        // Tambahkan ke cache sync agar getPost() bisa menemukan postingan baru
+        // tanpa harus menunggu fetchPosts() berikutnya.
+        _lastFetchedPosts = [mappedPost, ..._lastFetchedPosts.filter((p) => p.id !== mappedPost.id)];
+
+        return mappedPost;
+      } catch (err) {
+        // Propagasi error — jangan fallback ke localStorage, jangan laporkan sukses
+        throw err;
+      }
+    })();
+  }
+
+  // --- Jalur Demo (sync, backward-compatible) ---
   if (typeof window !== "undefined") {
     const isSimulateTitle =
       typeof values?.title === "string" && values.title.includes("[simulasi-gagal]");
@@ -545,6 +1166,819 @@ export function saveRating(activityId, rating) {
 
 export function cancelActivity(activityId) {
   setActivityState(activityId, { status: "batal" });
+}
+
+// ---------------------------------------------------------------------------
+// Activities — Supabase Integration
+// ---------------------------------------------------------------------------
+
+/**
+ * Memetakan baris tabel activities ke format yang diharapkan halaman Aktivitas.
+ * @param {Object} row - Baris dari Supabase query
+ * @returns {Object} Objek aktivitas dalam format aplikasi
+ */
+function mapSupabaseActivityToApp(row) {
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    postId: String(row.post_id),
+    status: row.status,
+    partner: row.partner_name || "",
+    partnerId: row.partner_id ? String(row.partner_id) : null,
+    note: row.note || "",
+    review: row.review_rating
+      ? { rating: row.review_rating, comment: row.review_comment || "" }
+      : null,
+    owned: true,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Mengambil semua aktivitas milik user yang sedang login dari Supabase.
+ * Aktivitas diturunkan dari postingan user + override status di tabel activities.
+ *
+ * Alur:
+ * 1. Ambil semua postingan milik user dari tabel posts
+ * 2. Ambil semua activity records milik user dari tabel activities
+ * 3. Untuk setiap post: jika ada activity record → gunakan data dari activity record;
+ *    jika tidak → buat aktivitas default dengan status "menunggu"
+ *
+ * @returns {Promise<Object[]>} Array objek aktivitas
+ */
+export async function fetchActivities() {
+  if (!isSupabaseConfigured()) {
+    // Mode demo: fallback ke fungsi sync existing
+    return getActivities();
+  }
+
+  try {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    // Ambil semua postingan milik user
+    const { data: posts, error: postsError } = await supabase
+      .from("posts")
+      .select("id, title")
+      .eq("author_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (postsError) {
+      throw new Error(`Gagal mengambil postingan: ${postsError.message}`);
+    }
+
+    // Ambil semua activity records milik user
+    const { data: activityRecords, error: actError } = await supabase
+      .from("activities")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (actError) {
+      throw new Error(`Gagal mengambil aktivitas: ${actError.message}`);
+    }
+
+    // Simpan status aktivitas per post agar feed/katalog bisa memfilter post
+    // selesai/batal tanpa data aktivitas basi (lihat injectActivityStatus).
+    // Baris activities milik user ini memang terbaca lewat RLS (activities_select_own),
+    // jadi status here sama dengan hasil RPC get_post_activity_status.
+    if (posts) {
+      const freshStatusByPost = new Map(
+        (activityRecords || []).map((act) => [String(act.post_id), act.status]),
+      );
+      _lastFetchedPosts = _lastFetchedPosts.map((cached) => {
+        const postId = String(cached.id);
+        const status = freshStatusByPost.get(postId);
+        // Tidak ada record = belum ada aktivitas nyata (post masih aktif).
+        // Aturan sama dengan attachDemoActivityStatus: status tak dikenal -> unknown.
+        const activity = !status
+          ? { kind: "none", status: null, ambiguous: false }
+          : status === "selesai" || status === "batal"
+            ? { kind: "closed", status, ambiguous: false }
+            : KNOWN_ACTIVITY_STATUSES.has(status)
+              ? { kind: "active", status, ambiguous: false }
+              : { kind: "unknown", status: null, ambiguous: false };
+        return { ...cached, activity };
+      });
+    }
+
+    // Index activity records by post_id untuk lookup cepat
+    const activityByPostId = new Map();
+    for (const act of activityRecords || []) {
+      activityByPostId.set(act.post_id, act);
+    }
+
+    // Gabungkan: setiap post → aktivitas (dari record atau default)
+    const activities = (posts || []).map((post) => {
+      const record = activityByPostId.get(post.id);
+      if (record) {
+        return mapSupabaseActivityToApp(record);
+      }
+      // Default: aktivitas menunggu tanpa record di tabel activities
+      return {
+        id: post.id, // Gunakan post ID sebagai activity ID sementara
+        postId: String(post.id),
+        status: "menunggu",
+        partner: "",
+        partnerId: null,
+        note: "Postingan aktif di katalog publik dan menunggu calon partner.",
+        review: null,
+        owned: true,
+        _defaultActivity: true, // Penanda bahwa ini belum punya record di DB
+      };
+    });
+
+    return activities;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
+ * Membatalkan aktivitas di Supabase menggunakan RPC cancel_activity.
+ * Hanya pemilik postingan yang dapat membatalkan.
+ * Status yang boleh dibatalkan: 'menunggu', 'berlangsung'.
+ *
+ * @param {string} postId - ID postingan terkait
+ * @returns {Promise<void>}
+ */
+export async function cancelActivitySupabase(postId) {
+  if (!isSupabaseConfigured()) {
+    // Mode demo: fallback ke cancelActivity sync
+    // Caller harus menyediakan activityId untuk mode demo
+    throw new Error("Mode demo tidak didukung untuk cancelActivitySupabase. Gunakan cancelActivity() untuk mode demo.");
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  const { error } = await supabase.rpc("cancel_activity", {
+    p_post_id: postId,
+  });
+
+  if (error) {
+    if (error.message.includes("sudah selesai")) {
+      throw new Error("Aktivitas yang sudah selesai tidak dapat dibatalkan.");
+    }
+    if (error.message.includes("sudah dibatalkan")) {
+      throw new Error("Aktivitas ini sudah dibatalkan sebelumnya.");
+    }
+    if (error.message.includes("bukan pemilik")) {
+      throw new Error("Anda bukan pemilik postingan ini.");
+    }
+    if (error.message.includes("tidak ditemukan")) {
+      throw new Error("Aktivitas tidak ditemukan untuk postingan ini.");
+    }
+    throw new Error(error.message || "Gagal membatalkan aktivitas.");
+  }
+}
+
+/**
+ * Menyelesaikan aktivitas di Supabase (transisi "berlangsung" → "selesai").
+ * Menggunakan RPC complete_activity.
+ * Ini terpisah dari rating — user bisa menyelesaikan dulu, lalu memberi rating nanti.
+ *
+ * @param {string} postId - ID postingan terkait
+ * @returns {Promise<void>}
+ */
+export async function completeActivitySupabase(postId) {
+  if (!isSupabaseConfigured()) {
+    // Mode demo: fallback ke setActivityState
+    // Untuk mode demo, kita tetap butuh activityId, tapi parameter sudah diubah
+    // Caller harus menyesuaikan
+    throw new Error("Mode demo tidak didukung untuk completeActivitySupabase. Gunakan completeActivity() untuk mode demo.");
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  const { error } = await supabase.rpc("complete_activity", {
+    p_post_id: postId,
+  });
+
+  if (error) {
+    if (error.message.includes("sudah selesai")) {
+      throw new Error("Aktivitas ini sudah selesai.");
+    }
+    if (error.message.includes("belum dimulai")) {
+      throw new Error("Aktivitas belum dimulai. Mulai aktivitas terlebih dahulu.");
+    }
+    if (error.message.includes("dibatalkan")) {
+      throw new Error("Aktivitas yang dibatalkan tidak dapat diselesaikan.");
+    }
+    if (error.message.includes("bukan pemilik")) {
+      throw new Error("Anda bukan pemilik postingan ini.");
+    }
+    if (error.message.includes("belum memiliki partner")) {
+      throw new Error("Aktivitas ini belum memiliki partner. Terima pengajuan bantuan terlebih dahulu.");
+    }
+    if (error.message.includes("tidak ditemukan")) {
+      throw new Error("Aktivitas tidak ditemukan untuk postingan ini.");
+    }
+    throw new Error(error.message || "Gagal menyelesaikan aktivitas.");
+  }
+}
+
+/**
+ * Menghapus postingan dari Supabase via RPC atomik `delete_post_with_cleanup`.
+ * Dalam satu transaksi PostgreSQL:
+ * - Dihapus: aktivitas 'batal' milik pemilik + pengajuan berstatus 'rejected'/'withdrawn'.
+ * - Menghalangi: aktivitas 'menunggu'/'berlangsung'/'selesai' (riwayat & rating),
+ *   pengajuan 'pending'/'accepted', dan aktivitas 'batal' milik pengguna lain.
+ * Nilai status mengikuti CHECK constraint di migrasi 002 (activities) dan 003
+ * (help_applications).
+ *
+ * @param {string} postId - ID postingan yang akan dihapus
+ * @returns {Promise<void>}
+ */
+export async function deletePostSupabase(postId) {
+  if (!isSupabaseConfigured()) {
+    // Mode demo: hapus dari localStorage
+    const posts = readJson(DEMO_POSTS_KEY, []);
+    const filtered = posts.filter((p) => p.id !== postId);
+    writeJson(DEMO_POSTS_KEY, filtered);
+    // Hapus juga dari cache
+    _lastFetchedPosts = _lastFetchedPosts.filter((p) => p.id !== postId);
+    return;
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  // Satu RPC atomik: verifikasi kepemilikan, bersihkan children yang diizinkan, dan
+  // hapus postingan dalam satu transaksi. Tidak ada request DELETE terpisah.
+  const { error } = await supabase.rpc("delete_post_with_cleanup", {
+    p_post_id: postId,
+  });
+
+  if (error) {
+    if (error.message.includes("pengajuan bantuan yang menunggu")) {
+      throw new Error(
+        "Postingan ini tidak dapat dihapus karena masih ada pengajuan bantuan yang menunggu keputusan. " +
+        "Tolak pengajuan tersebut terlebih dahulu, lalu hapus postingan."
+      );
+    }
+    if (error.message.includes("pengajuan yang diterima")) {
+      throw new Error(
+        "Postingan ini tidak dapat dihapus karena ada pengajuan yang sudah diterima. " +
+        "Selesaikan atau batalkan aktivitasnya terlebih dahulu."
+      );
+    }
+    if (error.message.includes("memiliki riwayat aktivitas")) {
+      throw new Error(
+        "Postingan ini tidak dapat dihapus karena memiliki aktivitas yang sedang berlangsung atau sudah selesai. " +
+        "Batalkan atau selesaikan aktivitas tersebut terlebih dahulu."
+      );
+    }
+    if (error.message.includes("bukan pemilik")) {
+      throw new Error("Anda tidak memiliki izin untuk menghapus postingan ini.");
+    }
+    if (error.message.includes("tidak ditemukan")) {
+      throw new Error("Postingan tidak ditemukan atau sudah dihapus.");
+    }
+    if (error.message.includes("pengguna lain")) {
+      throw new Error(
+        "Postingan ini memiliki aktivitas batal milik pengguna lain sehingga tidak dapat dihapus otomatis. " +
+        "Silakan hubungi admin."
+      );
+    }
+    if (error.message.includes("status yang tidak dikenali")) {
+      throw new Error(
+        "Postingan ini memiliki pengajuan dengan status tidak dikenal sehingga tidak dapat dihapus. " +
+        "Silakan hubungi admin."
+      );
+    }
+    if (error.message.includes("Verifikasi gagal")) {
+      throw new Error(
+        "Penghapusan dibatalkan karena data berubah bersamaan. Silakan coba lagi."
+      );
+    }
+    // PGRST202: RPC belum ada di database (migrasi 009 belum dijalankan).
+    if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) {
+      throw new Error(
+        "Fitur hapus postingan belum tersedia di server. Migrasi 009 belum diterapkan pada database."
+      );
+    }
+    // PGRST301 / 42501: RLS atau hak akses menolak — jangan disamarkan sebagai
+    // "riwayat aktivitas".
+    if (error.code === "PGRST301" || error.code === "42501" || /permission denied|row-level security/i.test(error.message || "")) {
+      throw new Error(
+        "Anda tidak memiliki izin untuk menghapus postingan ini. Pastikan Anda masih masuk dengan akun pemilik postingan."
+      );
+    }
+    // FK violation: ada tabel lain yang merujuk posts dengan ON DELETE RESTRICT
+    // dan tidak dibersihkan fungsi ini. Seluruh transaksi sudah rollback.
+    if (error.code === "23503" || error.message?.includes("foreign key constraint")) {
+      throw new Error(
+        "Postingan ini masih terhubung dengan data lain sehingga tidak dapat dihapus. " +
+        "Riwayat aktivitas dan pengajuan dipertahankan untuk sistem reputasi."
+      );
+    }
+    throw new Error(`Gagal menghapus postingan: ${error.message}`);
+  }
+
+  // Bersihkan cache lokal
+  _lastFetchedPosts = _lastFetchedPosts.filter((p) => p.id !== postId);
+}
+
+/**
+ * Menyimpan rating/ulasan ke Supabase menggunakan RPC save_activity_rating.
+ * Rating hanya dapat diberikan setelah aktivitas selesai (status='selesai').
+ * Fungsi ini TIDAK mengubah status aktivitas — gunakan completeActivitySupabase() terlebih dahulu.
+ *
+ * @param {string} postId - ID postingan terkait
+ * @param {Object} rating - {rating: number, comment: string}
+ * @returns {Promise<void>}
+ */
+export async function saveRatingSupabase(postId, rating) {
+  if (!isSupabaseConfigured()) {
+    // Mode demo: fallback ke saveRating sync
+    // Caller harus menyediakan activityId untuk mode demo
+    throw new Error("Mode demo tidak didukung untuk saveRatingSupabase. Gunakan saveRating() untuk mode demo.");
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  const stars = Number(rating?.rating);
+  const comment = String(rating?.comment || "").trim();
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+    throw new Error("Rating harus berupa bilangan bulat 1 sampai 5.");
+  }
+  if (comment.length < 10) {
+    throw new Error("Ulasan minimal 10 karakter.");
+  }
+
+  const { error } = await supabase.rpc("save_activity_rating", {
+    p_post_id: postId,
+    p_rating: stars,
+    p_comment: comment,
+  });
+
+  if (error) {
+    if (error.message.includes("sudah memberikan ulasan")) {
+      throw new Error("Anda sudah memberikan ulasan untuk aktivitas ini.");
+    }
+    if (error.message.includes("belum selesai")) {
+      throw new Error("Aktivitas belum selesai. Selesaikan aktivitas terlebih dahulu sebelum memberi ulasan.");
+    }
+    if (error.message.includes("belum dimulai")) {
+      throw new Error("Aktivitas belum dimulai. Mulai dan selesaikan aktivitas terlebih dahulu.");
+    }
+    if (error.message.includes("dibatalkan")) {
+      throw new Error("Aktivitas yang dibatalkan tidak dapat diberi ulasan.");
+    }
+    if (error.message.includes("bukan pemilik")) {
+      throw new Error("Anda bukan pemilik postingan ini.");
+    }
+    if (error.message.includes("belum memiliki partner")) {
+      throw new Error("Aktivitas ini belum memiliki partner. Tidak dapat memberi ulasan.");
+    }
+    if (error.message.includes("tidak dapat memberikan ulasan kepada diri sendiri")) {
+      throw new Error("Anda tidak dapat memberikan ulasan kepada diri sendiri.");
+    }
+    if (error.message.includes("tidak ditemukan")) {
+      throw new Error("Aktivitas tidak ditemukan untuk postingan ini.");
+    }
+    throw new Error(error.message || "Gagal menyimpan ulasan.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Help Applications — RPC Wrappers
+// ---------------------------------------------------------------------------
+
+/**
+ * Mengirim pengajuan bantuan untuk sebuah postingan.
+ * Menggunakan RPC submit_help_application.
+ *
+ * @param {string} postId - ID postingan yang dituju
+ * @param {Object} data - Data pengajuan
+ * @param {string} data.message - Pesan untuk pemilik postingan
+ * @param {string} data.contactInfo - Informasi kontak (WhatsApp, dll)
+ * @param {string} data.availableTime - Waktu ketersediaan
+ * @param {string} [data.extraNote] - Catatan tambahan (opsional)
+ * @returns {Promise<string>} ID pengajuan yang baru dibuat
+ */
+export async function submitHelpApplication(postId, data) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Fitur pengajuan bantuan hanya tersedia dalam mode Supabase.");
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  const { data: result, error } = await supabase.rpc("submit_help_application", {
+    p_post_id: postId,
+    p_message: data.message || "",
+    p_contact_info: data.contactInfo || "",
+    p_available_time: data.availableTime || "",
+    p_extra_note: data.extraNote || "",
+  });
+
+  if (error) {
+    // Terjemahkan error database ke pesan yang lebih user-friendly
+    if (error.message.includes("sudah memiliki pengajuan")) {
+      throw new Error("Anda sudah memiliki pengajuan pending atau diterima untuk postingan ini.");
+    }
+    if (error.message.includes("sudah ada pengajuan yang diterima")) {
+      throw new Error("Sudah ada pengajuan yang diterima untuk postingan ini.");
+    }
+    if (error.message.includes("tidak dapat mengajukan bantuan ke postingan sendiri")) {
+      throw new Error("Anda tidak dapat mengajukan bantuan ke postingan sendiri.");
+    }
+    if (error.message.includes("Postingan tidak ditemukan")) {
+      throw new Error("Postingan tidak ditemukan atau sudah dihapus.");
+    }
+    if (error.message.includes("sudah dibatalkan")) {
+      throw new Error("Aktivitas ini sudah dibatalkan. Buat postingan baru jika masih membutuhkan bantuan.");
+    }
+    if (error.message.includes("sudah selesai")) {
+      throw new Error("Aktivitas ini sudah selesai. Pengajuan tidak dapat dilakukan.");
+    }
+    if (error.message.includes("sudah berlangsung")) {
+      throw new Error("Aktivitas ini sudah berlangsung. Pengajuan tidak dapat dilakukan.");
+    }
+    if (error.message.includes("Postingan tidak menerima pengajuan")) {
+      throw new Error("Postingan ini sudah selesai atau dibatalkan, sehingga tidak menerima pengajuan bantuan baru.");
+    }
+    if (error.message.includes("Postingan belum aktif")) {
+      throw new Error("Postingan ini sedang tidak aktif. Pengajuan bantuan belum dapat dikirim.");
+    }
+    if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) {
+      throw new Error(
+        "Fitur pengajuan bantuan belum diperbarui di server. Migrasi 010 belum diterapkan pada database.",
+      );
+    }
+    throw new Error(error.message || "Gagal mengirim pengajuan bantuan.");
+  }
+
+  return result;
+}
+
+/**
+ * Mengambil pengajuan MILIK user yang sedang login untuk satu postingan.
+ *
+ * Aturan bisnis proyek (migration 003 + 010, partial unique index
+ * uq_help_applications_pending_accepted): user tidak boleh punya lebih dari satu
+ * pengajuan berstatus 'pending' atau 'accepted' untuk postingan yang sama.
+ * Status 'rejected'/'withdrawn' tidak memblokir pengajuan baru — idx parsial tidak
+ * mencakupnya dan RPC hanya menolak pending/accepted.
+ *
+ * Digunakan frontend agar tombol formulir/profil tidak menawarkan pengajuan kedua.
+ * Ini BUKAN pengaman utama: RPC 010 tetap menolak duplikat di server.
+ *
+ * @param {string} postId - ID postingan
+ * @returns {Promise<Object|null>}
+ *   null bila user belum login / mode demo / belum ada pengajuan aktif;
+ *   objek { id, status } bila ada pengajuan pending atau accepted.
+ */
+export async function getMyActiveApplicationForPost(postId) {
+  if (!isSupabaseConfigured() || !postId) return null;
+
+  try {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // RLS help_applications_select_own membatasi ke pengajuan milik user ini.
+    // Filter applicant_id ditulis eksplisit agar tidak bergantung pada RLS saja.
+    const { data, error } = await supabase
+      .from("help_applications")
+      .select("id, status")
+      .eq("post_id", postId)
+      .eq("applicant_id", user.id)
+      .in("status", ["pending", "accepted"])
+      .order("created_at", { ascending: false })
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Menerima pengajuan bantuan.
+ * Menggunakan RPC accept_help_application.
+ * Hanya pemilik postingan yang dapat menerima.
+ *
+ * @param {string} applicationId - ID pengajuan yang akan diterima
+ * @returns {Promise<void>}
+ */
+export async function acceptHelpApplication(applicationId) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Fitur penerimaan pengajuan hanya tersedia dalam mode Supabase.");
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  const { error } = await supabase.rpc("accept_help_application", {
+    p_application_id: applicationId,
+  });
+
+  if (error) {
+    if (error.message.includes("sudah diterima")) {
+      throw new Error("Pengajuan ini sudah diterima sebelumnya.");
+    }
+    if (error.message.includes("sudah ditolak")) {
+      throw new Error("Pengajuan ini sudah ditolak.");
+    }
+    if (error.message.includes("sudah ditarik")) {
+      throw new Error("Pengajuan ini sudah ditarik oleh pelamar.");
+    }
+    if (error.message.includes("Hanya pemilik postingan")) {
+      throw new Error("Hanya pemilik postingan yang dapat menerima pengajuan.");
+    }
+    if (error.message.includes("sudah berlangsung")) {
+      throw new Error("Aktivitas ini sudah berlangsung. Tidak dapat menerima pengajuan baru.");
+    }
+    if (error.message.includes("sudah selesai")) {
+      throw new Error("Aktivitas ini sudah selesai. Tidak dapat menerima pengajuan baru.");
+    }
+    if (error.message.includes("sudah dibatalkan")) {
+      throw new Error("Aktivitas ini sudah dibatalkan. Buat postingan baru jika masih membutuhkan bantuan.");
+    }
+    throw new Error(error.message || "Gagal menerima pengajuan.");
+  }
+
+  // RPC 004 mengembalikan void; pastikan status benar-benar berubah sebelum UI
+  // melaporkan sukses. Tidak berubah = bukan pemilik postingan / baris tak terlihat.
+  const { data: acceptedRow, error: verifyError } = await supabase
+    .from("help_applications")
+    .select("id, status")
+    .eq("id", applicationId)
+    .eq("status", "accepted")
+    .maybeSingle();
+
+  if (verifyError || !acceptedRow) {
+    throw new Error(
+      "Pengajuan tidak berhasil diterima. Muat ulang halaman dan pastikan Anda pemilik postingan.",
+    );
+  }
+}
+
+/**
+ * Menolak pengajuan bantuan.
+ * Menggunakan RPC reject_help_application.
+ * Hanya pemilik postingan yang dapat menolak.
+ *
+ * @param {string} applicationId - ID pengajuan yang akan ditolak
+ * @returns {Promise<void>}
+ */
+export async function rejectHelpApplication(applicationId) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Fitur penolakan pengajuan hanya tersedia dalam mode Supabase.");
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  const { error } = await supabase.rpc("reject_help_application", {
+    p_application_id: applicationId,
+  });
+
+  if (error) {
+    if (error.message.includes("sudah ditolak")) {
+      throw new Error("Pengajuan ini sudah ditolak sebelumnya.");
+    }
+    if (error.message.includes("sudah diterima")) {
+      throw new Error("Pengajuan ini sudah diterima. Tidak dapat ditolak.");
+    }
+    if (error.message.includes("sudah ditarik")) {
+      throw new Error("Pengajuan ini sudah ditarik oleh pelamar.");
+    }
+    if (error.message.includes("Hanya pemilik postingan")) {
+      throw new Error("Hanya pemilik postingan yang dapat menolak pengajuan.");
+    }
+    throw new Error(error.message || "Gagal menolak pengajuan.");
+  }
+
+  // Sama seperti accept: pastikan status benar-benar berubah.
+  const { data: rejectedRow, error: verifyError } = await supabase
+    .from("help_applications")
+    .select("id, status")
+    .eq("id", applicationId)
+    .eq("status", "rejected")
+    .maybeSingle();
+
+  if (verifyError || !rejectedRow) {
+    throw new Error(
+      "Pengajuan tidak berhasil ditolak. Muat ulang halaman dan pastikan Anda pemilik postingan.",
+    );
+  }
+}
+
+/**
+ * Menarik kembali pengajuan bantuan oleh pelamar sendiri.
+ * Menggunakan RPC withdraw_help_application.
+ *
+ * @param {string} applicationId - ID pengajuan yang akan ditarik
+ * @returns {Promise<void>}
+ */
+export async function withdrawHelpApplication(applicationId) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Fitur penarikan pengajuan hanya tersedia dalam mode Supabase.");
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+
+  const { error } = await supabase.rpc("withdraw_help_application", {
+    p_application_id: applicationId,
+  });
+
+  if (error) {
+    if (error.message.includes("sudah ditarik")) {
+      throw new Error("Pengajuan ini sudah ditarik sebelumnya.");
+    }
+    if (error.message.includes("sudah diterima")) {
+      throw new Error("Pengajuan ini sudah diterima. Tidak dapat ditarik.");
+    }
+    if (error.message.includes("sudah ditolak")) {
+      throw new Error("Pengajuan ini sudah ditolak. Tidak dapat ditarik.");
+    }
+    if (error.message.includes("Hanya pelamar")) {
+      throw new Error("Hanya pelamar yang dapat menarik pengajuannya sendiri.");
+    }
+    throw new Error(error.message || "Gagal menarik pengajuan.");
+  }
+}
+
+/**
+ * Mengambil pengajuan yang terkait user yang sedang login.
+ * RLS help_applications_select_post_owner + help_applications_select_own membuat
+ * query mengembalikan DUA jenis baris, lalu dipisah di sini:
+ * - applications:  pengajuan MASUK ke postingan milik user (pemilik boleh kelola)
+ * - myApplications: pengajuan user sendiri ke postingan orang lain (hanya lihat)
+ * Setiap item membawa isOwnSubmission/isPostOwner agar UI tidak menebak.
+ *
+ * @returns {Promise<{applications: Object[], myApplications: Object[]}>}
+ */
+export async function fetchMyHelpApplications() {
+  if (!isSupabaseConfigured()) {
+    return { applications: [], myApplications: [] };
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { applications: [], myApplications: [] };
+
+  // Ambil baris yang boleh dibaca user: pengajuan ke postingan miliknya (RLS
+  // help_applications_select_post_owner) dan pengajuannya sendiri
+  // (help_applications_select_own). Pemisahan dilakukan di bawah.
+  const { data, error } = await supabase
+    .from("help_applications")
+    .select(`
+      id,
+      post_id,
+      applicant_id,
+      message,
+      contact_info,
+      available_time,
+      extra_note,
+      status,
+      created_at,
+      updated_at
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Gagal mengambil daftar pengajuan: ${error.message}`);
+  }
+
+  // Identitas pemilik postingan per post_id. RLS mengembalikan dua jenis baris:
+  // pengajuan yang masuk ke postingan milik user (help_applications_select_post_owner)
+  // dan pengajuan milik user sendiri di postingan orang lain
+  // (help_applications_select_own). Pemilik post harus dibaca eksplisit, bukan
+  // disimpulkan dari applicant_id, lalu baris dipisahkan agar pemohon tidak pernah
+  // mendapat tombol Terima/Tolak. Proteksi akhirnya tetap RPC 004.
+  const postIds = [...new Set((data || []).map((row) => row.post_id))];
+  const postAuthorMap = new Map();
+  if (postIds.length > 0) {
+    const { data: posts, error: postsError } = await supabase
+      .from("posts")
+      .select("id, author_id")
+      .in("id", postIds);
+    if (postsError) {
+      throw new Error(`Gagal mengambil pemilik postingan: ${postsError.message}`);
+    }
+    for (const p of posts || []) postAuthorMap.set(String(p.id), String(p.author_id));
+  }
+  const isPostOwner = (row) => postAuthorMap.get(String(row.post_id)) === String(user.id);
+
+  // `applications` = pengajuan MASUK ke postingan user (boleh dikelola).
+  // `myApplications` = pengajuan user sendiri ke postingan orang lain (hanya lihat).
+  const incoming = [];
+  const myApplications = [];
+  for (const row of data || []) {
+    if (isPostOwner(row)) incoming.push(row);
+    else myApplications.push(row);
+  }
+
+  // Fetch profiles untuk applicant secara terpisah untuk menghindari masalah FK naming
+  const applicantIds = [...new Set((data || []).map((row) => row.applicant_id))];
+  let profilesMap = {};
+
+  if (applicantIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, avatar_url")
+      .in("id", applicantIds);
+
+    if (profiles) {
+      for (const p of profiles) {
+        profilesMap[p.id] = p;
+      }
+    }
+  }
+
+  const mapRow = (row) => ({
+    id: String(row.id),
+    postId: String(row.post_id),
+    applicantId: String(row.applicant_id),
+    applicantName: profilesMap[row.applicant_id]?.name || "Pengguna",
+    applicantAvatar: profilesMap[row.applicant_id]?.avatar_url || "/assets/images/avatar-user.svg",
+    message: row.message || "",
+    contactInfo: row.contact_info || "",
+    availableTime: row.available_time || "",
+    extraNote: row.extra_note || "",
+    status: row.status,
+    isOwnSubmission: String(row.applicant_id) === String(user.id),
+    isPostOwner: isPostOwner(row),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+
+  return {
+    applications: incoming.map(mapRow),
+    myApplications: myApplications.map(mapRow),
+  };
+}
+
+/**
+ * Mengambil daftar pengajuan untuk sebuah postingan spesifik.
+ * Hanya pemilik postingan yang dapat mengakses.
+ *
+ * @param {string} postId - ID postingan
+ * @returns {Promise<Object[]>} Array objek pengajuan
+ */
+export async function fetchHelpApplicationsForPost(postId) {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("help_applications")
+    .select(`
+      id,
+      post_id,
+      applicant_id,
+      message,
+      contact_info,
+      available_time,
+      extra_note,
+      status,
+      created_at,
+      updated_at,
+      profiles!help_applications_applicant_id_fkey(name, avatar_url)
+    `)
+    .eq("post_id", postId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Gagal mengambil daftar pengajuan: ${error.message}`);
+  }
+
+  return (data || []).map((row) => ({
+    id: String(row.id),
+    postId: String(row.post_id),
+    applicantId: String(row.applicant_id),
+    applicantName: row.profiles?.name || "Pengguna",
+    applicantAvatar: row.profiles?.avatar_url || "/assets/images/avatar-user.svg",
+    message: row.message || "",
+    contactInfo: row.contact_info || "",
+    availableTime: row.available_time || "",
+    extraNote: row.extra_note || "",
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
 }
 
 export function getConversations() {

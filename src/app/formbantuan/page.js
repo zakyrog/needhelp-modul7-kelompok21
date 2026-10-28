@@ -1,13 +1,25 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getPost, getPublicPost, getPostAuthor, saveMessage } from "../../lib/data";
+import {
+  getPostWithStatus,
+  getPostAuthor,
+  saveMessage,
+  submitHelpApplication,
+  fetchPostById,
+  fetchCurrentProfile,
+  getPostLifecycleStatus,
+  classifyActivityStatus,
+  getMyActiveApplicationForPost,
+} from "../../lib/data";
+import { EmptyState } from "../../components/EmptyState";
 import { validateHelpProposal } from "../../lib/validation";
 import { FormField } from "../../components/FormField";
 import { useToast } from "../../components/Toast";
 import { SimulationBanner } from "../../components/SimulationBanner";
+import { isSupabaseConfigured, getSupabase } from "../../lib/supabase";
 
 function FormBantuanContent() {
   const router = useRouter();
@@ -15,15 +27,91 @@ function FormBantuanContent() {
   const { showToast } = useToast();
 
   const postId = searchParams.get("id") || "post-pindahan";
-  const post = getPost(postId) || getPublicPost(postId);
+
+  // Halaman yang dituju setelah login: kembali ke formulir ini untuk postingan
+  // yang sama dan langsung ke langkah isian (bukan konfirmasi sukses).
+  const loginHref = `/login?next=${encodeURIComponent(`/formbantuan?id=${postId}`)}`;
+
+  const supabaseMode = isSupabaseConfigured();
+
+  // Identitas yang SUDAH diverifikasi Supabase Auth. `post.owned` hanya turunan
+  // dari cache user saat fetch dan bisa salah (misalnya sesi belum terbaca),
+  // jadi keputusan "postingan sendiri" memakai id ini.
+  const [verifiedUserId, setVerifiedUserId] = useState(null);
+  const [authChecked, setAuthChecked] = useState(!supabaseMode);
+
+  // Di mode Supabase, status post harus diambil segar (bukan dari cache) agar post
+  // yang baru selesai/dibatalkan tidak bisa menerima pengajuan lewat URL langsung.
+  const [post, setPost] = useState(() =>
+    supabaseMode ? null : getPostWithStatus(postId),
+  );
+  const [postLoading, setPostLoading] = useState(supabaseMode);
+  const [postError, setPostError] = useState(null);
+
   const author = post ? getPostAuthor(post) : { name: "Sari Wijaya", initial: "S" };
 
+  useEffect(() => {
+    if (!supabaseMode) {
+      setVerifiedUserId(null);
+      setAuthChecked(true);
+      return;
+    }
+
+    let isCancelled = false;
+    setAuthChecked(false);
+
+    // getUser() memverifikasi token ke server; berbeda dengan readSession()
+    // yang hanya membaca cache metadata lokal.
+    getSupabase()
+      .auth.getUser()
+      .then(({ data, error: authError }) => {
+        if (isCancelled) return;
+        setVerifiedUserId(authError ? null : data?.user?.id || null);
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        if (isCancelled) return;
+        setVerifiedUserId(null);
+        setAuthChecked(true);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [supabaseMode]);
+
+  useEffect(() => {
+    if (!supabaseMode) return;
+
+    let isCancelled = false;
+    setPostLoading(true);
+    setPostError(null);
+
+    fetchPostById(postId)
+      .then((data) => {
+        if (isCancelled) return;
+        setPost(data);
+        setPostLoading(false);
+      })
+      .catch((err) => {
+        if (isCancelled) return;
+        setPostError(err.message || "Gagal mengambil detail postingan.");
+        setPostLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [postId, supabaseMode]);
+
   const [step, setStep] = useState(1);
+  // Pesan sengaja kosong: placeholder hanya contoh dan tidak pernah ikut terkirim
+  // bila pengguna tidak mengetik apa pun.
   const [formData, setFormData] = useState({
-    helper_name: "Patungin Hadi",
-    helper_whatsapp: "0812-3456-7890",
-    helper_message: `Halo ${author.name}, aku siap membantu. Punya kendaraan dan waktu luang.`,
-    helper_time: "Sabtu, 10.00 – 13.00",
+    helper_name: "",
+    helper_whatsapp: "",
+    helper_message: "",
+    helper_time: "",
     helper_note: "",
   });
 
@@ -51,27 +139,280 @@ function FormBantuanContent() {
     setStep(2);
   };
 
+  // Aturan yang sama dengan getPostLifecycleStatus: hanya post "aktif" boleh diajukan.
+  // Status "tidak diketahui" (RPC gagal, status tak dikenal, atau hasil ambigu)
+  // TIDAK dianggap aktif sehingga form tidak pernah ditampilkan.
+  const lifecycle = getPostLifecycleStatus(post);
+  const isActive = lifecycle === "aktif";
+  const activityKind = classifyActivityStatus(post?.activity).kind;
+  const isOwnPost = Boolean(
+    supabaseMode && verifiedUserId && post?.authorId === verifiedUserId,
+  );
+  // Di mode Supabase, jangan tampilkan form sebelum identitas terverifikasi:
+  // tanpa itu kita tidak bisa memastikan ini bukan postingan sendiri.
+  const identityBlocked = supabaseMode && (!authChecked || !verifiedUserId);
+
+  // Isi nama dari profil pengguna yang login (profiles.name, sumber yang sama
+  // dengan halaman /profil). Hanya diisi bila field masih kosong agar ketikan
+  // pengguna tidak tertimpa. profiles tidak punya kolom WhatsApp, jadi nomor
+  // WhatsApp tetap diisi manual; form menampilkan petunjuk bila profil kosong.
+  const [profileName, setProfileName] = useState(null);
+  useEffect(() => {
+    if (!supabaseMode || !verifiedUserId) return;
+    let isCancelled = false;
+
+    fetchCurrentProfile()
+      .then((profile) => {
+        if (isCancelled || !profile) return;
+        setProfileName(profile.name || null);
+        const name = (profile.name || "").trim();
+        if (name) {
+          setFormData((prev) =>
+            prev.helper_name.trim() ? prev : { ...prev, helper_name: name },
+          );
+        }
+      })
+      .catch(() => {
+        // Profil tidak terbaca: field tetap kosong dan dilengkapi manual.
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [supabaseMode, verifiedUserId]);
+  const profileNameMissing = Boolean(verifiedUserId) && !(profileName || "").trim();
+
+  // Cegah pengajuan ganda untuk post yang sama. Aturan proyek: satu user hanya
+  // boleh punya satu pengajuan 'pending'/'accepted' per post (migration 003 +
+  // partial unique index, ditegakkan RPC 010). Status 'rejected'/'withdrawn'
+  // tidak memblokir pengajuan baru.
+  // `appCheckPostId` memastikan hasil null dihitung sebagai "sudah diperiksa"
+  // hanya untuk post yang hasilnya memang kembali.
+  const [myApplication, setMyApplication] = useState(null);
+  const [appCheckPostId, setAppCheckPostId] = useState(null);
+  const applicationChecked =
+    Boolean(verifiedUserId) && Boolean(post) && appCheckPostId === postId;
+  useEffect(() => {
+    if (!supabaseMode || !verifiedUserId || !post) return;
+    let isCancelled = false;
+
+    getMyActiveApplicationForPost(postId)
+      .then((app) => {
+        if (isCancelled) return;
+        setMyApplication(app);
+        setAppCheckPostId(postId);
+      })
+      .catch(() => {
+        if (isCancelled) return;
+        setMyApplication(null);
+        setAppCheckPostId(postId);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [supabaseMode, verifiedUserId, post, postId]);
+  // Bila query gagal kita tidak memblokir: RPC 010 tetap menolak duplikat.
+  const hasActiveApplication = Boolean(myApplication);
+
+  // Belum login (mode Supabase): redirect langsung ke /login, lalu kembali ke
+  // formulir ini setelah berhasil masuk (login mendukung ?next=).
+  // Hook ini WAJIB berada sebelum conditional return mana pun, agar jumlah dan
+  // urutan Hook sama di setiap render (sebelumnya hook ini ada setelah
+  // `if (postLoading || !authChecked) return ...` sehingga memicu
+  // "Rendered more hooks than during the previous render").
+  useEffect(() => {
+    if (supabaseMode && authChecked && !verifiedUserId) {
+      router.replace(loginHref);
+    }
+  }, [supabaseMode, authChecked, verifiedUserId, router, loginHref]);
+
   const handleFinalSubmit = async () => {
     if (submitting) return;
+
+    // Jangan kirim apa pun bila status post tidak memungkinkan (proteksi UI).
+    // Validasi sebenarnya tetap di RPC submit_help_application.
+    if (hasActiveApplication) {
+      showToast("Anda sudah mengajukan bantuan untuk postingan ini.", "info");
+      return;
+    }
+    if (identityBlocked || !isActive || isOwnPost) {
+      if (identityBlocked && !isOwnPost) {
+        showToast("Anda harus masuk terlebih dahulu.", "info");
+        router.push(loginHref);
+        return;
+      }
+      showToast(
+        isOwnPost
+          ? "Anda tidak dapat mengajukan bantuan ke postingan sendiri."
+          : "Postingan ini sudah tidak menerima pengajuan bantuan.",
+        "error",
+      );
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (post && post.authorId) {
-        saveMessage(
-          post.authorId,
-          `[Penawaran Bantuan Baru] ${formData.helper_message.trim()} (Kontak: ${formData.helper_whatsapp.trim()}, Waktu: ${formData.helper_time.trim()})`,
-          post.title,
-        );
+      if (supabaseMode) {
+        // Verifikasi ulang identitas tepat sebelum mengirim.
+        const { data: authData, error: authError } = await getSupabase().auth.getUser();
+        if (authError || !authData?.user?.id) {
+          setSubmitting(false);
+          showToast("Silakan masuk terlebih dahulu untuk mengirim pengajuan.", "info");
+          router.push(loginHref);
+          return;
+        }
+        if (post?.authorId === authData.user.id) {
+          showToast("Anda tidak dapat mengajukan bantuan ke postingan sendiri.", "error");
+          setSubmitting(false);
+          return;
+        }
+
+        await submitHelpApplication(postId, {
+          message: formData.helper_message.trim(),
+          contactInfo: formData.helper_whatsapp.trim(),
+          availableTime: formData.helper_time.trim(),
+          extraNote: formData.helper_note.trim(),
+        });
+      } else {
+        // Mode demo: fallback ke saveMessage (localStorage)
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (post && post.authorId) {
+          saveMessage(
+            post.authorId,
+            `[Penawaran Bantuan Baru] ${formData.helper_message.trim()} (Kontak: ${formData.helper_whatsapp.trim()}, Waktu: ${formData.helper_time.trim()})`,
+            post.title,
+          );
+        }
       }
+
       setSubmitting(false);
       setStep(3);
       showToast("Tawaran bantuan berhasil dikirimkan!", "success");
-    } catch {
+    } catch (err) {
       setSubmitting(false);
-      showToast("Gagal menyimpan tawaran bantuan.", "error");
+      showToast(err.message || "Gagal menyimpan tawaran bantuan.", "error");
     }
   };
+
+  if (postLoading || !authChecked) {
+    return (
+      <main className="form-page-wrapper">
+        <p style={{ textAlign: "center", padding: "40px 0" }}>
+          Memeriksa status postingan...
+        </p>
+      </main>
+    );
+  }
+
+  if (postError) {
+    return (
+      <main className="form-page-wrapper">
+        <EmptyState
+          icon="⚠️"
+          title="Gagal Memeriksa Postingan"
+          description={postError}
+          actionText="Kembali ke Katalog"
+          onAction={() => router.push("/katalog")}
+        />
+      </main>
+    );
+  }
+
+  // Pemeriksaan pengajuan ganda belum selesai untuk post ini: jangan render
+  // formulir dulu agar tidak ada kedipan form sebelum blokir "sudah mengajukan".
+  if (supabaseMode && verifiedUserId && !applicationChecked) {
+    return (
+      <main className="form-page-wrapper">
+        <p style={{ textAlign: "center", padding: "40px 0" }}>
+          Memeriksa pengajuan Anda...
+        </p>
+      </main>
+    );
+  }
+
+  // Buka URL formulir langsung padahal sudah ada pengajuan pending/accepted untuk
+  // post ini: jangan tampilkan formulir, arahkan ke halaman yang relevan.
+  if (hasActiveApplication) {
+    const isAccepted = myApplication.status === "accepted";
+    return (
+      <main className="form-page-wrapper">
+        <EmptyState
+          icon="📨"
+          title="Anda Sudah Mengajukan Bantuan"
+          description={
+            isAccepted
+              ? `Pengajuan Anda untuk postingan "${post?.title || ""}" sudah diterima. Anda tidak perlu mengajukan lagi untuk postingan ini.`
+              : `Pengajuan Anda untuk postingan "${post?.title || ""}" masih menunggu tanggapan pemilik postingan. Satu pengajuan sudah cukup — Anda tidak dapat mengajukan dua kali untuk postingan yang sama.`
+          }
+          actionText="Lihat Detail Postingan"
+          onAction={() =>
+            router.push(`/detail-postingan?id=${encodeURIComponent(postId)}`)
+          }
+        />
+        <div style={{ textAlign: "center", marginTop: "12px" }}>
+          <Link href="/pengajuan" className="button button-primary">
+            Buka Halaman Pengajuan Saya
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // Belum login (mode Supabase): halaman redirect sedang berjalan. Link tetap
+  // dirender sebagai cadangan bila navigasi gagal.
+  if (supabaseMode && authChecked && !verifiedUserId) {
+    return (
+      <main className="form-page-wrapper">
+        <p style={{ textAlign: "center", padding: "40px 0" }}>
+          Mengarahkan ke halaman masuk...
+        </p>
+        <div style={{ textAlign: "center" }}>
+          <Link href={loginHref} className="button button-primary">
+            Masuk Sekarang
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // Post selesai/dibatalkan, milik sendiri, atau status tak diketahui: tidak boleh
+  // membuka form pengajuan.
+  if (!post || !isActive || isOwnPost) {
+    const blockedReason = isOwnPost
+      ? "own"
+      : activityKind === "error"
+        ? "error"
+        : activityKind === "unknown"
+          ? "unknown"
+          : lifecycle;
+    return (
+      <main className="form-page-wrapper">
+        <EmptyState
+          icon={blockedReason === "own" ? "🙋" : "🔒"}
+          title={
+            blockedReason === "own"
+              ? "Tidak Bisa Mengajukan ke Postingan Sendiri"
+              : "Postingan Tidak Menerima Pengajuan"
+          }
+          description={
+            blockedReason === "own"
+              ? "Anda adalah pemilik postingan ini, jadi tidak dapat mengajukan bantuan untuknya."
+              : blockedReason === "selesai"
+                  ? "Aktivitas bantuan untuk postingan ini sudah selesai, sehingga pengajuan baru ditutup."
+                  : blockedReason === "batal"
+                    ? "Aktivitas untuk postingan ini sudah dibatalkan, sehingga pengajuan baru ditutup."
+                    : blockedReason === "error"
+                      ? "Status postingan tidak dapat diperiksa saat ini, sehingga pengajuan tidak dibuka untuk sementara. Coba muat ulang halaman."
+                      : "Status postingan ini tidak dikenali dengan pasti, sehingga pengajuan baru tidak dibuka."
+          }
+          actionText="Kembali ke Katalog"
+          onAction={() => router.push("/katalog")}
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="form-page-wrapper">
@@ -123,6 +464,12 @@ function FormBantuanContent() {
                 placeholder="Nama lengkapmu"
                 aria-invalid={Boolean(errors.helper_name)}
               />
+              {profileNameMissing && (
+                <small className="field-hint">
+                  Profil Anda belum memiliki nama. Lengkapi di halaman profil atau
+                  isi kolom ini secara manual.
+                </small>
+              )}
             </FormField>
 
             <FormField
@@ -154,7 +501,7 @@ function FormBantuanContent() {
                 rows={3}
                 value={formData.helper_message}
                 onChange={handleChange}
-                placeholder="Tulis pesan yang ramah dan jelaskan bantuan yang kamu tawarkan..."
+                placeholder="Halo, saya tertarik membantu. Boleh dijelaskan lebih lanjut?"
                 aria-invalid={Boolean(errors.helper_message)}
               />
             </FormField>
