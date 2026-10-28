@@ -8,8 +8,11 @@ import {
   getPost,
   saveRating,
   formatDate,
+  fetchActivities,
+  saveRatingSupabase,
 } from "../../lib/data.js";
 import { readSession } from "../../lib/auth.js";
+import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { validateRating } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
@@ -20,6 +23,8 @@ function RatingContent() {
   const { showToast } = useToast();
 
   const id = searchParams.get("id");
+  const postId = searchParams.get("postId");
+  const supabaseMode = isSupabaseConfigured();
 
   const [activity, setActivity] = useState(null);
   const [unrateableReason, setUnrateableReason] = useState(null);
@@ -33,24 +38,65 @@ function RatingContent() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    let isCancelled = false;
     setLoading(true);
-    const { activity: foundActivity, reason } = getRateableActivity(id);
-    if (!foundActivity) {
-      setUnrateableReason(reason);
-      setActivity(null);
+
+    if (supabaseMode) {
+      // Mode Supabase: fetch activities async lalu cari yang cocok
+      fetchActivities()
+        .then((activities) => {
+          if (isCancelled) return;
+          const found = activities.find((a) => a.id === id || a.postId === id);
+          if (!found) {
+            setUnrateableReason("not-found");
+            setActivity(null);
+          } else if (found.status === "menunggu") {
+            setUnrateableReason("pending");
+            setActivity(null);
+          } else if (found.status === "batal") {
+            setUnrateableReason("cancelled");
+            setActivity(null);
+          } else if (!["berlangsung", "selesai"].includes(found.status)) {
+            setUnrateableReason("invalid-status");
+            setActivity(null);
+          } else {
+            setActivity(found);
+            setUnrateableReason(null);
+            if (found.review) {
+              setStars(found.review.rating || 5);
+              setComment(found.review.comment || "");
+            }
+          }
+          setLoading(false);
+        })
+        .catch(() => {
+          if (!isCancelled) {
+            setUnrateableReason("not-found");
+            setLoading(false);
+          }
+        });
     } else {
-      setActivity(foundActivity);
-      setUnrateableReason(null);
-      if (foundActivity.review) {
-        setStars(foundActivity.review.rating || 5);
-        setComment(foundActivity.review.comment || "");
-        if (foundActivity.review.badges) {
-          setBadges(foundActivity.review.badges);
+      // Mode demo: sync lookup
+      const { activity: foundActivity, reason } = getRateableActivity(id);
+      if (!foundActivity) {
+        setUnrateableReason(reason);
+        setActivity(null);
+      } else {
+        setActivity(foundActivity);
+        setUnrateableReason(null);
+        if (foundActivity.review) {
+          setStars(foundActivity.review.rating || 5);
+          setComment(foundActivity.review.comment || "");
+          if (foundActivity.review.badges) {
+            setBadges(foundActivity.review.badges);
+          }
         }
       }
+      setLoading(false);
     }
-    setLoading(false);
-  }, [id]);
+
+    return () => { isCancelled = true; };
+  }, [id, supabaseMode]);
 
   const handleBadgeToggle = (badgeKey) => {
     setBadges((prev) =>
@@ -60,7 +106,7 @@ function RatingContent() {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateRating(stars, comment);
 
@@ -74,13 +120,25 @@ function RatingContent() {
     setErrors({});
 
     try {
-      saveRating(activity.id, {
+      const ratingData = {
         rating: Number(stars),
         comment: comment.trim(),
-        badges,
-        recommend,
-        at: new Date().toISOString(),
-      });
+      };
+
+      if (supabaseMode) {
+        const effectivePostId = postId || activity.postId;
+        await saveRatingSupabase(effectivePostId, ratingData);
+      } else {
+        // Mode demo: tetap gunakan saveRating dengan activityId
+        const fullRatingData = {
+          ...ratingData,
+          badges,
+          recommend,
+          at: new Date().toISOString(),
+        };
+        saveRating(activity.id, fullRatingData);
+      }
+
       showToast("Penilaian berhasil disimpan!", "success");
       router.push("/aktivitas?rated=1");
     } catch (err) {

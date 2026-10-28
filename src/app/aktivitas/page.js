@@ -8,8 +8,13 @@ import {
   getActivityStats,
   getPost,
   cancelActivity,
+  fetchActivities,
+  cancelActivitySupabase,
+  completeActivitySupabase,
+  fetchPosts,
 } from "../../lib/data.js";
 import { readSession } from "../../lib/auth.js";
+import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
 
@@ -18,23 +23,62 @@ function ActivityContent() {
   const router = useRouter();
   const { showToast } = useToast();
 
+  const supabaseMode = isSupabaseConfigured();
+
   const [session, setSession] = useState(null);
-  const [activities, setActivities] = useState(() => getActivities());
+  const [activities, setActivities] = useState(() => {
+    // Mode demo: sync init; mode Supabase: kosong (akan di-fetch async)
+    return supabaseMode ? [] : getActivities();
+  });
+  const [loading, setLoading] = useState(supabaseMode);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [startingId, setStartingId] = useState(null);
+  const [completingId, setCompletingId] = useState(null);
 
-  const loadActivities = () => {
-    setActivities(getActivities());
-  };
-
+  // Load activities
   useEffect(() => {
     const currentSession = readSession();
     setSession(currentSession);
-    loadActivities();
+
+    if (!currentSession) {
+      setLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    if (supabaseMode) {
+      setLoading(true);
+      setError(null);
+
+      // Fetch posts terlebih dahulu agar cache _lastFetchedPosts terisi
+      // (diperlukan untuk getPost() saat render activity card)
+      fetchPosts()
+        .then(() => fetchActivities())
+        .then((data) => {
+          if (!isCancelled) {
+            setActivities(data);
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          if (!isCancelled) {
+            setError(err.message || "Gagal memuat aktivitas.");
+            setLoading(false);
+          }
+        });
+    } else {
+      setActivities(getActivities());
+      setLoading(false);
+    }
 
     if (searchParams.get("rated") === "1") {
       showToast("Terima kasih! Ulasanmu berhasil disimpan.", "success");
     }
-  }, [searchParams, showToast]);
+
+    return () => { isCancelled = true; };
+  }, [searchParams, showToast, supabaseMode]);
 
   const stats = useMemo(() => {
     return getActivityStats(activities);
@@ -45,15 +89,65 @@ function ActivityContent() {
     return activities.filter((act) => act.status === filter);
   }, [activities, filter]);
 
-  const handleCancel = (activityId) => {
-    if (window.confirm("Apakah kamu yakin ingin membatalkan aktivitas ini?")) {
-      try {
+  const handleCancel = async (activityId, postId) => {
+    if (!window.confirm("Apakah kamu yakin ingin membatalkan aktivitas ini?")) return;
+
+    try {
+      if (supabaseMode) {
+        await cancelActivitySupabase(postId);
+        // Refresh activities dari Supabase
+        const refreshed = await fetchActivities();
+        setActivities(refreshed);
+      } else {
         cancelActivity(activityId);
-        loadActivities();
-        showToast("Aktivitas berhasil dibatalkan.", "info");
-      } catch {
-        showToast("Gagal mengubah status aktivitas.", "error");
+        setActivities(getActivities());
       }
+      showToast("Aktivitas berhasil dibatalkan.", "info");
+    } catch (err) {
+      showToast(err.message || "Gagal mengubah status aktivitas.", "error");
+    }
+  };
+
+  const handleStart = async (activityId, postId) => {
+    if (!window.confirm("Mulai aktivitas ini sekarang? Status akan berubah menjadi 'Sedang Berjalan'.")) return;
+
+    setStartingId(activityId);
+    try {
+      // Mode demo: gunakan setActivityState untuk mengubah status
+      // Catatan: Dalam mode Supabase, tombol "Mulai Aktivitas" tidak ditampilkan
+      // karena aktivitas dimulai otomatis saat pengajuan diterima via accept_help_application.
+      const { setActivityState } = await import("../../lib/data.js");
+      setActivityState(activityId, { status: "berlangsung" });
+      setActivities(getActivities());
+      showToast("Aktivitas berhasil dimulai!", "success");
+    } catch (err) {
+      showToast(err.message || "Gagal memulai aktivitas.", "error");
+    } finally {
+      setStartingId(null);
+    }
+  };
+
+  const handleComplete = async (activityId, postId) => {
+    if (!window.confirm("Tandai aktivitas ini sebagai selesai? Anda masih bisa memberikan ulasan setelahnya.")) return;
+
+    setCompletingId(activityId);
+    try {
+      if (supabaseMode) {
+        await completeActivitySupabase(postId);
+        // Refresh activities dari Supabase untuk mendapatkan data terbaru
+        const refreshed = await fetchActivities();
+        setActivities(refreshed);
+      } else {
+        // Mode demo: fallback ke setActivityState
+        const { setActivityState } = await import("../../lib/data.js");
+        setActivityState(activityId, { status: "selesai" });
+        setActivities(getActivities());
+      }
+      showToast("Aktivitas ditandai sebagai selesai!", "success");
+    } catch (err) {
+      showToast(err.message || "Gagal menyelesaikan aktivitas.", "error");
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -72,11 +166,79 @@ function ActivityContent() {
     }
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <main>
+        <header className="page-header-section">
+          <h1>Aktivitas Saya</h1>
+          <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+        </header>
+        <div style={{ maxWidth: "600px", margin: "40px auto", textAlign: "center" }}>
+          <p>Memuat aktivitas...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <main>
+        <header className="page-header-section">
+          <h1>Aktivitas Saya</h1>
+          <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+        </header>
+        <div style={{ maxWidth: "600px", margin: "40px auto" }}>
+          <EmptyState
+            icon="⚠️"
+            title="Gagal Memuat Aktivitas"
+            description={error}
+            actionText="Coba Lagi"
+            onAction={() => window.location.reload()}
+          />
+        </div>
+      </main>
+    );
+  }
+
+  // Not logged in
+  if (!session) {
+    return (
+      <main>
+        <header className="page-header-section">
+          <h1>Aktivitas Saya</h1>
+          <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+        </header>
+        <div style={{ maxWidth: "600px", margin: "40px auto" }}>
+          <EmptyState
+            icon="🔒"
+            title="Masuk untuk Melihat Aktivitas"
+            description="Silakan masuk terlebih dahulu untuk melihat aktivitas bantuan Anda."
+            actionText="Masuk Sekarang"
+            onAction={() => router.push("/login?next=/aktivitas")}
+          />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main>
       <header className="page-header-section">
         <h1>Aktivitas Saya</h1>
         <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+        {supabaseMode && session && (
+          <div style={{ marginTop: "12px" }}>
+            <Link
+              href="/pengajuan"
+              className="btn-detail-outline"
+              style={{ fontSize: "14px" }}
+            >
+              📋 Kelola Pengajuan Bantuan
+            </Link>
+          </div>
+        )}
       </header>
 
       <section className="activity-stats-grid">
@@ -123,9 +285,9 @@ function ActivityContent() {
         {visibleActivities.length > 0 ? (
           visibleActivities.map((activity) => {
             const post = getPost(activity.postId);
-            const canOpenPost = Boolean(
-              post && (post.owned || activity.status !== "batal"),
-            );
+            // Aktivitas batal tidak boleh membuka detail postingan dari halaman Aktivitas
+            const isCancelled = activity.status === "batal";
+            const canOpenPost = Boolean(post && !isCancelled);
             const avatarInitial = activity.partner
               ? activity.partner.charAt(0).toUpperCase()
               : post
@@ -173,6 +335,11 @@ function ActivityContent() {
                       )}
                       {activity.note}
                     </p>
+                    {isCancelled && (
+                      <p style={{ marginTop: "4px", fontSize: "12px", color: "var(--color-error)" }}>
+                        Aktivitas ini sudah dibatalkan. Detail postingan tidak tersedia.
+                      </p>
+                    )}
                     {activity.review && (
                       <p style={{ marginTop: "4px", color: "var(--color-text-primary)" }}>
                         Ulasan: <em>&ldquo;{activity.review.comment}&rdquo;</em> ({activity.review.rating}.0 ★)
@@ -191,27 +358,31 @@ function ActivityContent() {
                     </Link>
                   )}
 
-                  {activity.status === "berlangsung" && activity.partnerId && (
+                  {activity.status === "berlangsung" && (
                     <>
-                      <Link
-                        href={`/chat?user=${encodeURIComponent(activity.partnerId)}`}
+                      {activity.partnerId && (
+                        <Link
+                          href={`/chat?user=${encodeURIComponent(activity.partnerId)}`}
+                          className="btn-detail-outline"
+                          style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
+                        >
+                          Obrolan
+                        </Link>
+                      )}
+                      <button
+                        type="button"
                         className="btn-detail-outline"
-                        style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
+                        onClick={() => handleComplete(activity.id, activity.postId)}
+                        disabled={completingId === activity.id}
                       >
-                        Obrolan
-                      </Link>
-                      <Link
-                        href={`/rating?id=${encodeURIComponent(activity.id)}`}
-                        className="btn-detail-outline"
-                      >
-                        Selesaikan
-                      </Link>
+                        {completingId === activity.id ? "Menyelesaikan..." : "Selesaikan"}
+                      </button>
                     </>
                   )}
 
                   {activity.status === "selesai" && !activity.review && (
                     <Link
-                      href={`/rating?id=${encodeURIComponent(activity.id)}`}
+                      href={`/rating?id=${encodeURIComponent(activity.id)}&postId=${encodeURIComponent(activity.postId)}`}
                       className="btn-detail-outline"
                       style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
                     >
@@ -220,14 +391,34 @@ function ActivityContent() {
                   )}
 
                   {activity.status === "menunggu" && (
-                    <button
-                      type="button"
-                      className="btn-detail-outline"
-                      onClick={() => handleCancel(activity.id)}
-                      style={{ color: "var(--color-error)", borderColor: "var(--color-error)" }}
-                    >
-                      Batalkan
-                    </button>
+                    <>
+                      {/* Tombol Mulai Aktivitas hanya untuk mode demo.
+                          Dalam mode Supabase, aktivitas dimulai otomatis saat pengajuan diterima. */}
+                      {!supabaseMode && (
+                        <button
+                          type="button"
+                          className="btn-detail-outline"
+                          onClick={() => handleStart(activity.id, activity.postId)}
+                          disabled={startingId === activity.id}
+                          style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
+                        >
+                          {startingId === activity.id ? "Memulai..." : "Mulai Aktivitas"}
+                        </button>
+                      )}
+                      {/* Aktivitas sintetis (belum punya baris di tabel activities) tidak bisa
+                          dibatalkan: RPC cancel_activity hanya mengubah record database. */}
+                      {!activity._defaultActivity && (
+                        <button
+                          type="button"
+                          className="btn-detail-outline"
+                          onClick={() => handleCancel(activity.id, activity.postId)}
+                          disabled={startingId === activity.id}
+                          style={{ color: "var(--color-error)", borderColor: "var(--color-error)" }}
+                        >
+                          Batalkan
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </article>

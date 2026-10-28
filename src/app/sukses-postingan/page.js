@@ -3,20 +3,82 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { getPost, formatDateTime, formatDate, formatTimeRange } from "../../lib/data";
+import { getPost, fetchPostById, formatDateTime, formatDate, formatTimeRange } from "../../lib/data";
+import { isSupabaseConfigured } from "../../lib/supabase";
 import { EmptyState } from "../../components/EmptyState";
 
 function SuksesPostinganContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
 
-  const [post, setPost] = useState(() => (id ? getPost(id) : null));
+  // Di mode Supabase, jangan pakai getPost sync karena cache mungkin kosong
+  const [post, setPost] = useState(() => {
+    if (!id) return null;
+    if (isSupabaseConfigured()) return null; // akan di-fetch async
+    return getPost(id);
+  });
+  const [loading, setLoading] = useState(() => isSupabaseConfigured() && Boolean(id));
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (id) {
+    if (!id) return;
+
+    let isCancelled = false;
+
+    if (isSupabaseConfigured()) {
+      setLoading(true);
+      setError(null);
+
+      fetchPostById(id)
+        .then((data) => {
+          if (!isCancelled) {
+            setPost(data);
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          if (!isCancelled) {
+            setError(err.message || "Gagal mengambil detail postingan.");
+            setLoading(false);
+          }
+        });
+    } else {
+      // Mode demo: sync lookup
       setPost(getPost(id));
     }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [id]);
+
+  // State loading (Supabase)
+  if (loading) {
+    return (
+      <main className="form-page-wrapper">
+        <div style={{ maxWidth: "560px", margin: "40px auto", textAlign: "center" }}>
+          <p>Memuat data postingan...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // State error (Supabase query gagal)
+  if (error) {
+    return (
+      <main className="form-page-wrapper">
+        <div style={{ maxWidth: "560px", margin: "40px auto" }}>
+          <EmptyState
+            icon="⚠"
+            title="Gagal Memuat Postingan"
+            description={error}
+            actionText="Kembali ke Katalog"
+            onAction={() => (window.location.href = "/katalog")}
+          />
+        </div>
+      </main>
+    );
+  }
 
   if (!post) {
     return (
