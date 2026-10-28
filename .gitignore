@@ -11,10 +11,3 @@ out/
 .env.*
 !.env.example
 *.log
-
-# Supabase CLI local state (project ref, pooler URL, version cache)
-supabase/.temp/
-
-# Database dumps / schema snapshots
-*.sql.dump
-backup-supabase/

@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPost } from "../../lib/data.js";
-import { readSession, getSupabaseUser } from "../../lib/auth.js";
-import { isSupabaseConfigured } from "../../lib/supabase.js";
+import { readSession } from "../../lib/auth.js";
 import { validatePost, sanitizeString } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
 
@@ -37,22 +36,12 @@ export default function BuatPostinganPage() {
     const currentSession = readSession();
     if (!currentSession) {
       showToast(
-        "Silakan masuk terlebih dahulu untuk membuat postingan.",
+        "Silakan masuk dengan akun demo untuk membuat postingan.",
         "info",
       );
       router.replace("/login?next=/buat-postingan");
-      return;
-    }
-    setSession(currentSession);
-
-    // Verifikasi async: jika Supabase aktif, pastikan token masih valid
-    if (isSupabaseConfigured()) {
-      getSupabaseUser().then((user) => {
-        if (!user) {
-          showToast("Sesi Anda telah berakhir. Silakan masuk kembali.", "error");
-          router.replace("/login?next=/buat-postingan");
-        }
-      });
+    } else {
+      setSession(currentSession);
     }
   }, [router, showToast]);
 
@@ -108,9 +97,9 @@ export default function BuatPostinganPage() {
       // Simulasi delay pengiriman network/penyimpanan terstruktur (500ms)
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const newPost = await createPost(sanitizedData, session);
+      const newPost = createPost(sanitizedData, session);
       if (!newPost || !newPost.id) {
-        throw new Error("Gagal menyimpan postingan. Silakan coba lagi.");
+        throw new Error("Gagal menyimpan postingan ke penyimpanan lokal.");
       }
 
       showToast("Postingan berhasil diterbitkan!", "success");

@@ -4,7 +4,6 @@ import {
   COMPENSATION_LABELS,
   CURRENT_USER,
 } from "./data.js";
-import { isSupabaseConfigured } from "./supabase.js";
 
 /**
  * Sanitasi string sederhana untuk mencegah injeksi tag/skrip (XSS)
@@ -113,9 +112,7 @@ export function validatePost(values) {
 }
 
 /**
- * Validasi form Login.
- * - Mode Supabase: hanya validasi format email dan password (biarkan Supabase Auth yang verifikasi kredensial).
- * - Mode demo: validasi format + cek hardcoded demo credentials.
+ * Validasi form Login Demo
  */
 export function validateLogin(email, password) {
   const errors = {};
@@ -134,81 +131,10 @@ export function validateLogin(email, password) {
     errors.password = "Password minimal 8 karakter.";
   }
 
-  // Hardcoded credential check hanya untuk mode demo
-  if (!isSupabaseConfigured() && Object.keys(errors).length === 0) {
+  if (Object.keys(errors).length === 0) {
     if (emailValue !== CURRENT_USER.email || passwordValue !== "NeedHelp123!") {
       errors.general = "Email atau password salah. Gunakan akun demo: demo@needhelp.test / NeedHelp123!";
     }
-  }
-
-  return errors;
-}
-
-/**
- * Validasi form Edit Profil.
- * Memvalidasi nama dan bio.
- */
-export function validateProfile(name, bio) {
-  const errors = {};
-  const nameValue = (name || "").trim();
-  const bioValue = (bio || "").trim();
-
-  if (!nameValue) {
-    errors.name = "Nama lengkap wajib diisi.";
-  } else if (nameValue.length < 3) {
-    errors.name = "Nama minimal 3 karakter.";
-  } else if (nameValue.length > 60) {
-    errors.name = "Nama maksimal 60 karakter.";
-  }
-
-  if (bioValue && bioValue.length > 200) {
-    errors.bio = "Bio maksimal 200 karakter.";
-  }
-
-  return errors;
-}
-
-/**
- * Validasi form Registrasi.
- * Memvalidasi nama, email, password, dan konfirmasi password.
- * Mode Supabase: hanya validasi format (Supabase Auth yang verifikasi).
- * Mode demo: tidak berlaku (registrasi hanya tersedia saat Supabase aktif).
- */
-export function validateRegistration(name, email, password, confirmPassword) {
-  const errors = {};
-  const nameValue = (name || "").trim();
-  const emailValue = (email || "").trim().toLowerCase();
-  const passwordValue = password || "";
-  const confirmValue = confirmPassword || "";
-
-  // 1. Nama lengkap
-  if (!nameValue) {
-    errors.name = "Nama lengkap wajib diisi.";
-  } else if (nameValue.length < 3) {
-    errors.name = "Nama minimal 3 karakter.";
-  } else if (nameValue.length > 60) {
-    errors.name = "Nama maksimal 60 karakter.";
-  }
-
-  // 2. Email
-  if (!emailValue) {
-    errors.email = "Email wajib diisi.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-    errors.email = "Format email tidak valid (contoh: nama@domain.com).";
-  }
-
-  // 3. Password
-  if (!passwordValue) {
-    errors.password = "Password wajib diisi.";
-  } else if (passwordValue.length < 8) {
-    errors.password = "Password minimal 8 karakter.";
-  }
-
-  // 4. Konfirmasi password
-  if (!confirmValue) {
-    errors.confirmPassword = "Konfirmasi password wajib diisi.";
-  } else if (passwordValue && confirmValue !== passwordValue) {
-    errors.confirmPassword = "Konfirmasi password tidak cocok dengan password.";
   }
 
   return errors;

@@ -3,47 +3,29 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { fetchPublicPosts, getPublicPosts, DEMO_POSTS } from "../lib/data.js";
-import { isSupabaseConfigured } from "../lib/supabase.js";
 import { PostCard } from "../components/PostCard";
 
 // Data seed statis untuk initial state yang konsisten antara server dan client
-// Hanya digunakan di mode demo; mode Supabase mulai dari kosong agar tidak flash data lama
-const supabaseActive = isSupabaseConfigured();
-const INITIAL_SEED_POSTS = supabaseActive ? [] : DEMO_POSTS.slice(0, 3);
+// Menggunakan DEMO_POSTS yang di-import langsung, bukan dari fungsi yang bisa berubah
+const INITIAL_SEED_POSTS = DEMO_POSTS.slice(0, 3);
 
 export default function HomePage() {
-  // Initial state: kosong di mode Supabase (akan diisi async), demo posts di mode demo
+  // Initial state menggunakan data statis yang dijamin konsisten
   const [posts, setPosts] = useState(INITIAL_SEED_POSTS);
-  const [loading, setLoading] = useState(supabaseActive);
-  const [feedError, setFeedError] = useState(null);
 
   useEffect(() => {
+    // Setelah mount, ambil data lengkap termasuk postingan user dari localStorage
     let isCancelled = false;
-
-    if (supabaseActive) {
-      setLoading(true);
-      setFeedError(null);
-    }
 
     fetchPublicPosts()
       .then((data) => {
         if (!isCancelled) {
           setPosts(data.slice(0, 3));
-          setFeedError(null);
-          if (supabaseActive) setLoading(false);
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (!isCancelled) {
-          if (supabaseActive) {
-            // Supabase terkonfigurasi tapi gagal: tampilkan error, jangan fallback ke demo
-            setFeedError(err.message || "Gagal memuat postingan dari server.");
-            setPosts([]);
-            setLoading(false);
-          } else {
-            // Mode demo: fallback ke data sync
-            setPosts(getPublicPosts().slice(0, 3));
-          }
+          setPosts(getPublicPosts().slice(0, 3));
         }
       });
 
@@ -160,15 +142,7 @@ export default function HomePage() {
         </div>
 
         <div className="cards-grid">
-          {feedError ? (
-            <p className="empty-state" role="alert" style={{ color: "#b91c1c" }}>
-              ⚠️ {feedError}
-            </p>
-          ) : loading ? (
-            <p className="empty-state" style={{ color: "var(--color-text-muted)" }}>
-              Memuat postingan terbaru...
-            </p>
-          ) : posts.length > 0 ? (
+          {posts.length > 0 ? (
             posts.map((post, idx) => (
               <PostCard key={post.id} post={post} index={idx} />
             ))

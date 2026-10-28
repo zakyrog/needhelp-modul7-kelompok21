@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { readSession, clearSession, signOut } from "../lib/auth";
-import { isSupabaseConfigured } from "../lib/supabase";
+import { readSession, clearSession } from "../lib/auth";
 import { getNotifications } from "../lib/data";
 import { useToast } from "./Toast";
 
@@ -66,16 +65,12 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [profileMenuOpen]);
 
-  const handleLogout = async (e) => {
+  const handleLogout = (e) => {
     e.preventDefault();
-    if (isSupabaseConfigured()) {
-      await signOut();
-    } else {
-      clearSession();
-    }
+    clearSession();
     setSession(null);
     setProfileMenuOpen(false);
-    showToast("Berhasil keluar.", "info");
+    showToast("Berhasil keluar dari akun demo.", "info");
     router.push("/");
   };
 
@@ -96,7 +91,7 @@ export function Header() {
     setProfileMenuOpen((prev) => !prev);
   };
 
-  if (pathname === "/login" || pathname === "/register") {
+  if (pathname === "/login") {
     return null;
   }
 
@@ -247,10 +242,10 @@ export function Header() {
             type="button"
             className="user-profile-badge"
             role="button"
-            aria-label={session ? `Menu profil ${session.name}` : "Menu pengunjung"}
+            aria-label={session ? `Menu profil ${session.name}` : "Menu profil tamu"}
             aria-expanded={profileMenuOpen}
             aria-haspopup="true"
-            title={session ? session.name : "Pengunjung"}
+            title={session ? session.name : "Tamu demo"}
             onClick={toggleProfileMenu}
             style={{
               cursor: "pointer",
@@ -259,17 +254,7 @@ export function Header() {
               padding: 0,
             }}
           >
-            {session ? (
-              session.name.charAt(0).toUpperCase()
-            ) : (
-              <img
-                src="/assets/images/avatar-user.svg"
-                alt="Pengunjung"
-                width={28}
-                height={28}
-                style={{ borderRadius: "50%", display: "block" }}
-              />
-            )}
+            {session ? session.name.charAt(0).toUpperCase() : "P"}
           </button>
 
           {/* Dropdown Menu */}
@@ -302,25 +287,6 @@ export function Header() {
                   >
                     {session.name || "Pengguna Demo"}
                   </div>
-                  <Link
-                    href="/profil"
-                    onClick={() => {
-                      setProfileMenuOpen(false);
-                      closeMenu();
-                    }}
-                    style={{
-                      display: "block",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#0f2e33",
-                      textDecoration: "none",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
-                  >
-                    Edit Profil
-                  </Link>
                   <a
                     href="#logout"
                     onClick={handleLogout}
@@ -339,48 +305,26 @@ export function Header() {
                   </a>
                 </>
               ) : (
-                <>
-                  <Link
-                    href="/login"
-                    onClick={() => {
-                      setProfileMenuOpen(false);
-                      closeMenu();
-                    }}
-                    style={{
-                      display: "block",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#4a9ba0",
-                      textDecoration: "none",
-                      fontWeight: "600",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
-                  >
-                    Masuk
-                  </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => {
-                      setProfileMenuOpen(false);
-                      closeMenu();
-                    }}
-                    style={{
-                      display: "block",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#0f2e33",
-                      textDecoration: "none",
-                      fontWeight: "600",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
-                  >
-                    Daftar
-                  </Link>
-                </>
+                <Link
+                  href="/login"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    closeMenu();
+                  }}
+                  style={{
+                    display: "block",
+                    padding: "12px 16px",
+                    fontSize: "14px",
+                    color: "#4a9ba0",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                    transition: "background-color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
+                  onMouseLeave={(e) => (e.target.style.background = "transparent")}
+                >
+                  Masuk
+                </Link>
               )}
             </div>
           )}
