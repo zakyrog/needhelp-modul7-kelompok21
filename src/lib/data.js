@@ -14,6 +14,48 @@ export const CATEGORY_LABELS = {
   explore: "Explore",
 };
 
+/** Key kategori resmi, urutannya sama dengan CATEGORY_LABELS (urutan stabil untuk seri). */
+export const CATEGORY_KEYS = Object.freeze(Object.keys(CATEGORY_LABELS));
+
+/**
+ * Menghitung kategori populer dari postingan aktif yang aktual.
+ *
+ * - Hanya key di CATEGORY_KEYS yang dihitung; key lain diabaikan.
+ * - Post dengan status siklus hidup "selesai"/"batal" (lihat getPostLifecycleStatus,
+ *   sumbernya post.activity) tidak dihitung. Status yang tidak diketahui juga tidak
+ *   dihitung, mengikuti isPostActive (fail-closed).
+ * - Urut: jumlah terbanyak dulu; bila seri, urutan CATEGORY_KEYS (stabil).
+ * - Kategori yang tersedia selalu dikembalikan semua (count 0 bila kosong),
+ *   kecuali `includeEmpty: false`.
+ *
+ * @param {Object[]} posts
+ * @param {{limit?: number, includeEmpty?: boolean}} [options]
+ * @returns {{key: string, label: string, count: number}[]}
+ */
+export function computeCategoryCounts(posts, options = {}) {
+  const { limit = CATEGORY_KEYS.length, includeEmpty = true } = options;
+  const counts = new Map(CATEGORY_KEYS.map((key) => [key, 0]));
+
+  for (const post of Array.isArray(posts) ? posts : []) {
+    const key = post ? post.category : null;
+    if (!counts.has(key)) continue;
+    if (!isPostActive(post)) continue;
+    counts.set(key, counts.get(key) + 1);
+  }
+
+  const order = new Map(CATEGORY_KEYS.map((key, index) => [key, index]));
+  const rows = CATEGORY_KEYS.map((key) => ({
+    key,
+    label: CATEGORY_LABELS[key],
+    count: counts.get(key),
+  }))
+    .filter((row) => includeEmpty || row.count > 0)
+    .sort((a, b) => b.count - a.count || order.get(a.key) - order.get(b.key));
+
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : rows.length;
+  return rows.slice(0, safeLimit);
+}
+
 export const REGION_LABELS = {
   sleman: "Sleman",
   kota: "Kota Yogyakarta",
@@ -248,52 +290,13 @@ export const SEED_CONVERSATIONS = {
   },
 };
 
-export const DEMO_NOTIFICATIONS = [
-  {
-    id: "notif-kebersihan",
-    type: "post",
-    title: "Permintaan bantuan baru di dekatmu",
-    message: "Rina mencari bantuan antar barang di Seturan untuk besok.",
-    href: "/detail-postingan?id=post-antar",
-    timeLabel: "5 menit lalu",
-    at: "2026-10-18T09:15:00+07:00",
-    icon: "/assets/images/icon-kebersihan.svg",
-  },
-  {
-    id: "notif-chat",
-    type: "chat",
-    title: "Pesan baru dari Budi Pratama",
-    message: "Budi mengonfirmasi jadwal pindahan Sabtu pukul 09.00.",
-    href: "/chat?user=budi-pratama",
-    timeLabel: "1 jam lalu",
-    at: "2026-10-18T08:20:00+07:00",
-    icon: "/assets/images/icon-kurir.svg",
-  },
-  {
-    id: "notif-rating",
-    type: "rating",
-    title: "Beri rating untuk bantuan yang selesai",
-    message: "Bantuan belajar bersama Rina sudah selesai. Bagikan pengalamanmu.",
-    href: "/rating?id=act-belajar",
-    timeLabel: "Kemarin",
-    at: "2026-10-17T19:40:00+07:00",
-    icon: "/assets/images/icon-quote.svg",
-  },
-  {
-    id: "notif-post",
-    type: "post",
-    title: "Tawaran bantuanmu diterima",
-    message: "Budi menerima tawaran bantuan kurirmu. Cek detail aktivitas.",
-    href: "/aktivitas",
-    timeLabel: "Kemarin",
-    at: "2026-10-17T10:00:00+07:00",
-    icon: "/assets/images/icon-kurir.svg",
-  },
-];
+// Data notifikasi simulasi (DEMO_NOTIFICATIONS) dihapus: notifikasi kini
+// berasal dari tabel public.notifications (migration 014) dan dibaca lewat
+// src/lib/notifications.js. Menyisakan daftar statis akan menampilkan
+// notifikasi palsu bila fungsinya dipakai lagi.
 
 export const POSTS_KEY = "needhelp.demo-posts.v1";
 export const CHATS_KEY = "needhelp.demo-chats.v1";
-export const NOTIFICATIONS_KEY = "needhelp.demo-read-notifications.v1";
 export const ACTIVITY_STATE_KEY = "needhelp.demo-activity-state.v1";
 
 export function readJson(key, fallback) {
@@ -852,6 +855,45 @@ export async function fetchPostActivityStatus(postId) {
   }
 }
 
+/**
+ * Mengambil status siklus hidup satu postingan secara ringkas untuk UI chat.
+ *
+ * - Postingan tidak ada (sudah dihapus) → "dihapus"
+ * - Status aktivitas dari RPC 011 → aktif | selesai | batal | tidakDikenal
+ * - RPC gagal → "tidakDikenal" (tidak pernah dianggap aktif)
+ *
+ * @param {string} postId
+ * @returns {Promise<"aktif"|"selesai"|"batal"|"tidakDikenal"|"dihapus">}
+ */
+export async function fetchPostLifecycle(postId) {
+  if (!postId) return "tidakDikenal";
+
+  if (!isSupabaseConfigured()) {
+    const post = getPostWithStatus(postId);
+    if (!post) return "dihapus";
+    return getPostLifecycleStatus(post);
+  }
+
+  try {
+    const supabase = getSupabase();
+    // Status aktivitas dan keberadaan post diperiksa sekaligus: RPC 011 hanya
+    // mengembalikan baris untuk post yang masih ada di tabel posts.
+    const { data, error } = await supabase
+      .from("posts")
+      .select("id")
+      .eq("id", postId)
+      .maybeSingle();
+    if (error) return "tidakDikenal";
+    if (!data) return "dihapus";
+
+    const statusMap = await fetchActivityStatusMap(supabase, [postId]);
+    const activity = statusMap.get(String(postId)) || { kind: "none", status: null };
+    return getPostLifecycleStatus({ id: postId, activity });
+  } catch {
+    return "tidakDikenal";
+  }
+}
+
 export function getPost(id) {
   // Coba cari di cache hasil fetch terakhir (Supabase atau demo)
   const cached = _lastFetchedPosts.find((post) => post.id === id);
@@ -1215,8 +1257,14 @@ export async function fetchActivities() {
 
   try {
     const supabase = getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Jangan kembalikan [] saat sesi tidak ada: pemanggil akan mengira
+    // "tidak ada aktivitas" (mis. halaman /rating menampilkan "tidak ditemukan").
+    if (userError || !user) {
+      const err = new Error("Anda harus masuk terlebih dahulu untuk melihat aktivitas.");
+      err.code = RATING_ERROR_CODES.NOT_AUTHENTICATED;
+      throw err;
+    }
 
     // Ambil semua postingan milik user
     const { data: posts, error: postsError } = await supabase
@@ -1397,9 +1445,9 @@ export async function completeActivitySupabase(postId) {
 export async function deletePostSupabase(postId) {
   if (!isSupabaseConfigured()) {
     // Mode demo: hapus dari localStorage
-    const posts = readJson(DEMO_POSTS_KEY, []);
+    const posts = readJson(POSTS_KEY, []);
     const filtered = posts.filter((p) => p.id !== postId);
-    writeJson(DEMO_POSTS_KEY, filtered);
+    writeJson(POSTS_KEY, filtered);
     // Hapus juga dari cache
     _lastFetchedPosts = _lastFetchedPosts.filter((p) => p.id !== postId);
     return;
@@ -1485,6 +1533,91 @@ export async function deletePostSupabase(postId) {
   _lastFetchedPosts = _lastFetchedPosts.filter((p) => p.id !== postId);
 }
 
+/** Kode error tambahan yang bisa dikenali UI (err.code). */
+export const RATING_ERROR_CODES = Object.freeze({
+  NOT_AUTHENTICATED: "NOT_AUTHENTICATED",
+  NOT_FOUND: "NOT_FOUND",
+  NOT_OWNER: "NOT_OWNER",
+  NOT_COMPLETED: "NOT_COMPLETED",
+});
+
+/**
+ * Menentukan aktivitas mana yang akan dinilai dari daftar aktivitas milik user.
+ *
+ * ID aktivitas dan postId adalah dua nilai berbeda:
+ * - `activityIdParam` = activities.id (URL "id")
+ * - `postIdParam` = posts.id (URL "postId")
+ * Keduanya dicocokkan ke kolom YANG SESUAI, dibandingkan sebagai string (UUID).
+ * Catatan struktur data: di fetchActivities(), post tanpa baris activities
+ * memakai post.id sebagai id sementara (`_defaultActivity: true`) — itu bukan
+ * activities.id, jadi tidak boleh dipakai sebagai p_post_id ke RPC.
+ *
+ * @param {Object[]} activities - Hasil fetchActivities()
+ * @param {{activityId?: string|null, postId?: string|null}} params
+ * @returns {{activity: Object|null, reason: string|null, postId: string|null}}
+ *   reason: missing | not-found | pending | cancelled | invalid-status
+ */
+export function resolveRateableActivity(activities, { activityId = null, postId = null } = {}) {
+  const list = Array.isArray(activities) ? activities : [];
+  const activityParam = activityId ? String(activityId) : null;
+  const postParam = postId ? String(postId) : null;
+
+  if (!activityParam && !postParam) {
+    return { activity: null, reason: "missing", postId: null };
+  }
+
+  let found = null;
+  if (activityParam) {
+    found = list.find((item) => String(item?.id) === activityParam) || null;
+    if (found?._defaultActivity) {
+      // Placeholder: id-nya adalah post.id, bukan activities.id.
+      found = null;
+    }
+    if (!found) {
+      // Fallback URL ?id=<postId> hanya diberikan ke aktivitas nyata;
+      // placeholder menunggu (id = post.id) tidak terhitung.
+      found =
+        list.find(
+          (item) =>
+            String(item?.postId) === activityParam && !item._defaultActivity,
+        ) || null;
+    }
+  }
+  if (!found && postParam) {
+    found = list.find((item) => String(item?.postId) === postParam) || null;
+  }
+
+  if (!found) return { activity: null, reason: "not-found", postId: postParam };
+
+  const effectivePostId = found.postId ? String(found.postId) : postParam;
+  if (found.status === "menunggu") return { activity: null, reason: "pending", postId: effectivePostId };
+  if (found.status === "batal") return { activity: null, reason: "cancelled", postId: effectivePostId };
+  if (!["berlangsung", "selesai"].includes(found.status)) {
+    return { activity: null, reason: "invalid-status", postId: effectivePostId };
+  }
+  return { activity: found, reason: null, postId: effectivePostId };
+}
+
+/** URL halaman rating yang hanya memuat parameter yang memang ada. */
+export function buildRatingUrl(activityId, postId) {
+  const params = new URLSearchParams();
+  if (activityId) params.set("id", String(activityId));
+  if (postId) params.set("postId", String(postId));
+  const query = params.toString();
+  return query ? `/rating?${query}` : "/rating";
+}
+
+/** True bila RPC menolak karena pemanggil bukan pemilik postingan. */
+export function isNotOwnerError(message) {
+  return typeof message === "string" && /bukan pemilik|kepemilikan postingan/i.test(message);
+}
+
+/** Menandai error dengan `code` agar UI bisa membedakan jenis kegagalan. */
+function withCode(error, code) {
+  if (error && typeof error === "object") error.code = code;
+  return error;
+}
+
 /**
  * Menyimpan rating/ulasan ke Supabase menggunakan RPC save_activity_rating.
  * Rating hanya dapat diberikan setelah aktivitas selesai (status='selesai').
@@ -1502,8 +1635,8 @@ export async function saveRatingSupabase(postId, rating) {
   }
 
   const supabase = getSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Anda harus masuk terlebih dahulu.");
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw withCode(new Error("Anda harus masuk terlebih dahulu."), RATING_ERROR_CODES.NOT_AUTHENTICATED);
 
   const stars = Number(rating?.rating);
   const comment = String(rating?.comment || "").trim();
@@ -1543,7 +1676,7 @@ export async function saveRatingSupabase(postId, rating) {
       throw new Error("Anda tidak dapat memberikan ulasan kepada diri sendiri.");
     }
     if (error.message.includes("tidak ditemukan")) {
-      throw new Error("Aktivitas tidak ditemukan untuk postingan ini.");
+      throw withCode(new Error("Aktivitas tidak ditemukan untuk postingan ini."), RATING_ERROR_CODES.NOT_FOUND);
     }
     throw new Error(error.message || "Gagal menyimpan ulasan.");
   }
@@ -2031,25 +2164,5 @@ export function saveMessage(userId, text, topic) {
   return conversation;
 }
 
-export function getNotifications() {
-  const read = readJson(NOTIFICATIONS_KEY, []);
-  const readIds = Array.isArray(read) ? read : [];
-  return DEMO_NOTIFICATIONS.map((notification) => ({
-    ...notification,
-    read: readIds.includes(notification.id),
-  }));
-}
-
-export function markNotificationRead(id) {
-  const stored = readJson(NOTIFICATIONS_KEY, []);
-  const read = new Set(Array.isArray(stored) ? stored : []);
-  read.add(id);
-  writeJson(NOTIFICATIONS_KEY, [...read]);
-}
-
-export function markAllNotificationsRead() {
-  writeJson(
-    NOTIFICATIONS_KEY,
-    DEMO_NOTIFICATIONS.map((notification) => notification.id),
-  );
-}
+// getNotifications/markNotificationRead/markAllNotificationsRead versi localStorage
+// dihapus bersama DEMO_NOTIFICATIONS; gunakan src/lib/notifications.js.

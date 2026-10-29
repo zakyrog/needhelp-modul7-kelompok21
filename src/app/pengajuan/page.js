@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   fetchMyHelpApplications,
   acceptHelpApplication,
@@ -17,6 +17,11 @@ import { EmptyState } from "../../components/EmptyState";
 function PengajuanContent() {
   const router = useRouter();
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
+  // Notifikasi pengajuan/status pengajuan menautkan ?application=<id>.
+  // Catatan: pengajuan yang PELAMAR lihat ada di daftar "milik saya", sehingga
+  // ID yang tidak ada di daftar yang dikelola tetap ditandai sebagai sorotan.
+  const highlightedApplicationId = searchParams.get("application");
 
   const supabaseMode = isSupabaseConfigured();
   const [session, setSession] = useState(null);
@@ -216,9 +221,32 @@ function PengajuanContent() {
 
       {/* Applications list */}
       <section className="activity-list-container">
+        {highlightedApplicationId && (
+          <p
+            style={{
+              maxWidth: "720px",
+              margin: "0 auto 12px",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              background: "var(--color-bg-subtle, #e3fdfd)",
+              color: "var(--color-text-primary, #0f2e33)",
+              fontSize: "14px",
+            }}
+          >
+            Menampilkan pengajuan yang dibuka dari notifikasi.
+          </p>
+        )}
         {filteredApplications.length > 0 ? (
           filteredApplications.map((app) => (
-            <article key={app.id}>
+            <article
+              key={app.id}
+              id={`application-${app.id}`}
+              style={
+                app.id === highlightedApplicationId
+                  ? { outline: "2px solid var(--color-action-primary, #4a9ba0)", outlineOffset: "2px" }
+                  : undefined
+              }
+            >
               <header>
                 <div className="article-avatar avatar-tosca">
                   {app.applicantName.charAt(0).toUpperCase()}
@@ -328,7 +356,15 @@ function PengajuanContent() {
           </p>
           <div className="activity-list-container">
             {myApplications.map((app) => (
-              <article key={app.id}>
+              <article
+                key={app.id}
+                id={`application-${app.id}`}
+                style={
+                  app.id === highlightedApplicationId
+                    ? { outline: "2px solid var(--color-action-primary, #4a9ba0)", outlineOffset: "2px" }
+                    : undefined
+                }
+              >
                 <header>
                   <div className="article-avatar avatar-blue">
                     {getStatusBadge(app.status)}

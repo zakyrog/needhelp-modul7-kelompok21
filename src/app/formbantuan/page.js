@@ -118,6 +118,11 @@ function FormBantuanContent() {
   const [errors, setErrors] = useState({});
 
   const [submitting, setSubmitting] = useState(false);
+  // Jalur mana yang benar-benar dipakai saat submit. Mode demo TIDAK menulis
+  // ke Supabase: tidak ada baris help_applications, tidak ada trigger
+  // notifikasi, dan pemilik postingan tidak diberi tahu. Langkah 3 harus
+  // menyatakannya, bukan mengklaim pengajuan/notifikasi berhasil.
+  const [submittedVia, setSubmittedVia] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -269,14 +274,20 @@ function FormBantuanContent() {
           return;
         }
 
+        // Satu RPC = satu baris help_applications. Notifikasi ke pemilik
+        // postingan dibuat oleh TRIGGER database (migration 014), bukan di sini,
+        // sehingga tidak ada notifikasi ganda dari frontend.
         await submitHelpApplication(postId, {
           message: formData.helper_message.trim(),
           contactInfo: formData.helper_whatsapp.trim(),
           availableTime: formData.helper_time.trim(),
           extraNote: formData.helper_note.trim(),
         });
+        setSubmittedVia("supabase");
       } else {
-        // Mode demo: fallback ke saveMessage (localStorage)
+        // Mode demo: hanya localStorage. Tidak ada record Supabase, jadi tidak
+        // ada notifikasi ke pemilik postingan. Simpan pesan demo supaya alur
+        // simulasi tetap bisa dilihat, dan katakan terus terang di langkah 3.
         await new Promise((resolve) => setTimeout(resolve, 500));
         if (post && post.authorId) {
           saveMessage(
@@ -285,11 +296,17 @@ function FormBantuanContent() {
             post.title,
           );
         }
+        setSubmittedVia("demo");
       }
 
       setSubmitting(false);
       setStep(3);
-      showToast("Tawaran bantuan berhasil dikirimkan!", "success");
+      showToast(
+        supabaseMode
+          ? "Tawaran bantuan berhasil dikirimkan!"
+          : "Tersimpan di perangkat ini (mode simulasi).",
+        "success",
+      );
     } catch (err) {
       setSubmitting(false);
       showToast(err.message || "Gagal menyimpan tawaran bantuan.", "error");
@@ -416,6 +433,9 @@ function FormBantuanContent() {
 
   return (
     <main className="form-page-wrapper">
+      {!supabaseMode && (
+        <SimulationBanner text="Mode Simulasi: pengajuan ini hanya disimpan di browser lokal. Pemilik postingan tidak menerima pengajuan atau notifikasi." />
+      )}
       <div className="form-container-box">
         {/* Step Indicator */}
         <div className="step-indicator">
@@ -613,22 +633,43 @@ function FormBantuanContent() {
               <span className="success-icon">&#10003;</span>
             </div>
             <h2 className="success-title">
-              Tawaran Bantuan Terkirim!
+              {submittedVia === "demo"
+                ? "Tawaran Bantuan Tersimpan (Mode Simulasi)"
+                : "Tawaran Bantuan Terkirim!"}
             </h2>
-            <p className="success-desc">
-              {author.name} akan menerima tawaran bantuanmu. Kamu dapat melanjutkan obrolan langsung untuk menyepakati titik kumpul.
-            </p>
-            <div className="success-actions">
-              <Link
-                href={`/chat?user=${encodeURIComponent(post?.authorId || "sari-wijaya")}&topic=${encodeURIComponent(post?.title || "")}`}
-                className="btn-primary-custom"
-              >
-                Buka Obrolan dengan {author.name}
-              </Link>
-              <Link href="/katalog" className="btn-secondary-custom">
-                Kembali ke Katalog
-              </Link>
-            </div>
+            {submittedVia === "demo" ? (
+              <>
+                <p className="success-desc">
+                  Ini mode simulasi: tawaran bantuanmu hanya disimpan di browser
+                  perangkat ini, <strong>tidak</strong> masuk ke database NeedHelp.
+                  Pemilik postingan tidak menerima pengajuan maupun notifikasi.
+                </p>
+                <div className="success-actions">
+                  <Link href="/katalog" className="btn-secondary-custom">
+                    Kembali ke Katalog
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="success-desc">
+                  {author.name} akan menerima tawaran bantuanmu dan notifikasi
+                  pengajuan baru. Kamu dapat melanjutkan obrolan langsung untuk
+                  menyepakati titik kumpul.
+                </p>
+                <div className="success-actions">
+                  <Link
+                    href={`/chat?user=${encodeURIComponent(post?.authorId || "")}&post=${encodeURIComponent(postId)}`}
+                    className="btn-primary-custom"
+                  >
+                    Buka Obrolan dengan {author.name}
+                  </Link>
+                  <Link href="/katalog" className="btn-secondary-custom">
+                    Kembali ke Katalog
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

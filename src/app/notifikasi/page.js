@@ -1,71 +1,213 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  getNotifications,
+  fetchNotifications,
   markNotificationRead,
   markAllNotificationsRead,
-} from "../../lib/data.js";
+  mergeIncomingNotifications,
+  applyReadLocally,
+  formatNotificationTime,
+  NOTIFICATION_ERROR_CODES,
+} from "../../lib/notifications.js";
+import { subscribeToNotifications } from "../../lib/notification-realtime.js";
+import { readSession } from "../../lib/auth.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
-import { SimulationBanner } from "../../components/SimulationBanner";
+
+const FILTER_MAP = {
+  all: null,
+  post: ["application", "application_status"],
+  chat: ["chat"],
+  status: ["application_status"],
+};
 
 export default function NotifikasiPage() {
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [notifications, setNotifications] = useState(() => getNotifications());
-  const [filter, setFilter] = useState("all");
-
-  const refreshNotifications = () => {
-    setNotifications(getNotifications());
-  };
-
-  useEffect(() => {
-    refreshNotifications();
+  // readSession() mengembalikan objek BARU pada setiap pemanggilan (hasil
+  // JSON.parse localStorage). Kalau dipanggil langsung tiap render, `session`
+  // berubah identitas terus sehingga `load` dan useEffect realtime ikut berubah
+  // tiap render (langganan ulang + fetch berulang). Baca sekali per mount agar
+  // referensinya stabil. Header sudah mengarahkan keluar saat logout.
+  const session = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return readSession();
   }, []);
 
-  const unreadCount = useMemo(() => {
-    return notifications.filter((n) => !n.read).length;
-  }, [notifications]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [markingAll, setMarkingAll] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setError(null);
+      const rows = await fetchNotifications();
+      setNotifications((prev) => mergeIncomingNotifications(prev, rows));
+    } catch (err) {
+      setError(
+        err.code === NOTIFICATION_ERROR_CODES.NOT_AUTHENTICATED
+          ? "Silakan masuk terlebih dahulu untuk melihat notifikasi."
+          : err.message || "Gagal memuat notifikasi.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Realtime: notifikasi baru masuk tanpa reload. Status baca hanya bisa
+  // berubah menjadi dibaca (mergeIncomingNotifications), bukan sebaliknya.
+  useEffect(() => {
+    if (!session) return undefined;
+    const stop = subscribeToNotifications((row) => {
+      setNotifications((prev) => mergeIncomingNotifications(prev, row));
+    });
+    // Sinkronisasi berkala ringan sebagai cadangan bila realtime terputus.
+    const interval = setInterval(() => {
+      load();
+    }, 60_000);
+    return () => {
+      stop();
+      clearInterval(interval);
+    };
+  }, [session, load]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications],
+  );
 
   const visibleNotifications = useMemo(() => {
-    if (filter === "all") return notifications;
-    return notifications.filter((item) => item.type === filter);
+    const allowed = FILTER_MAP[filter];
+    if (!allowed) return notifications;
+    return notifications.filter((n) => allowed.includes(n.kind));
   }, [notifications, filter]);
 
-  const handleMarkAll = () => {
+  const handleMarkAll = async () => {
+    if (markingAll) return;
+    setMarkingAll(true);
     try {
-      markAllNotificationsRead();
-      refreshNotifications();
+      await markAllNotificationsRead();
+      const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+      setNotifications((prev) => applyReadLocally(prev, unreadIds));
       showToast("Semua notifikasi ditandai sudah dibaca.", "success");
-    } catch {
-      showToast("Gagal memperbarui status notifikasi.", "error");
+    } catch (err) {
+      showToast(err.message || "Gagal memperbarui status notifikasi.", "error");
+    } finally {
+      setMarkingAll(false);
     }
   };
 
-  const handleClickItem = (item) => {
-    try {
-      markNotificationRead(item.id);
-      refreshNotifications();
-    } catch {}
-    if (item.href) {
-      router.push(item.href);
+  const handleClickItem = async (item) => {
+    // Navigasi tetap dilakukan walau penandaan baca gagal.
+    if (!item.read) {
+      try {
+        await markNotificationRead(item.id);
+      } catch {
+        // abaikan; badge akan tersinkron pada muat berikutnya
+      }
+      setNotifications((prev) => applyReadLocally(prev, [item.id]));
     }
+    router.push(item.href);
   };
 
-  const getIconData = (type) => {
-    switch (type) {
+  const getIconData = (kind) => {
+    switch (kind) {
       case "chat":
         return { icon: "💬", className: "tosca-icon" };
-      case "rating":
-        return { icon: "⭐", className: "yellow-icon" };
-      case "post":
-        return { icon: "📦", className: "green-icon" };
+      case "application":
+        return { icon: "📩", className: "green-icon" };
+      case "application_status":
+        return { icon: "🔔", className: "yellow-icon" };
       default:
         return { icon: "🔔", className: "tosca-icon" };
     }
+  };
+
+  const renderBody = () => {
+    if (!session) {
+      return (
+        <EmptyState
+          icon="🔒"
+          title="Masuk untuk melihat notifikasi"
+          description="Notifikasi hanya ditampilkan untuk akun yang sedang masuk."
+          actionText="Masuk"
+          onAction={() => router.push("/login?next=/notifikasi")}
+        />
+      );
+    }
+    if (loading) {
+      return (
+        <p style={{ textAlign: "center", padding: "40px 0", color: "#5e7a80" }}>
+          Memuat notifikasi...
+        </p>
+      );
+    }
+    if (error) {
+      return (
+        <EmptyState
+          icon="⚠️"
+          title="Gagal Memuat Notifikasi"
+          description={error}
+          actionText="Coba Lagi"
+          onAction={load}
+        />
+      );
+    }
+    if (visibleNotifications.length === 0) {
+      return (
+        <EmptyState
+          icon="🔔"
+          title="Tidak Ada Notifikasi"
+          description={
+            notifications.length === 0
+              ? "Belum ada notifikasi. Notifikasi pesan, pengajuan, dan status pengajuan akan muncul di sini."
+              : "Tidak ada notifikasi untuk kategori filter yang dipilih saat ini."
+          }
+          actionText={notifications.length === 0 ? undefined : "Tampilkan Semua"}
+          onAction={notifications.length === 0 ? undefined : () => setFilter("all")}
+        />
+      );
+    }
+    return visibleNotifications.map((item) => {
+      const iconData = getIconData(item.kind);
+      return (
+        <article
+          key={item.id}
+          className={`notification-card${item.read ? "" : " unread"}`}
+          onClick={() => handleClickItem(item)}
+          style={{ cursor: "pointer" }}
+        >
+          <div className="notif-card-left">
+            <div className={`notif-icon-box ${iconData.className}`}>
+              {iconData.icon}
+            </div>
+            <div className="notif-text-content">
+              <div className="notif-title-row">
+                <h3>{item.title}</h3>
+                {!item.read && <span className="unread-dot-badge" />}
+              </div>
+              <p>{item.body}</p>
+            </div>
+          </div>
+          <div className="notif-card-right">
+            <span className="notif-time">{formatNotificationTime(item.createdAt)}</span>
+          </div>
+        </article>
+      );
+    });
   };
 
   return (
@@ -82,20 +224,19 @@ export default function NotifikasiPage() {
             type="button"
             className="btn-mark-all"
             onClick={handleMarkAll}
+            disabled={markingAll}
           >
-            Tandai semua terbaca
+            {markingAll ? "Menandai..." : "Tandai semua terbaca"}
           </button>
         )}
       </div>
 
-      <SimulationBanner text="Status notifikasi dibaca disimpan di penyimpanan browser lokal." />
-
       <div className="notification-filters">
         {[
           { key: "all", label: "Semua" },
-          { key: "post", label: "Permintaan" },
+          { key: "post", label: "Pengajuan" },
           { key: "chat", label: "Pesan" },
-          { key: "rating", label: "Rating & Ulasan" },
+          { key: "status", label: "Status Pengajuan" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -108,45 +249,7 @@ export default function NotifikasiPage() {
         ))}
       </div>
 
-      <div className="notification-list">
-        {visibleNotifications.length > 0 ? (
-          visibleNotifications.map((item) => {
-            const iconData = getIconData(item.type);
-            return (
-              <article
-                key={item.id}
-                className={`notification-card${item.read ? "" : " unread"}`}
-                onClick={() => handleClickItem(item)}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="notif-card-left">
-                  <div className={`notif-icon-box ${iconData.className}`}>
-                    {iconData.icon}
-                  </div>
-                  <div className="notif-text-content">
-                    <div className="notif-title-row">
-                      <h3>{item.title}</h3>
-                      {!item.read && <span className="unread-dot-badge" />}
-                    </div>
-                    <p>{item.message}</p>
-                  </div>
-                </div>
-                <div className="notif-card-right">
-                  <span className="notif-time">{item.timeLabel}</span>
-                </div>
-              </article>
-            );
-          })
-        ) : (
-          <EmptyState
-            icon="🔔"
-            title="Tidak Ada Notifikasi"
-            description="Tidak ada notifikasi untuk kategori filter yang dipilih saat ini."
-            actionText="Tampilkan Semua"
-            onAction={() => setFilter("all")}
-          />
-        )}
-      </div>
+      <div className="notification-list">{renderBody()}</div>
     </main>
   );
 }

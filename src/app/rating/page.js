@@ -8,11 +8,19 @@ import {
   getPost,
   saveRating,
   formatDate,
+  fetchActivities,
+  saveRatingSupabase,
+  resolveRateableActivity,
+  RATING_ERROR_CODES,
+  buildRatingUrl,
+  isNotOwnerError,
 } from "../../lib/data.js";
 import { readSession } from "../../lib/auth.js";
+import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { validateRating } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
+
 
 function RatingContent() {
   const router = useRouter();
@@ -20,6 +28,8 @@ function RatingContent() {
   const { showToast } = useToast();
 
   const id = searchParams.get("id");
+  const postId = searchParams.get("postId");
+  const supabaseMode = isSupabaseConfigured();
 
   const [activity, setActivity] = useState(null);
   const [unrateableReason, setUnrateableReason] = useState(null);
@@ -31,26 +41,84 @@ function RatingContent() {
   const [recommend, setRecommend] = useState("yes");
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  // Penolakan bisnis dari RPC yang tetap boleh ditampilkan sebagai form:
+  // "not-owner" (bukan pemilik postingan) dan "not-completed" (belum selesai).
+  const [businessBlock, setBusinessBlock] = useState(null);
 
-  useEffect(() => {
-    setLoading(true);
-    const { activity: foundActivity, reason } = getRateableActivity(id);
-    if (!foundActivity) {
+  const applyResolved = (found, reason) => {
+    if (!found) {
       setUnrateableReason(reason);
       setActivity(null);
+      return;
+    }
+    setActivity(found);
+    setUnrateableReason(null);
+    if (found.review) {
+      setStars(found.review.rating || 5);
+      setComment(found.review.comment || "");
+      if (found.review.badges) setBadges(found.review.badges);
+    }
+  };
+
+  useEffect(() => {
+    let isCancelled = false;
+    setLoading(true);
+    setUnrateableReason(null);
+
+    if (supabaseMode && !readSession()) {
+      // Belum login / sesi kedaluwarsa: beri pesan login, bukan "tidak ditemukan".
+      setActivity(null);
+      setUnrateableReason("unauthenticated");
+      setLoading(false);
+      return () => { isCancelled = true; };
+    }
+
+    setBusinessBlock(null);
+
+    if (supabaseMode) {
+      // Mode Supabase: fetch activities async lalu cocokkan id aktivitas / postId
+      fetchActivities()
+        .then((activities) => {
+          if (isCancelled) return;
+          const { activity: found, reason } = resolveRateableActivity(activities, {
+            activityId: id,
+            postId,
+          });
+          applyResolved(found, reason);
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (isCancelled) return;
+          setUnrateableReason(
+            err?.code === RATING_ERROR_CODES.NOT_AUTHENTICATED
+              ? "unauthenticated"
+              : "load-error",
+          );
+          setActivity(null);
+          setLoading(false);
+        });
     } else {
-      setActivity(foundActivity);
-      setUnrateableReason(null);
-      if (foundActivity.review) {
-        setStars(foundActivity.review.rating || 5);
-        setComment(foundActivity.review.comment || "");
-        if (foundActivity.review.badges) {
-          setBadges(foundActivity.review.badges);
+      // Mode demo: sync lookup
+      const { activity: foundActivity, reason } = getRateableActivity(id);
+      if (!foundActivity) {
+        setUnrateableReason(reason);
+        setActivity(null);
+      } else {
+        setActivity(foundActivity);
+        setUnrateableReason(null);
+        if (foundActivity.review) {
+          setStars(foundActivity.review.rating || 5);
+          setComment(foundActivity.review.comment || "");
+          if (foundActivity.review.badges) {
+            setBadges(foundActivity.review.badges);
+          }
         }
       }
+      setLoading(false);
     }
-    setLoading(false);
-  }, [id]);
+
+    return () => { isCancelled = true; };
+  }, [id, postId, supabaseMode]);
 
   const handleBadgeToggle = (badgeKey) => {
     setBadges((prev) =>
@@ -60,7 +128,7 @@ function RatingContent() {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateRating(stars, comment);
 
@@ -74,21 +142,53 @@ function RatingContent() {
     setErrors({});
 
     try {
-      saveRating(activity.id, {
+      const ratingData = {
         rating: Number(stars),
         comment: comment.trim(),
-        badges,
-        recommend,
-        at: new Date().toISOString(),
-      });
+      };
+
+      if (supabaseMode) {
+        // RPC save_activity_rating memakai p_post_id (posts.id), BUKAN activities.id.
+        // Parameter postId dari URL didahulukan karena diambil langsung dari aktivitas
+        // pemilik; activity.postId adalah cadangan.
+        const effectivePostId = postId || activity.postId;
+        if (!effectivePostId) {
+          throw new Error("Postingan untuk aktivitas ini tidak diketahui. Buka ulasan dari halaman Aktivitas.");
+        }
+        await saveRatingSupabase(effectivePostId, ratingData);
+      } else {
+        // Mode demo: tetap gunakan saveRating dengan activityId
+        const fullRatingData = {
+          ...ratingData,
+          badges,
+          recommend,
+          at: new Date().toISOString(),
+        };
+        saveRating(activity.id, fullRatingData);
+      }
+
       showToast("Penilaian berhasil disimpan!", "success");
       router.push("/aktivitas?rated=1");
     } catch (err) {
       setSubmitting(false);
-      setErrors({
-        general: err.message || "Gagal menyimpan ulasan.",
-      });
-      showToast("Gagal menyimpan ulasan.", "error");
+      if (err?.code === RATING_ERROR_CODES.NOT_AUTHENTICATED) {
+        setUnrateableReason("unauthenticated");
+        return;
+      }
+      if (isNotOwnerError(err?.message)) {
+        setBusinessBlock("not-owner");
+        return;
+      }
+      if (/belum selesai|belum dimulai/i.test(err?.message || "")) {
+        setBusinessBlock("not-completed");
+        return;
+      }
+      const message =
+        err?.code === RATING_ERROR_CODES.NOT_FOUND
+          ? "Aktivitas tidak ditemukan lagi. Muat ulang halaman Aktivitas dan coba lagi."
+          : err.message || "Gagal menyimpan ulasan.";
+      setErrors({ general: message });
+      showToast(message, "error");
     }
   };
 
@@ -103,6 +203,25 @@ function RatingContent() {
     );
   }
 
+  if (unrateableReason === "unauthenticated") {
+    return (
+      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
+        <EmptyState
+          icon="🔐"
+          title="Silakan Masuk Terlebih Dahulu"
+          description="Sesi kamu tidak ditemukan atau sudah berakhir. Masuk kembali untuk memberi penilaian."
+          actionText="Masuk"
+          onAction={() => {
+            const next = supabaseMode
+              ? buildRatingUrl(id, postId)
+              : "/aktivitas";
+            router.push(`/login?next=${encodeURIComponent(next)}`);
+          }}
+        />
+      </main>
+    );
+  }
+
   if (unrateableReason) {
     const errorMessages = {
       missing: "Pilih aktivitas dari halaman Aktivitas sebelum memberi ulasan.",
@@ -110,19 +229,32 @@ function RatingContent() {
       pending: "Aktivitas ini belum berlangsung, jadi belum dapat dinilai.",
       cancelled: "Aktivitas yang dibatalkan tidak dapat dinilai.",
       "invalid-status": "Aktivitas dengan status ini tidak dapat dinilai.",
+      "load-error": "Gagal memuat data aktivitas. Periksa koneksi lalu coba lagi.",
     };
 
     return (
       <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
         <EmptyState
-          icon="⭐"
-          title="Tidak Dapat Memberi Penilaian"
+          icon={unrateableReason === "load-error" ? "⚠️" : "⭐"}
+          title={
+            unrateableReason === "load-error"
+              ? "Gagal Memuat Aktivitas"
+              : "Tidak Dapat Memberi Penilaian"
+          }
           description={
             errorMessages[unrateableReason] ||
             "Aktivitas ini tidak memenuhi syarat untuk dinilai."
           }
-          actionText="Buka Daftar Aktivitas"
-          onAction={() => router.push("/aktivitas")}
+          actionText={
+            unrateableReason === "load-error"
+              ? "Muat Ulang Halaman"
+              : "Buka Daftar Aktivitas"
+          }
+          onAction={() =>
+            unrateableReason === "load-error"
+              ? window.location.reload()
+              : router.push("/aktivitas")
+          }
         />
       </main>
     );
@@ -184,6 +316,18 @@ function RatingContent() {
           </dd>
         </dl>
       </article>
+
+      {businessBlock === "not-owner" && (
+        <p className="error-banner" role="alert">
+          Hanya pemilik postingan yang dapat memberi penilaian kepada partner.
+        </p>
+      )}
+
+      {businessBlock === "not-completed" && (
+        <p className="error-banner" role="alert">
+          Aktivitas belum selesai. Selesaikan aktivitas terlebih dahulu sebelum memberi ulasan.
+        </p>
+      )}
 
       {errors.general && (
         <p className="error-banner" role="alert">
@@ -296,7 +440,7 @@ function RatingContent() {
             <button
               type="submit"
               className="button button-primary"
-              disabled={submitting}
+              disabled={submitting || Boolean(businessBlock)}
             >
               {submitting ? "Menyimpan..." : "Kirim Penilaian & Selesaikan Bantuan"}
             </button>

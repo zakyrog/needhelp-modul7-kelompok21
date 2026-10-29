@@ -214,7 +214,12 @@ function DetailPostContent() {
         : "Status postingan ini tidak dikenali, sehingga pengajuan bantuan baru tidak dibuka.";
   const typeLabel = isNeed ? "Saya Butuh" : "Saya Bisa";
   const categoryLabel = CATEGORY_LABELS[post.category] || post.category;
-  const chatUrl = `/chat?user=${encodeURIComponent(author.id)}&topic=${encodeURIComponent(post.title)}`;
+  // Tautan chat membawa post_id + user_id asli (UUID Supabase), bukan id seed.
+  // Halaman /chat memakai keduanya untuk memanggil RPC
+  // get_or_create_conversation(p_post_id, p_partner_id) — idempoten, jadi
+  // percakapan yang sudah ada dipakai ulang. Aturan siapa boleh memulai
+  // percakapan tetap divalidasi server.
+  const chatUrl = `/chat?user=${encodeURIComponent(author.id)}&post=${encodeURIComponent(post.id)}`;
 
   return (
     <main className="detail-main-layout">
