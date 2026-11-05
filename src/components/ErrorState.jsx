@@ -1,7 +1,5 @@
-
-"use client";
-
 import React from "react";
+import { SvgIcon } from "./Icons.jsx";
 
 export function ErrorState({
   title = "Terjadi Kesalahan",
@@ -15,7 +13,7 @@ export function ErrorState({
       aria-live="assertive"
     >
       <span className="error-state-icon" aria-hidden="true">
-        ⚠
+        <SvgIcon name="warning" size={34} strokeWidth={1.5} />
       </span>
 
       <h3 className="error-state-title">{title}</h3>

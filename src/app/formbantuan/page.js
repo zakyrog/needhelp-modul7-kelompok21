@@ -20,6 +20,7 @@ import { FormField } from "../../components/FormField";
 import { useToast } from "../../components/Toast";
 import { SimulationBanner } from "../../components/SimulationBanner";
 import { isSupabaseConfigured, getSupabase } from "../../lib/supabase";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 function FormBantuanContent() {
   const router = useRouter();
@@ -620,7 +621,7 @@ function FormBantuanContent() {
                 onClick={handleFinalSubmit}
                 disabled={submitting}
               >
-                {submitting ? "Mengirimkan Tawaran..." : "Kirim Pengajuan Sekarang ✓"}
+                {submitting ? "Mengirimkan Tawaran..." : "Kirim Pengajuan Sekarang"}<SvgIcon name="check" size={16} strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -630,7 +631,7 @@ function FormBantuanContent() {
         {step === 3 && (
           <div className="success-box text-center" style={{ padding: "24px 0" }}>
             <div className="success-icon-wrapper">
-              <span className="success-icon">&#10003;</span>
+              <SvgIcon name="check" size={28} strokeWidth={2.5} />
             </div>
             <h2 className="success-title">
               {submittedVia === "demo"

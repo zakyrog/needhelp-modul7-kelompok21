@@ -20,7 +20,15 @@ import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { validateRating } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
+import { SvgIcon } from "../../components/Icons.jsx";
 
+const STAR_LABELS = {
+  5: "Luar Biasa",
+  4: "Sangat Baik",
+  3: "Cukup Baik",
+  2: "Kurang Memuaskan",
+  1: "Tidak Memuaskan",
+};
 
 function RatingContent() {
   const router = useRouter();
@@ -195,17 +203,15 @@ function RatingContent() {
   // Handle loading state
   if (loading) {
     return (
-      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
-        <div style={{ textAlign: "center", padding: "40px 0" }}>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "14px" }}>Memuat data aktivitas...</p>
-        </div>
+      <main className="rating-page-wrap">
+        <p className="rating-status" role="status">Memuat data aktivitas...</p>
       </main>
     );
   }
 
   if (unrateableReason === "unauthenticated") {
     return (
-      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
+      <main className="rating-page-wrap">
         <EmptyState
           icon="🔐"
           title="Silakan Masuk Terlebih Dahulu"
@@ -233,7 +239,7 @@ function RatingContent() {
     };
 
     return (
-      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
+      <main className="rating-page-wrap">
         <EmptyState
           icon={unrateableReason === "load-error" ? "⚠️" : "⭐"}
           title={
@@ -263,7 +269,7 @@ function RatingContent() {
   // Safety check: activity should not be null at this point
   if (!activity) {
     return (
-      <main style={{ maxWidth: "600px", margin: "40px auto", padding: "0 16px" }}>
+      <main className="rating-page-wrap">
         <EmptyState
           icon="⚠️"
           title="Data Aktivitas Tidak Tersedia"
@@ -278,42 +284,121 @@ function RatingContent() {
   const post = getPost(activity.postId);
   const partnerName = activity.partner || "Rekan Bantuan";
 
+  // Ulasan yang sudah ada: aturan server melarang penilaian ulang
+  // ("sudah memberikan ulasan"), jadi form tidak ditampilkan lagi — cukup
+  // tampilkan ulasan yang tersimpan (read-only) + tautan kembali.
+  if (activity.review) {
+    const existingStars = Math.max(0, Math.min(5, Number(activity.review.rating) || 0));
+    return (
+      <main className="rating-page-wrap">
+        <header className="rating-header">
+          <p className="rating-eyebrow">
+            <SvgIcon name="star" size={14} strokeWidth={2} />
+            Ulasan Komunitas
+          </p>
+          <h1>Ulasan Sudah Diberikan</h1>
+          <p className="rating-lede">
+            Kamu sudah menilai aktivitas ini. Setiap aktivitas hanya dapat dinilai
+            satu kali.
+          </p>
+        </header>
+
+        <article className="rating-summary">
+          <header>
+            <h2>Ringkasan Aktivitas</h2>
+          </header>
+          <div className="rating-summary-body">
+            <p>
+              <span className="rating-summary-label">Aktivitas</span>
+              <strong>{post?.title || "Aktivitas NeedHelp"}</strong>
+            </p>
+            <p>
+              <span className="rating-summary-label">Rekan Bantuan</span>
+              <strong>{partnerName}</strong>
+            </p>
+          </div>
+        </article>
+
+        <section className="rating-existing" aria-label="Ulasan yang sudah diberikan">
+          <h2>Ulasan Kamu</h2>
+          <div className="rating-existing-stars" role="img" aria-label={`${existingStars} dari 5 bintang`}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <SvgIcon
+                key={value}
+                name={value <= existingStars ? "starFilled" : "star"}
+                size={28}
+                strokeWidth={value <= existingStars ? 1.2 : 1.75}
+                className={"rating-existing-star" + (value <= existingStars ? " filled" : "")}
+              />
+            ))}
+            <span className="rating-existing-value">
+              {existingStars} dari 5
+            </span>
+          </div>
+          {activity.review.comment && (
+            <p className="rating-existing-comment">
+              &ldquo;{activity.review.comment}&rdquo;
+            </p>
+          )}
+          <Link href="/aktivitas" className="button button-outline">
+            Kembali ke Aktivitas
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <main>
-      <header>
+    <main className="rating-page-wrap">
+      <header className="rating-header">
+        <p className="rating-eyebrow">
+          <SvgIcon name="star" size={14} strokeWidth={2} />
+          Ulasan Komunitas
+        </p>
         <h1>Beri Ulasan dan Penilaian</h1>
-        <p>
+        <p className="rating-lede">
           Bantu bangun reputasi komunitas dengan memberikan ulasan jujur setelah
           aktivitas bantuan selesai dilaksanakan.
         </p>
       </header>
 
       {/* Ringkasan Kegiatan */}
-      <article>
+      <article className="rating-summary">
         <header>
           <h2>Ringkasan Aktivitas</h2>
-          <p>
-            Aktivitas: <strong>{post?.title || "Aktivitas NeedHelp"}</strong>
-          </p>
-          <p>
-            Rekan Bantuan: <strong>{partnerName}</strong>
-          </p>
         </header>
-        <dl>
-          <dt>Tanggal Pelaksanaan</dt>
-          <dd>{post ? formatDate(post.date) : activity.note}</dd>
-          <dt>Lokasi</dt>
-          <dd>
-            {post
-              ? `${post.address}${post.destination ? ` ke ${post.destination}` : ""}`
-              : "Sesuai kesepakatan"}
-          </dd>
-          <dt>Status</dt>
-          <dd>
-            <mark>
-              {activity.status === "selesai" ? "Aktivitas Selesai" : "Aktivitas Berlangsung"}
-            </mark>
-          </dd>
+        <div className="rating-summary-body">
+          <p>
+            <span className="rating-summary-label">Aktivitas</span>
+            <strong>{post?.title || "Aktivitas NeedHelp"}</strong>
+          </p>
+          <p>
+            <span className="rating-summary-label">Rekan Bantuan</span>
+            <strong>{partnerName}</strong>
+          </p>
+        </div>
+        <dl className="rating-facts">
+          <div>
+            <dt>Tanggal Pelaksanaan</dt>
+            <dd>{post ? formatDate(post.date) : activity.note}</dd>
+          </div>
+          <div>
+            <dt>Lokasi</dt>
+            <dd>
+              {post
+                ? `${post.address}${post.destination ? ` ke ${post.destination}` : ""}`
+                : "Sesuai kesepakatan"}
+            </dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span className="rating-status-chip">
+                <SvgIcon name="check" size={13} strokeWidth={2} />
+                {activity.status === "selesai" ? "Aktivitas Selesai" : "Aktivitas Berlangsung"}
+              </span>
+            </dd>
+          </div>
         </dl>
       </article>
 
@@ -336,29 +421,52 @@ function RatingContent() {
       )}
 
       {/* Formulir Evaluasi & Rating */}
-      <form onSubmit={handleSubmit} noValidate>
+      <form className="rating-form" onSubmit={handleSubmit} noValidate>
         {/* 1. Bintang Kepuasan */}
-        <fieldset>
-          <legend>1. Berikan Bintang Kepuasan (Skala 1 - 5)</legend>
-          {[
-            { value: 5, label: "★★★★★ (5 - Luar Biasa)" },
-            { value: 4, label: "★★★★☆ (4 - Sangat Baik)" },
-            { value: 3, label: "★★★☆☆ (3 - Cukup Baik)" },
-            { value: 2, label: "★★☆☆☆ (2 - Kurang Memuaskan)" },
-            { value: 1, label: "★☆☆☆☆ (1 - Tidak Memuaskan)" },
-          ].map((starOpt) => (
-            <p key={starOpt.value}>
-              <input
-                type="radio"
-                id={`star-${starOpt.value}`}
-                name="star_rating"
-                value={starOpt.value}
-                checked={Number(stars) === starOpt.value}
-                onChange={() => setStars(starOpt.value)}
-              />
-              <label htmlFor={`star-${starOpt.value}`}>{starOpt.label}</label>
-            </p>
-          ))}
+        <fieldset className="rating-fieldset rating-fieldset-stars">
+          <legend>
+            <span className="rating-step">1</span>
+            Berikan Bintang Kepuasan
+          </legend>
+          <p className="rating-fieldset-hint">Skala 1 sampai 5 bintang.</p>
+
+          <div
+            className="star-picker"
+            role="radiogroup"
+            aria-label="Rating bintang kepuasan"
+          >
+            {[1, 2, 3, 4, 5].map((value) => {
+              const selected = Number(stars) >= value;
+              return (
+                <label
+                  key={value}
+                  className={`star-option${selected ? " selected" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="star_rating"
+                    value={value}
+                    checked={Number(stars) === value}
+                    onChange={() => setStars(value)}
+                    className="sr-only"
+                  />
+                  <SvgIcon
+                    name={selected ? "starFilled" : "star"}
+                    size={34}
+                    strokeWidth={selected ? 1.2 : 1.75}
+                  />
+                  <span className="sr-only">
+                    {value} dari 5 bintang — {STAR_LABELS[value]}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          <p className="star-picker-feedback" aria-live="polite">
+            {Number(stars)} dari 5 — {STAR_LABELS[Number(stars)]}
+          </p>
+
           {errors.rating && (
             <small className="field-error" role="alert">
               {errors.rating}
@@ -367,38 +475,56 @@ function RatingContent() {
         </fieldset>
 
         {/* 2. Aspek Positif */}
-        <fieldset>
-          <legend>2. Apa yang Paling Kamu Apresiasi dari {partnerName}?</legend>
-          {[
-            { key: "tepat-waktu", label: "Tepat Waktu & Disiplin" },
-            { key: "ramah", label: "Ramah & Menyenangkan" },
-            { key: "sangat-membantu", label: "Tenaga Kuat & Sangat Membantu" },
-            { key: "komunikatif", label: "Komunikatif & Responsif di Chat" },
-          ].map((badge) => (
-            <p key={badge.key}>
-              <input
-                type="checkbox"
-                id={`badge-${badge.key}`}
-                name="badges"
-                value={badge.key}
-                checked={badges.includes(badge.key)}
-                onChange={() => handleBadgeToggle(badge.key)}
-              />
-              <label htmlFor={`badge-${badge.key}`}>{badge.label}</label>
-            </p>
-          ))}
+        <fieldset className="rating-fieldset">
+          <legend>
+            <span className="rating-step">2</span>
+            Apa yang Paling Kamu Apresiasi dari {partnerName}?
+          </legend>
+          <div className="badge-options">
+            {[
+              { key: "tepat-waktu", label: "Tepat Waktu & Disiplin" },
+              { key: "ramah", label: "Ramah & Menyenangkan" },
+              { key: "sangat-membantu", label: "Tenaga Kuat & Sangat Membantu" },
+              { key: "komunikatif", label: "Komunikatif & Responsif di Chat" },
+            ].map((badge) => {
+              const checked = badges.includes(badge.key);
+              return (
+                <label
+                  key={badge.key}
+                  className={`badge-option${checked ? " selected" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    name="badges"
+                    value={badge.key}
+                    checked={checked}
+                    onChange={() => handleBadgeToggle(badge.key)}
+                    className="sr-only"
+                  />
+                  <SvgIcon
+                    name={checked ? "check" : "wave"}
+                    size={15}
+                    strokeWidth={2}
+                  />
+                  {badge.label}
+                </label>
+              );
+            })}
+          </div>
         </fieldset>
 
         {/* 3. Ulasan Terbuka */}
-        <fieldset>
-          <legend>3. Catatan &amp; Testimoni</legend>
-          <p>
-            <label htmlFor="review-comment">Ceritakan pengalamanmu:</label>
+        <fieldset className="rating-fieldset">
+          <legend>
+            <span className="rating-step">3</span>
+            Catatan &amp; Testimoni
+          </legend>
+          <div className="rating-field">
+            <label htmlFor="review-comment">Ceritakan pengalamanmu</label>
             <textarea
               id="review-comment"
               name="review"
               rows={4}
-              cols={50}
               value={comment}
               onChange={(e) => {
                 setComment(e.target.value);
@@ -414,9 +540,9 @@ function RatingContent() {
                 {errors.comment}
               </small>
             )}
-          </p>
+          </div>
 
-          <p>
+          <div className="rating-field">
             <label htmlFor="recommend-user">
               Apakah kamu merekomendasikan {partnerName} ke teman lain?
             </label>
@@ -430,25 +556,22 @@ function RatingContent() {
               <option value="neutral">Netral</option>
               <option value="no">Tidak Merekomendasikan</option>
             </select>
-          </p>
+          </div>
         </fieldset>
 
         {/* 4. Konfirmasi Akhir */}
-        <fieldset>
-          <legend>4. Konfirmasi Akhir</legend>
-          <p style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <button
-              type="submit"
-              className="button button-primary"
-              disabled={submitting || Boolean(businessBlock)}
-            >
-              {submitting ? "Menyimpan..." : "Kirim Penilaian & Selesaikan Bantuan"}
-            </button>
-            <Link href="/aktivitas" className="button button-outline">
-              Kembali ke Aktivitas
-            </Link>
-          </p>
-        </fieldset>
+        <div className="rating-actions">
+          <button
+            type="submit"
+            className="button button-primary"
+            disabled={submitting || Boolean(businessBlock)}
+          >
+            {submitting ? "Menyimpan..." : "Kirim Penilaian & Selesaikan Bantuan"}
+          </button>
+          <Link href="/aktivitas" className="button button-outline">
+            Kembali ke Aktivitas
+          </Link>
+        </div>
       </form>
     </main>
   );
@@ -456,7 +579,7 @@ function RatingContent() {
 
 export default function RatingPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "40px", textAlign: "center" }}><p>Memuat form penilaian...</p></div>}>
+    <Suspense fallback={<div className="rating-page-wrap"><p className="rating-status">Memuat form penilaian...</p></div>}>
       <RatingContent />
     </Suspense>
   );

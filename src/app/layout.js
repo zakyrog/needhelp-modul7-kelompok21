@@ -1,7 +1,8 @@
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, Fraunces } from "next/font/google";
 import "../styles/tokens.css";
 import "../styles/base.css";
 import "../styles/ux-states.css";
+import "../styles/theme.css";
 
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
@@ -13,6 +14,20 @@ const inter = Inter({
   weight: ["400", "600", "700"],
   display: "swap",
   variable: "--font-inter",
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-jakarta",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-fraunces",
 });
 
 export const metadata = {
@@ -40,7 +55,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={inter.variable}>
+    <html lang="id" className={`${inter.variable} ${plusJakarta.variable} ${fraunces.variable}`}>
       <body>
         <BodyClassManager />
         <ToastProvider>

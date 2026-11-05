@@ -5,9 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { readSession, clearSession, signOut } from "../lib/auth";
 import { isSupabaseConfigured } from "../lib/supabase";
+import { fetchCurrentProfile } from "../lib/data.js";
 import { fetchUnreadNotificationCount } from "../lib/notifications.js";
 import { subscribeToNotifications } from "../lib/notification-realtime.js";
 import { useToast } from "./Toast";
+import { SvgIcon } from "./Icons.jsx";
+import { resolveAvatarSrc, DEMO_PROFILE_KEY } from "../lib/avatars.js";
 
 export function Header() {
   const pathname = usePathname();
@@ -16,6 +19,12 @@ export function Header() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [session, setSession] = useState(null);
+  // Profil dari tabel `profiles` (avatar_url/initial) — hanya untuk tampilan
+  // avatar. Tidak pernah membuat data; null berarti pakai inisial dari nama.
+  const [profile, setProfile] = useState(null);
+  // Penanda perubahan profil demo (localStorage.setItem di tab yang sama tidak
+  // memicu event "storage"), agar avatar pilihan langsung tampil di Header.
+  const [profileRevision, setProfileRevision] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -47,6 +56,7 @@ export function Header() {
 
     const handleStorageChange = () => {
       syncAuthAndNotifs();
+      setProfileRevision((prev) => prev + 1);
     };
 
     window.addEventListener("storage", handleStorageChange);
@@ -64,6 +74,47 @@ export function Header() {
     });
     return stop;
   }, [session]);
+
+  // Ambil profil (avatar_url/initial) milik pengguna yang sedang login dari
+  // tabel `profiles` lewat helper yang sudah ada. Tanpa sesi atau tanpa
+  // Supabase, profil dibiarkan null sehingga avatar memakai inisial nama.
+  useEffect(() => {
+    let cancelled = false;
+    if (!session) {
+      setProfile(null);
+      return undefined;
+    }
+    if (!isSupabaseConfigured()) {
+      // Mode demo: tidak ada tabel profiles. Baca cache profil yang disimpan
+      // halaman /profil (nama/bio/avatarKey) agar avatar pilihan tetap tampil
+      // setelah reload. Tidak ada data palsu — hanya memantulkan pilihan
+      // pengguna sendiri di perangkat ini.
+      try {
+        const raw = window.localStorage.getItem(DEMO_PROFILE_KEY);
+        const cached = raw ? JSON.parse(raw) : null;
+        // Bentuk cache demo: { name, bio, avatarKey } — normalkan ke bentuk
+        // kolom profiles agar jalur render di bawah sama untuk kedua mode.
+        setProfile(
+          cached
+            ? { name: cached.name || null, avatar_key: cached.avatarKey || null }
+            : null,
+        );
+      } catch {
+        setProfile(null);
+      }
+      return undefined;
+    }
+    fetchCurrentProfile()
+      .then((data) => {
+        if (!cancelled) setProfile(data);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, profileRevision]);
 
   // Handle escape key to close menus
   useEffect(() => {
@@ -121,6 +172,27 @@ export function Header() {
     setProfileMenuOpen((prev) => !prev);
   };
 
+  // --- Data tampilan avatar (tidak ada data baru yang dibuat) ---
+  // Nama: dari profil `profiles.name` bila ada, jika tidak dari sesi auth.
+  const displayName = profile?.name || session?.name || null;
+  // Avatar: ilustrasi pilihan (avatar_key) → foto (avatar_url) → null.
+  // Placeholder lama (aset teal) bukan foto pengguna dan tidak ditampilkan,
+  // agar tidak memunculkan aksen teal di luar design system; null berarti
+  // Header menampilkan inisial nama (avatar default).
+  const avatarUrl = resolveAvatarSrc({
+    key: profile?.avatar_key,
+    url: profile?.avatar_url,
+  });
+  // Inisial: pakai kolom `initial` dari DB bila ada, jika tidak huruf
+  // pertama nama tampilan.
+  const avatarInitial = (
+    (profile?.initial || "").trim() ||
+    (displayName || "").trim() ||
+    "?"
+  )
+    .charAt(0)
+    .toUpperCase();
+
   if (pathname === "/login" || pathname === "/register") {
     return null;
   }
@@ -128,13 +200,7 @@ export function Header() {
   return (
     <header className="site-header">
       <Link href="/" className="site-brand" aria-label="NeedHelp - Beranda" onClick={closeMenu}>
-        <img
-          src="/assets/images/logo.svg"
-          alt="NeedHelp"
-          width="160"
-          height="40"
-          style={{ height: "auto" }}
-        />
+        <span className="site-wordmark">NeedHelp</span>
       </Link>
 
       <button
@@ -263,145 +329,103 @@ export function Header() {
           )}
         </Link>
 
-        {/* Profile Badge dengan Dropdown Menu */}
-        <div
-          ref={profileMenuRef}
-          style={{ position: "relative" }}
-        >
+        {/* Avatar profil + dropdown. Tombol dan menu memakai kelas theme.css
+            (bukan inline style) agar konsisten dengan design system. */}
+        <div className="profile-menu-anchor" ref={profileMenuRef}>
           <button
             type="button"
             className="user-profile-badge"
-            role="button"
-            aria-label={session ? `Menu profil ${session.name}` : "Menu pengunjung"}
+            aria-label={
+              session ? `Menu profil ${displayName || "pengguna"}` : "Menu pengunjung"
+            }
             aria-expanded={profileMenuOpen}
-            aria-haspopup="true"
-            title={session ? session.name : "Pengunjung"}
+            aria-haspopup="menu"
+            aria-controls="profile-menu"
+            title={session ? displayName || "Pengguna" : "Pengunjung"}
             onClick={toggleProfileMenu}
-            style={{
-              cursor: "pointer",
-              border: "none",
-              background: "transparent",
-              padding: 0,
-            }}
           >
             {session ? (
-              session.name.charAt(0).toUpperCase()
+              avatarUrl ? (
+                // Foto profil dari `profiles.avatar_url` (bila ada).
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="user-profile-avatar-img"
+                  width={44}
+                  height={44}
+                />
+              ) : (
+                // Tanpa foto: inisial nama di atas peach, teks terracotta.
+                <span className="user-profile-initial" aria-hidden="true">
+                  {avatarInitial}
+                </span>
+              )
             ) : (
-              <img
-                src="/assets/images/avatar-user.svg"
-                alt="Pengunjung"
-                width={28}
-                height={28}
-                style={{ borderRadius: "50%", display: "block" }}
-              />
+              <SvgIcon name="person" size={20} strokeWidth={1.9} />
             )}
           </button>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown Menu — hanya route/fungsi yang memang sudah ada */}
           {profileMenuOpen && (
             <div
               className="profile-dropdown-menu"
-              style={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                right: 0,
-                background: "#ffffff",
-                border: "1px solid #cfdadc",
-                borderRadius: "8px",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                minWidth: "180px",
-                zIndex: 1001,
-                overflow: "hidden",
-              }}
+              id="profile-menu"
+              role="menu"
+              aria-label={session ? "Menu profil" : "Menu pengunjung"}
             >
               {session ? (
                 <>
-                  <div
-                    style={{
-                      padding: "12px 16px",
-                      borderBottom: "1px solid #eef2f1",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      color: "#0f2e33",
-                    }}
-                  >
-                    {session.name || "Pengguna Demo"}
+                  <div className="profile-dropdown-header">
+                    <span className="profile-dropdown-name">
+                      {displayName || "Pengguna"}
+                    </span>
+                    {session.email && (
+                      <span className="profile-dropdown-email">{session.email}</span>
+                    )}
                   </div>
                   <Link
                     href="/profil"
+                    role="menuitem"
+                    className="profile-dropdown-item"
                     onClick={() => {
                       setProfileMenuOpen(false);
                       closeMenu();
                     }}
-                    style={{
-                      display: "block",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#0f2e33",
-                      textDecoration: "none",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
                   >
+                    <SvgIcon name="person" size={16} strokeWidth={1.8} />
                     Edit Profil
                   </Link>
-                  <a
-                    href="#logout"
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="profile-dropdown-item profile-dropdown-item-danger"
                     onClick={handleLogout}
-                    style={{
-                      display: "block",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#e53e3e",
-                      textDecoration: "none",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.background = "#fee2e2")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
                   >
+                    <SvgIcon name="logout" size={16} strokeWidth={1.8} />
                     Keluar
-                  </a>
+                  </button>
                 </>
               ) : (
                 <>
                   <Link
                     href="/login"
+                    role="menuitem"
+                    className="profile-dropdown-item profile-dropdown-item-primary"
                     onClick={() => {
                       setProfileMenuOpen(false);
                       closeMenu();
                     }}
-                    style={{
-                      display: "block",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#4a9ba0",
-                      textDecoration: "none",
-                      fontWeight: "600",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
                   >
                     Masuk
                   </Link>
                   <Link
                     href="/register"
+                    role="menuitem"
+                    className="profile-dropdown-item"
                     onClick={() => {
                       setProfileMenuOpen(false);
                       closeMenu();
                     }}
-                    style={{
-                      display: "block",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      color: "#0f2e33",
-                      textDecoration: "none",
-                      fontWeight: "600",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.target.style.background = "#e6f9f8")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
                   >
                     Daftar
                   </Link>

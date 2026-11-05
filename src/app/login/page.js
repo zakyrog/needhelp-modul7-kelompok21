@@ -8,6 +8,7 @@ import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { validateLogin } from "../../lib/validation.js";
 import { Modal } from "../../components/Modal";
 import { useToast } from "../../components/Toast";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 function LoginForm() {
   const router = useRouter();
@@ -106,12 +107,7 @@ function LoginForm() {
       <aside className="login-banner">
         <div className="banner-content">
           <Link href="/">
-            <img
-              src="/assets/images/logo.svg"
-              alt="NeedHelp - Beranda"
-              width="160"
-              height="40"
-            />
+            <span className="site-wordmark site-wordmark-banner">NeedHelp</span>
           </Link>
           <div className="quote-icon">"</div>
           <h1>
@@ -129,21 +125,26 @@ function LoginForm() {
               <p>Relawan aktif</p>
             </div>
             <div className="stat-item">
-              <h3>4.8★</h3>
+              <h3>4.8<span style={{ fontSize: "0.8em" }}>&#8201;/&#8201;5</span></h3>
               <p>Rating komunitas</p>
             </div>
           </div>
-        </div>
-
-        <div className="banner-decorations">
-          <div className="circle-large" />
-          <div className="circle-small" />
+        <div className="banner-proof" aria-label="Komunitas NeedHelp">
+            <span className="banner-proof-avatars" aria-hidden="true">
+              <img src="/assets/images/avatar-budi.svg" alt="" width="30" height="30" />
+              <img src="/assets/images/avatar-sari.svg" alt="" width="30" height="30" />
+              <img src="/assets/images/avatar-rina.svg" alt="" width="30" height="30" />
+            </span>
+            <span className="banner-proof-text">
+              Bergabunglah dengan 850+ relawan yang siap membantu sekitar.
+            </span>
+          </div>
         </div>
       </aside>
 
       <section className="login-card" aria-labelledby="login-title">
         <header>
-          <h1 id="login-title">Selamat datang kembali 👋</h1>
+          <h1 id="login-title">Selamat datang kembali</h1>
           <p>Masuk untuk mulai meminta atau menawarkan bantuan.</p>
         </header>
 
@@ -269,8 +270,8 @@ function LoginForm() {
           </p>
 
           {!supabaseMode && (
-            <p style={{ marginTop: "16px", fontSize: "11px", color: "var(--color-text-muted)", textAlign: "center" }}>
-              💡 Mode Demo: Gunakan akun <code>demo@needhelp.test</code> / <code>NeedHelp123!</code>
+            <p style={{ marginTop: "16px", fontSize: "11px", color: "var(--color-text-muted)", textAlign: "center", display: "inline-flex", alignItems: "center", gap: "6px", justifyContent: "center", width: "100%" }}>
+              <SvgIcon name="idea" size={14} strokeWidth={2} /> Mode Demo: Gunakan akun <code>demo@needhelp.test</code> / <code>NeedHelp123!</code>
             </p>
           )}
         </form>

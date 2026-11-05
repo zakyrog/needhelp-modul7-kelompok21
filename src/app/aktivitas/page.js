@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   getActivities,
-  getActivityStats,
   getPost,
   cancelActivity,
   fetchActivities,
@@ -17,6 +16,16 @@ import { readSession } from "../../lib/auth.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
+import { SvgIcon } from "../../components/Icons.jsx";
+
+// Status badge + ikon yang dipakai di daftar maupun kartu. Konsisten dengan
+// jalur detail /aktivitas/[id] agar tidak ada dua bahasa visual berbeda.
+const STATUS_META = {
+  menunggu: { label: "Menunggu", icon: "hourglass", className: "tag-waiting" },
+  berlangsung: { label: "Sedang Berjalan", icon: "clock", className: "tag-confirmed" },
+  selesai: { label: "Selesai", icon: "check", className: "tag-completed" },
+  batal: { label: "Dibatalkan", icon: "cross", className: "tag-cancelled" },
+};
 
 function ActivityContent() {
   const searchParams = useSearchParams();
@@ -80,8 +89,14 @@ function ActivityContent() {
     return () => { isCancelled = true; };
   }, [searchParams, showToast, supabaseMode]);
 
-  const stats = useMemo(() => {
-    return getActivityStats(activities);
+  // Ringkasan status HANYA dari status yang benar-benar dipakai (menunggu,
+  // berlangsung, selesai, batal). Tidak ada angka yang dibuat-buat.
+  const statusCounts = useMemo(() => {
+    const counts = { total: activities.length, menunggu: 0, berlangsung: 0, selesai: 0, batal: 0 };
+    for (const act of activities) {
+      if (counts[act.status] !== undefined) counts[act.status] += 1;
+    }
+    return counts;
   }, [activities]);
 
   const visibleActivities = useMemo(() => {
@@ -152,31 +167,29 @@ function ActivityContent() {
   };
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case "menunggu":
-        return <span className="activity-status-tag tag-waiting">&#9679; Menunggu</span>;
-      case "berlangsung":
-        return <span className="activity-status-tag tag-confirmed">&#9679; Sedang Berjalan</span>;
-      case "selesai":
-        return <span className="activity-status-tag tag-completed">&#9679; Selesai</span>;
-      case "batal":
-        return <span className="activity-status-tag tag-cancelled">&#9679; Dibatalkan</span>;
-      default:
-        return <span className="activity-status-tag">{status}</span>;
-    }
+    const meta = STATUS_META[status];
+    if (!meta) return <span className="activity-status-tag">{status}</span>;
+    return (
+      <span className={`activity-status-tag ${meta.className}`}>
+        <SvgIcon name={meta.icon} size={13} strokeWidth={2} />
+        {meta.label}
+      </span>
+    );
   };
 
   // Loading state
   if (loading) {
     return (
       <main>
-        <header className="page-header-section">
+        <header className="activity-hero-header">
+          <p className="activity-eyebrow">
+            <SvgIcon name="clipboard" size={14} strokeWidth={2} />
+            Pusat Aktivitas
+          </p>
           <h1>Aktivitas Saya</h1>
-          <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+          <p className="activity-lede">Memuat aktivitasmu...</p>
         </header>
-        <div style={{ maxWidth: "600px", margin: "40px auto", textAlign: "center" }}>
-          <p>Memuat aktivitas...</p>
-        </div>
+        <p className="activity-loading" role="status">Memuat aktivitas...</p>
       </main>
     );
   }
@@ -185,11 +198,15 @@ function ActivityContent() {
   if (error) {
     return (
       <main>
-        <header className="page-header-section">
+        <header className="activity-hero-header">
+          <p className="activity-eyebrow">
+            <SvgIcon name="clipboard" size={14} strokeWidth={2} />
+            Pusat Aktivitas
+          </p>
           <h1>Aktivitas Saya</h1>
-          <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+          <p className="activity-lede">Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
         </header>
-        <div style={{ maxWidth: "600px", margin: "40px auto" }}>
+        <div className="activity-empty-wrap">
           <EmptyState
             icon="⚠️"
             title="Gagal Memuat Aktivitas"
@@ -206,11 +223,15 @@ function ActivityContent() {
   if (!session) {
     return (
       <main>
-        <header className="page-header-section">
+        <header className="activity-hero-header">
+          <p className="activity-eyebrow">
+            <SvgIcon name="clipboard" size={14} strokeWidth={2} />
+            Pusat Aktivitas
+          </p>
           <h1>Aktivitas Saya</h1>
-          <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+          <p className="activity-lede">Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
         </header>
-        <div style={{ maxWidth: "600px", margin: "40px auto" }}>
+        <div className="activity-empty-wrap">
           <EmptyState
             icon="🔒"
             title="Masuk untuk Melihat Aktivitas"
@@ -225,136 +246,119 @@ function ActivityContent() {
 
   return (
     <main>
-      <header className="page-header-section">
+      {/* ===== Header editorial ===== */}
+      <header className="activity-hero-header">
+        <p className="activity-eyebrow">
+          <SvgIcon name="clipboard" size={14} strokeWidth={2} />
+          Pusat Aktivitas
+        </p>
         <h1>Aktivitas Saya</h1>
-        <p>Semua permintaan dan tawaran bantuanmu dalam satu tempat.</p>
+        <p className="activity-lede">
+          Semua permintaan dan tawaran bantuanmu dalam satu tempat — pantau yang
+          menunggu, sedang berjalan, atau sudah tuntas.
+        </p>
         {supabaseMode && session && (
-          <div style={{ marginTop: "12px" }}>
-            <Link
-              href="/pengajuan"
-              className="btn-detail-outline"
-              style={{ fontSize: "14px" }}
-            >
-              📋 Kelola Pengajuan Bantuan
-            </Link>
-          </div>
+          <Link href="/pengajuan" className="activity-manage-link">
+            <SvgIcon name="clipboard" size={15} strokeWidth={2} /> Kelola Pengajuan Bantuan
+          </Link>
         )}
       </header>
 
-      <section className="activity-stats-grid">
-        <div className="stat-box">
-          <span className="stat-num">{stats.total}</span>
-          <span className="stat-desc">Total aktivitas</span>
-        </div>
-        <div className="stat-box tosca-bg-1">
-          <span className="stat-num">
-            {activities.filter((a) => a.status === "menunggu").length}
-          </span>
-          <span className="stat-desc">Menunggu respon</span>
-        </div>
-        <div className="stat-box tosca-bg-2">
-          <span className="stat-num">{stats.berlangsung}</span>
-          <span className="stat-desc">Sedang berjalan</span>
-        </div>
-        <div className="stat-box">
-          <span className="stat-num">{stats.selesai}</span>
-          <span className="stat-desc">Selesai</span>
-        </div>
-      </section>
-
-      <div className="activity-filter-chips">
+      {/* ===== Filter (merangkap ringkasan status) ===== */}
+      <div className="activity-filter-chips" role="group" aria-label="Filter status aktivitas">
         {[
-          { key: "all", label: "Semua" },
-          { key: "menunggu", label: "Menunggu" },
-          { key: "berlangsung", label: "Sedang Berjalan" },
-          { key: "selesai", label: "Selesai" },
-          { key: "batal", label: "Dibatalkan" },
+          { key: "all", label: "Semua", count: statusCounts.total },
+          { key: "menunggu", label: "Menunggu", count: statusCounts.menunggu },
+          { key: "berlangsung", label: "Sedang Berjalan", count: statusCounts.berlangsung },
+          { key: "selesai", label: "Selesai", count: statusCounts.selesai },
+          { key: "batal", label: "Dibatalkan", count: statusCounts.batal },
         ].map((tab) => (
           <button
             key={tab.key}
             type="button"
             className={`filter-chip${filter === tab.key ? " active" : ""}`}
             onClick={() => setFilter(tab.key)}
+            aria-pressed={filter === tab.key}
           >
             {tab.label}
+            <span className="filter-chip-count">{tab.count}</span>
           </button>
         ))}
       </div>
 
-      <section className="activity-list-container">
+      {/* ===== Daftar kartu ===== */}
+      <section className="activity-list-container" aria-label="Daftar aktivitas">
         {visibleActivities.length > 0 ? (
           visibleActivities.map((activity) => {
             const post = getPost(activity.postId);
             // Aktivitas batal tidak boleh membuka detail postingan dari halaman Aktivitas
             const isCancelled = activity.status === "batal";
             const canOpenPost = Boolean(post && !isCancelled);
+            const detailHref = `/aktivitas/${encodeURIComponent(activity.id)}`;
+
             const avatarInitial = activity.partner
               ? activity.partner.charAt(0).toUpperCase()
               : post
                 ? post.title.charAt(0).toUpperCase()
                 : "A";
 
-            const avatarClass =
-              activity.status === "berlangsung"
-                ? "avatar-blue"
-                : activity.status === "selesai"
-                  ? "avatar-green"
-                  : activity.status === "batal"
-                    ? "avatar-red"
-                    : "avatar-tosca";
-
             return (
-              <article key={activity.id}>
-                <header>
-                  <div className={`article-avatar ${avatarClass}`}>
-                    {avatarInitial}
-                  </div>
-                  <div className="article-info">
-                    <div className="article-title-row">
-                      <h3>
-                        {canOpenPost ? (
-                          <Link
-                            href={`/detail-postingan?id=${encodeURIComponent(post.id)}`}
-                          >
-                            {post.title}
-                          </Link>
-                        ) : post ? (
-                          post.title
-                        ) : (
-                          "Aktivitas NeedHelp"
-                        )}
-                      </h3>
-                      {getStatusBadge(activity.status)}
-                    </div>
-                    <p>
-                      {activity.partner && (
-                        <>
-                          <span className="role-label">Partner</span>{" "}
-                          <strong>{activity.partner}</strong> &bull;{" "}
-                        </>
-                      )}
-                      {activity.note}
-                    </p>
-                    {isCancelled && (
-                      <p style={{ marginTop: "4px", fontSize: "12px", color: "var(--color-error)" }}>
-                        Aktivitas ini sudah dibatalkan. Detail postingan tidak tersedia.
-                      </p>
-                    )}
-                    {activity.review && (
-                      <p style={{ marginTop: "4px", color: "var(--color-text-primary)" }}>
-                        Ulasan: <em>&ldquo;{activity.review.comment}&rdquo;</em> ({activity.review.rating}.0 ★)
-                      </p>
-                    )}
-                  </div>
-                </header>
+              <article key={activity.id} className={`activity-card activity-card-${activity.status}`}>
+                <div className="activity-card-avatar" aria-hidden="true">
+                  {avatarInitial}
+                </div>
 
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <div className="activity-card-body">
+                  <div className="activity-card-topline">
+                    {getStatusBadge(activity.status)}
+                    {post && (
+                      <span className="activity-card-meta">
+                        {post.nature === "butuh" ? "Saya Butuh" : "Saya Bisa"}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3>
+                    <Link href={detailHref}>
+                      {post ? post.title : "Aktivitas NeedHelp"}
+                    </Link>
+                  </h3>
+
+                  <p className="activity-card-note">
+                    {activity.partner && (
+                      <>
+                        <span className="role-label">Partner</span>{" "}
+                        <strong>{activity.partner}</strong> &bull;{" "}
+                      </>
+                    )}
+                    {activity.note}
+                  </p>
+
+                  {isCancelled && (
+                    <p className="activity-card-warning">
+                      <SvgIcon name="warning" size={14} strokeWidth={2} />
+                      Aktivitas ini sudah dibatalkan. Detail postingan tidak tersedia.
+                    </p>
+                  )}
+                  {activity.review && (
+                    <p className="activity-card-review">
+                      Ulasan: <em>&ldquo;{activity.review.comment}&rdquo;</em> ({activity.review.rating}.0)
+                    </p>
+                  )}
+                </div>
+
+                <div className="activity-card-actions">
+                  <Link href={detailHref} className="activity-card-detail">
+                    Detail
+                    <SvgIcon name="arrowRight" size={14} strokeWidth={2} />
+                  </Link>
+
                   {canOpenPost && (
                     <Link
                       href={`/detail-postingan?id=${encodeURIComponent(post.id)}`}
                       className="btn-detail-outline"
                     >
-                      Lihat Detail
+                      Lihat Postingan
                     </Link>
                   )}
 
@@ -363,15 +367,14 @@ function ActivityContent() {
                       {activity.partnerId && (
                         <Link
                           href={`/chat?user=${encodeURIComponent(activity.partnerId)}&post=${encodeURIComponent(activity.postId)}`}
-                          className="btn-detail-outline"
-                          style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
+                          className="btn-detail-outline activity-cta-action"
                         >
-                          Obrolan
+                          <SvgIcon name="chat" size={15} strokeWidth={2} /> Obrolan
                         </Link>
                       )}
                       <button
                         type="button"
-                        className="btn-detail-outline"
+                        className="btn-detail-outline activity-cta-action"
                         onClick={() => handleComplete(activity.id, activity.postId)}
                         disabled={completingId === activity.id}
                       >
@@ -383,10 +386,9 @@ function ActivityContent() {
                   {activity.status === "selesai" && !activity.review && (
                     <Link
                       href={`/rating?id=${encodeURIComponent(activity.id)}&postId=${encodeURIComponent(activity.postId)}`}
-                      className="btn-detail-outline"
-                      style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
+                      className="btn-detail-outline activity-cta-action"
                     >
-                      Beri Ulasan
+                      <SvgIcon name="star" size={15} strokeWidth={2} /> Beri Ulasan
                     </Link>
                   )}
 
@@ -397,10 +399,9 @@ function ActivityContent() {
                       {!supabaseMode && (
                         <button
                           type="button"
-                          className="btn-detail-outline"
+                          className="btn-detail-outline activity-cta-action"
                           onClick={() => handleStart(activity.id, activity.postId)}
                           disabled={startingId === activity.id}
-                          style={{ color: "var(--color-action-primary)", borderColor: "var(--color-action-primary)" }}
                         >
                           {startingId === activity.id ? "Memulai..." : "Mulai Aktivitas"}
                         </button>
@@ -410,10 +411,9 @@ function ActivityContent() {
                       {!activity._defaultActivity && (
                         <button
                           type="button"
-                          className="btn-detail-outline"
+                          className="btn-detail-outline activity-cta-danger"
                           onClick={() => handleCancel(activity.id, activity.postId)}
                           disabled={startingId === activity.id}
-                          style={{ color: "var(--color-error)", borderColor: "var(--color-error)" }}
                         >
                           Batalkan
                         </button>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Avatar gunung Merapi">
+  <circle cx="48" cy="48" r="48" fill="#e4eef2"/>
+  <circle cx="48" cy="48" r="46.5" fill="none" stroke="#d2bfae" stroke-width="3"/>
+  <circle cx="66" cy="30" r="8" fill="#cf7f27"/>
+  <path d="M14 72l20-32 10 14 8-10 22 28z" fill="#a6472b"/>
+  <path d="M27 51l7-11 10 14 3-3 6 8-26 0z" fill="#faf0ea" opacity="0.92"/>
+  <path d="M12 72h72a3 3 0 0 1 0 6H12a3 3 0 0 1 0-6z" fill="#6f2c19"/>
+</svg>

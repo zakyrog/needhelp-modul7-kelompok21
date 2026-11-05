@@ -15,6 +15,7 @@ import { subscribeToNotifications } from "../../lib/notification-realtime.js";
 import { readSession } from "../../lib/auth.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 const FILTER_MAP = {
   all: null,
@@ -126,13 +127,13 @@ export default function NotifikasiPage() {
   const getIconData = (kind) => {
     switch (kind) {
       case "chat":
-        return { icon: "💬", className: "tosca-icon" };
+        return { icon: "chat", className: "tosca-icon" };
       case "application":
-        return { icon: "📩", className: "green-icon" };
+        return { icon: "mail", className: "green-icon" };
       case "application_status":
-        return { icon: "🔔", className: "yellow-icon" };
+        return { icon: "bell", className: "yellow-icon" };
       default:
-        return { icon: "🔔", className: "tosca-icon" };
+        return { icon: "bell", className: "tosca-icon" };
     }
   };
 
@@ -192,7 +193,7 @@ export default function NotifikasiPage() {
         >
           <div className="notif-card-left">
             <div className={`notif-icon-box ${iconData.className}`}>
-              {iconData.icon}
+              <SvgIcon name={iconData.icon} size={20} strokeWidth={1.75} />
             </div>
             <div className="notif-text-content">
               <div className="notif-title-row">

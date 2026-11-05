@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { FormField } from "../../components/FormField";
 import { useToast } from "../../components/Toast";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 export default function FormErrorPage() {
   const { showToast } = useToast();
@@ -81,7 +82,7 @@ export default function FormErrorPage() {
 
         {hasErrors && (
           <div className="error-summary-box" role="alert">
-            <span className="error-icon">⚠</span>
+            <span className="error-icon"><SvgIcon name="warning" size={16} strokeWidth={2} /></span>
             <p>Beberapa field belum diisi dengan benar.</p>
           </div>
         )}

@@ -9,6 +9,7 @@ import {
   fetchPostById,
   getPostAuthor,
   CATEGORY_LABELS,
+  REGION_LABELS,
   formatDate,
   formatTimeRange,
   formatCompensation,
@@ -18,8 +19,10 @@ import {
   getMyActiveApplicationForPost,
 } from "../../lib/data.js";
 import { isSupabaseConfigured, getSupabase } from "../../lib/supabase.js";
+import { resolveAvatarSrc } from "../../lib/avatars.js";
 import { EmptyState } from "../../components/EmptyState";
 import { useToast } from "../../components/Toast";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 function DetailPostContent() {
   const router = useRouter();
@@ -187,6 +190,8 @@ function DetailPostContent() {
 
   const author = getPostAuthor(post);
   const isNeed = post.nature === "butuh";
+  const authorAvatar = resolveAvatarSrc({ key: author.avatarKey, url: author.avatar });
+  const authorInitial = (author.initial || author.name || "N").charAt(0).toUpperCase();
 
   // Status efektif diambil dari activities.status (lihat getPostLifecycleStatus).
   // Hanya "aktif" yang boleh menerima pengajuan baru atau memulai chat.
@@ -237,31 +242,60 @@ function DetailPostContent() {
         </div>
       </nav>
 
-      <article className="detail-article">
+      <article className={`detail-article${isNeed ? " detail-article-need" : " detail-article-offer"}`}>
         <section className="requester-section">
-          <img
-            src={author.avatar || "/assets/images/avatar-user.svg"}
-            alt={`Foto profil ${author.name}`}
-            width={48}
-            height={48}
-            className="requester-img"
-          />
+          {authorAvatar ? (
+            <img
+              src={authorAvatar}
+              alt=""
+              width={48}
+              height={48}
+              className="requester-img"
+            />
+          ) : (
+            <span className="requester-img-initial" aria-hidden="true">
+              {authorInitial}
+            </span>
+          )}
           <div>
             <h3 className="requester-name">{author.name}</h3>
-            <p className="requester-info">{author.bio}</p>
+            <p className="requester-info">
+              {author.bio}
+              {author.verification ? (
+                <span className="requester-verified">
+                  <SvgIcon name="shield" size={13} strokeWidth={2} /> {author.verification}
+                </span>
+              ) : null}
+            </p>
           </div>
           <div className="requester-rating">
-            &star; <span>{author.rating ? author.rating.split(" ")[0] : "4.9"}</span>
+            <SvgIcon name="star" size={13} strokeWidth={2} />
+            <span>{author.rating ? author.rating.split(" ")[0] : "4.9"}</span>
           </div>
         </section>
 
         <header className="article-header">
+          <div className="detail-kickers">
+            <span className={`nature-badge nature-badge-${post.nature}`}>
+              <SvgIcon name={isNeed ? "hand" : "wave"} size={13} strokeWidth={2.2} />
+              {typeLabel}
+            </span>
+            <span className={`lifecycle-badge lifecycle-${lifecycle}`}>
+              {lifecycle === "aktif"
+                ? "Aktif"
+                : lifecycle === "selesai"
+                  ? "Selesai"
+                  : lifecycle === "batal"
+                    ? "Dibatalkan"
+                    : "Status tidak dikenal"}
+            </span>
+          </div>
           <h1>{post.title}</h1>
           <p style={{ color: "var(--color-text-muted)", fontSize: "14px", margin: "8px 0 16px 0" }}>
             Dipublikasikan oleh <strong>{author.name}</strong> pada{" "}
             <time dateTime={post.createdAt}>{formatDateTime(post.createdAt)}</time>
           </p>
-          <div style={{ lineHeight: "1.7" }}>
+          <div className="article-body">
             <h2>{isNeed ? "Deskripsi Kebutuhan" : "Deskripsi Penawaran"}</h2>
             {post.description.split(/\n{2,}/).map((p, idx) => (
               <p key={idx}>{p}</p>
@@ -271,12 +305,7 @@ function DetailPostContent() {
 
         <section className="info-grid-section">
           <div className="info-card">
-            <img
-              src="/assets/images/icon-kurir.svg"
-              alt="Kategori"
-              width={20}
-              height={20}
-            />
+            <SvgIcon name="tag" size={18} strokeWidth={2} className="info-card-icon" />
             <div>
               <div className="info-label">Kategori</div>
               <div className="info-value">{categoryLabel}</div>
@@ -284,25 +313,15 @@ function DetailPostContent() {
           </div>
 
           <div className="info-card">
-            <img
-              src="/assets/images/icon-quote.svg"
-              alt="Kompensasi"
-              width={20}
-              height={20}
-            />
+            <SvgIcon name="wallet" size={18} strokeWidth={2} className="info-card-icon" />
             <div>
-              <div className="info-label">Kompensasi</div>
+              <div className="info-label">{isNeed ? "Kompensasi" : "Imbalan"}</div>
               <div className="info-value">{formatCompensation(post)}</div>
             </div>
           </div>
 
           <div className="info-card">
-            <img
-              src="/assets/images/icon-bell.svg"
-              alt="Waktu"
-              width={20}
-              height={20}
-            />
+            <SvgIcon name="calendar" size={18} strokeWidth={2} className="info-card-icon" />
             <div>
               <div className="info-label">Waktu</div>
               <div className="info-value">
@@ -312,17 +331,17 @@ function DetailPostContent() {
           </div>
 
           <div className="info-card">
-            <img
-              src="/assets/images/icon-search.svg"
-              alt="Lokasi"
-              width={20}
-              height={20}
-            />
+            <SvgIcon name="pin" size={18} strokeWidth={2} className="info-card-icon" />
             <div>
               <div className="info-label">Lokasi</div>
               <div className="info-value">
                 {post.destination ? `${post.address} → ${post.destination}` : post.address}
               </div>
+              {(REGION_LABELS[post.region] || post.region) && (
+                <div style={{ color: "var(--color-text-muted)", fontSize: "12px", marginTop: "4px" }}>
+                  {REGION_LABELS[post.region] || post.region}
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -354,11 +373,11 @@ function DetailPostContent() {
               dapat mengajukan bantuan ke postingan sendiri.
             </p>
             <Link href="/pengajuan" className="btn-bantu">
-              Kelola Pengajuan Bantuan
+              <SvgIcon name="clipboard" size={16} strokeWidth={2} /> Kelola Pengajuan Bantuan
             </Link>
           </section>
         ) : (
-          <section className="action-box">
+          <section className="action-box" data-post-apply>
             <h2>
               {isNeed ? "Ajukan Penawaran Bantuan" : "Tertarik dengan Tawaran Ini?"}
             </h2>
@@ -369,22 +388,22 @@ function DetailPostContent() {
             </p>
 
             <Link href={chatUrl} className="btn-bantu">
-              {isNeed ? "Mulai Chat & Tawarkan Bantuan" : "Mulai Chat & Tanyakan Detail"}
+              <SvgIcon name="chat" size={16} strokeWidth={2} />
+              {isNeed ? "Mulai Chat & Tawarkan" : "Mulai Chat & Tanyakan"}
             </Link>
 
             {hasActiveApplication ? (
               <span
-                className="btn-chat"
+                className="btn-chat app-status"
                 aria-disabled="true"
                 data-application-exists={myApplication.status}
-                style={{ opacity: 0.65, cursor: "not-allowed" }}
               >
-                &#10003; Sudah Mengajukan
+                <SvgIcon name="check" size={14} strokeWidth={3} /> Sudah Mengajukan
                 {myApplication.status === "accepted" ? " (Diterima)" : " (Menunggu)"}
               </span>
             ) : (
-              <Link href={applicationHref} className="btn-chat">
-                &#128221; Form Pengajuan Bantuan
+              <Link href={applicationHref} className="btn-chat app-apply">
+                <SvgIcon name="clipboard" size={14} strokeWidth={2} /> Form Pengajuan Bantuan
               </Link>
             )}
           </section>
@@ -392,33 +411,24 @@ function DetailPostContent() {
 
         {/* Tombol Hapus — hanya untuk pemilik postingan */}
         {post.owned && (
-          <section style={{ marginTop: "16px" }}>
+          <section className="action-box action-box-danger">
             <button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                background: "transparent",
-                border: "1px solid var(--color-error, #e53e3e)",
-                borderRadius: "var(--radius-md, 8px)",
-                color: "var(--color-error, #e53e3e)",
-                fontWeight: 600,
-                fontSize: "14px",
-                cursor: deleting ? "not-allowed" : "pointer",
-                opacity: deleting ? 0.6 : 1,
-                transition: "all 0.2s ease",
-              }}
+              className="btn-delete"
             >
-              {deleting ? "Menghapus..." : "🗑️ Hapus Postingan"}
+              <SvgIcon name="trash" size={16} strokeWidth={2} />
+              {deleting ? "Menghapus..." : "Hapus Postingan"}
             </button>
           </section>
         )}
 
         {/* Kotak Tips Aman */}
         <section className="safety-box">
-          <h3>🛡️ Tips aman</h3>
+          <h3 style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <SvgIcon name="shield" size={18} strokeWidth={2} /> Tips aman
+          </h3>
           <p>
             Selalu ketemu di tempat ramai pertama kali. Jangan transfer uang
             muka sebelum ketemu langsung.

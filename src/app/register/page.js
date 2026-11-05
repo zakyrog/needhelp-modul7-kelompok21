@@ -7,6 +7,7 @@ import { signUp } from "../../lib/auth.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { validateRegistration } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 function RegisterForm() {
   const router = useRouter();
@@ -28,12 +29,7 @@ function RegisterForm() {
         <aside className="login-banner">
           <div className="banner-content">
             <Link href="/">
-              <img
-                src="/assets/images/logo.svg"
-                alt="NeedHelp - Beranda"
-                width="160"
-                height="40"
-              />
+              <span className="site-wordmark site-wordmark-banner">NeedHelp</span>
             </Link>
             <div className="quote-icon">"</div>
             <h1>
@@ -41,9 +37,15 @@ function RegisterForm() {
               sekitarmu.
             </h1>
           </div>
-          <div className="banner-decorations">
-            <div className="circle-large" />
-            <div className="circle-small" />
+          <div className="banner-proof" aria-label="Komunitas NeedHelp">
+            <span className="banner-proof-avatars" aria-hidden="true">
+              <img src="/assets/images/avatar-budi.svg" alt="" width="30" height="30" />
+              <img src="/assets/images/avatar-sari.svg" alt="" width="30" height="30" />
+              <img src="/assets/images/avatar-rina.svg" alt="" width="30" height="30" />
+            </span>
+            <span className="banner-proof-text">
+              Bergabunglah dengan 850+ relawan yang siap membantu sekitar.
+            </span>
           </div>
         </aside>
 
@@ -130,12 +132,7 @@ function RegisterForm() {
       <aside className="login-banner">
         <div className="banner-content">
           <Link href="/">
-            <img
-              src="/assets/images/logo.svg"
-              alt="NeedHelp - Beranda"
-              width="160"
-              height="40"
-            />
+            <span className="site-wordmark site-wordmark-banner">NeedHelp</span>
           </Link>
           <div className="quote-icon">"</div>
           <h1>
@@ -153,21 +150,27 @@ function RegisterForm() {
               <p>Relawan aktif</p>
             </div>
             <div className="stat-item">
-              <h3>4.8★</h3>
+              <h3>4.8<span style={{ fontSize: "0.8em" }}>&#8201;/&#8201;5</span></h3>
               <p>Rating komunitas</p>
             </div>
           </div>
         </div>
 
-        <div className="banner-decorations">
-          <div className="circle-large" />
-          <div className="circle-small" />
-        </div>
+        <div className="banner-proof" aria-label="Komunitas NeedHelp">
+            <span className="banner-proof-avatars" aria-hidden="true">
+              <img src="/assets/images/avatar-budi.svg" alt="" width="30" height="30" />
+              <img src="/assets/images/avatar-sari.svg" alt="" width="30" height="30" />
+              <img src="/assets/images/avatar-rina.svg" alt="" width="30" height="30" />
+            </span>
+            <span className="banner-proof-text">
+              Bergabunglah dengan 850+ relawan yang siap membantu sekitar.
+            </span>
+          </div>
       </aside>
 
       <section className="login-card" aria-labelledby="register-title">
         <header>
-          <h1 id="register-title">Daftar Akun Baru 👋</h1>
+          <h1 id="register-title">Daftar Akun Baru</h1>
           <p>Buat akun untuk mulai meminta atau menawarkan bantuan.</p>
         </header>
 

@@ -13,6 +13,7 @@ import { readSession } from "../../lib/auth";
 import { isSupabaseConfigured } from "../../lib/supabase";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 function PengajuanContent() {
   const router = useRouter();
@@ -119,13 +120,13 @@ function PengajuanContent() {
   const getStatusBadge = (status) => {
     switch (status) {
       case "pending":
-        return <span className="activity-status-tag tag-waiting">⏳ Menunggu</span>;
+        return <span className="activity-status-tag tag-waiting"><SvgIcon name="hourglass" size={13} strokeWidth={2} /> Menunggu</span>;
       case "accepted":
-        return <span className="activity-status-tag tag-confirmed">✓ Diterima</span>;
+        return <span className="activity-status-tag tag-confirmed"><SvgIcon name="check" size={13} strokeWidth={3} /> Diterima</span>;
       case "rejected":
-        return <span className="activity-status-tag tag-cancelled">✗ Ditolak</span>;
+        return <span className="activity-status-tag tag-cancelled"><SvgIcon name="cross" size={13} strokeWidth={2.5} /> Ditolak</span>;
       case "withdrawn":
-        return <span className="activity-status-tag" style={{ opacity: 0.6 }}>↩ Ditarik</span>;
+        return <span className="activity-status-tag" style={{ opacity: 0.6 }}><SvgIcon name="reply" size={13} strokeWidth={2} /> Ditarik</span>;
       default:
         return <span className="activity-status-tag">{status}</span>;
     }
@@ -292,7 +293,7 @@ function PengajuanContent() {
                       borderColor: "var(--color-action-primary)",
                     }}
                   >
-                    {processingId === app.id ? "Memproses..." : "✓ Terima"}
+                    {processingId === app.id ? "Memproses..." : (<><SvgIcon name="check" size={14} strokeWidth={3} /> Terima</>)}
                   </button>
                   <button
                     type="button"
@@ -304,25 +305,25 @@ function PengajuanContent() {
                       borderColor: "var(--color-error)",
                     }}
                   >
-                    {processingId === app.id ? "Memproses..." : "✗ Tolak"}
+                    {processingId === app.id ? "Memproses..." : (<><SvgIcon name="cross" size={14} strokeWidth={2.5} /> Tolak</>)}
                   </button>
                 </div>
               )}
 
               {/* Info untuk status lain */}
               {app.status === "accepted" && (
-                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--color-success, #38a169)" }}>
-                  ✓ Pengajuan ini telah diterima. Aktivitas sedang berlangsung.
+                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--color-success, #38a169)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <SvgIcon name="check" size={14} strokeWidth={3} /> Pengajuan ini telah diterima. Aktivitas sedang berlangsung.
                 </p>
               )}
               {app.status === "rejected" && (
-                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--color-text-muted)" }}>
-                  ✗ Pengajuan ini telah ditolak.
+                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--color-text-muted)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <SvgIcon name="cross" size={14} strokeWidth={2.5} /> Pengajuan ini telah ditolak.
                 </p>
               )}
               {app.status === "withdrawn" && (
-                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--color-text-muted)" }}>
-                  ↩ Pelamar telah menarik pengajuan ini.
+                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--color-text-muted)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <SvgIcon name="reply" size={14} strokeWidth={2} /> Pelamar telah menarik pengajuan ini.
                 </p>
               )}
             </article>

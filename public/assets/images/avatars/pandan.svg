@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Avatar pandan">
+  <circle cx="48" cy="48" r="48" fill="#e6f0e4"/>
+  <circle cx="48" cy="48" r="46.5" fill="none" stroke="#d2bfae" stroke-width="3"/>
+  <path d="M48 76c-14 0-24-9-24-22 0-3 1-6 2-8 2 4 6 7 10 8-1-4 0-9 3-13 2 5 6 8 11 9 3-3 5-7 5-12 6 4 10 11 10 18 0 12-9 20-17 20z" fill="#3f7a45"/>
+  <path d="M48 76V48" stroke="#2f5c34" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M48 58l-8-6M48 64l8-7" stroke="#2f5c34" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <circle cx="38" cy="79" r="3" fill="#a6472b"/>
+  <circle cx="58" cy="79" r="3" fill="#a6472b"/>
+</svg>

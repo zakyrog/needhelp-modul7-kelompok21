@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { getPost, fetchPostById, formatDateTime, formatDate, formatTimeRange } from "../../lib/data";
 import { isSupabaseConfigured } from "../../lib/supabase";
 import { EmptyState } from "../../components/EmptyState";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 function SuksesPostinganContent() {
   const searchParams = useSearchParams();
@@ -108,10 +109,10 @@ function SuksesPostinganContent() {
     <main className="form-page-wrapper">
       <div className="form-container-box success-box text-center">
         <div className="success-icon-wrapper">
-          <span className="success-icon">&#10003;</span>
+          <SvgIcon name="check" size={28} strokeWidth={2.5} />
         </div>
 
-        <h1 className="success-title">Postingan Berhasil Diterbitkan 🎉</h1>
+        <h1 className="success-title">Postingan Berhasil Diterbitkan</h1>
         <p className="success-desc">
           Postingan kamu telah aktif dan dapat ditemukan oleh pengguna lain di katalog.
         </p>

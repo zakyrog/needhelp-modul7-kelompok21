@@ -2,11 +2,44 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchPublicPosts, filterPosts } from "../../lib/data.js";
+import {
+  fetchPublicPosts,
+  filterPosts,
+  CATEGORY_LABELS,
+  REGION_LABELS,
+  COMPENSATION_LABELS,
+} from "../../lib/data.js";
 import { CatalogCard } from "../../components/CatalogCard";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { SkeletonList } from "../../components/Skeleton";
+import { SvgIcon } from "../../components/Icons.jsx";
+
+const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS);
+const REGION_KEYS = Object.keys(REGION_LABELS);
+const COMPENSATION_KEYS = Object.keys(COMPENSATION_LABELS);
+const TYPE_LABELS = { butuh: "Saya Butuh", bisa: "Saya Bisa" };
+
+// Filter yang aktif saat ini, digunakan untuk chip "hapus filter" dan empty state.
+function buildActiveFilters({ query, postType, categories, location, compensation }) {
+  const filters = [];
+  if (query.trim()) {
+    filters.push({ key: "query", type: "text", label: `"${query.trim()}"`, clear: "query" });
+  }
+  if (postType !== "all") {
+    filters.push({ key: "type", type: "type", label: TYPE_LABELS[postType] || postType, clear: "type" });
+  }
+  categories.forEach((c) => {
+    filters.push({ key: `cat-${c}`, type: "category", label: CATEGORY_LABELS[c] || c, clear: c });
+  });
+  if (location) {
+    filters.push({ key: "location", type: "location", label: REGION_LABELS[location] || location, clear: "location" });
+  }
+  if (compensation) {
+    filters.push({ key: "compensation", type: "compensation", label: COMPENSATION_LABELS[compensation] || compensation, clear: "compensation" });
+  }
+  return filters;
+}
 
 function CatalogContent() {
   const router = useRouter();
@@ -28,6 +61,9 @@ function CatalogContent() {
   const [compensation, setCompensation] = useState(initialCompensation);
   const [sort, setSort] = useState(initialSort);
   const [page, setPage] = useState(initialPage);
+
+  // Panel filter mobile (bottom sheet / drawer)
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Status pemuatan data dinamis
   const [allPosts, setAllPosts] = useState([]);
@@ -100,6 +136,16 @@ function CatalogContent() {
     setPage(1);
   };
 
+  // Menghapus satu filter aktif
+  const removeFilter = (clearKey) => {
+    if (clearKey === "query") setQuery("");
+    else if (clearKey === "type") setPostType("all");
+    else if (clearKey === "location") setLocation("");
+    else if (clearKey === "compensation") setCompensation("");
+    else setCategories((prev) => prev.filter((c) => c !== clearKey));
+    setPage(1);
+  };
+
   // Mengembalikan semua filter ke kondisi awal
   const handleReset = () => {
     setQuery("");
@@ -109,12 +155,14 @@ function CatalogContent() {
     setCompensation("");
     setSort("terbaru");
     setPage(1);
+    setFiltersOpen(false);
     router.replace("/katalog");
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setPage(1);
+    setFiltersOpen(false);
   };
 
   // Filter dan pengurutan postingan
@@ -156,6 +204,14 @@ function CatalogContent() {
     sort,
   ]);
 
+  const activeFilters = buildActiveFilters({
+    query,
+    postType,
+    categories,
+    location,
+    compensation,
+  });
+
   // Pagination
   const pageSize = 4;
   const pageCount = Math.max(
@@ -173,49 +229,60 @@ function CatalogContent() {
 
   return (
     <main>
-      <header>
-        <h1>Feed Bantuan</h1>
-        <p>
-          Temukan orang di sekitar yang sedang membutuhkan bantuan atau menawarkan keahlian.
+      {/* ===== Header editorial ===== */}
+      <header className="catalog-header">
+        <p className="catalog-eyebrow">
+          <span className="dot" aria-hidden="true" /> Jelajahi komunitas
+        </p>
+        <h1>Katalog Bantuan</h1>
+        <p className="catalog-subtitle">
+          Temukan orang di sekitar yang sedang membutuhkan bantuan atau menawarkan
+          keahliannya — dan jadilah bagian dari kebaikan hari ini.
         </p>
 
-        {/* Tab jenis postingan dan opsi pengurutan */}
+        {/* Pencarian menonjol */}
+        <form
+          className="catalog-search"
+          role="search"
+          onSubmit={handleSubmit}
+          aria-label="Pencarian bantuan"
+        >
+          <SvgIcon name="search" size={20} strokeWidth={2} className="catalog-search-icon" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Cari judul, deskripsi, nama, atau keahlian..."
+            aria-label="Cari bantuan"
+          />
+        </form>
+
+        {/* Toggle jenis postingan + urutan */}
         <div className="catalog-actions-bar">
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="catalog-tabs" role="group" aria-label="Jenis postingan">
             <button
               type="button"
               className={`tab-btn${postType === "butuh" ? " active" : ""}`}
-              onClick={() =>
-                handleTypeSelect(postType === "butuh" ? "all" : "butuh")
-              }
-              aria-current={postType === "butuh" ? "page" : undefined}
+              onClick={() => handleTypeSelect(postType === "butuh" ? "all" : "butuh")}
+              aria-pressed={postType === "butuh"}
             >
-              Saya Butuh
+              <SvgIcon name="hand" size={16} strokeWidth={2} /> Saya Butuh
             </button>
-
             <button
               type="button"
-              className={`tab-btn${postType === "bisa" ? " active" : ""}`}
-              onClick={() =>
-                handleTypeSelect(postType === "bisa" ? "all" : "bisa")
-              }
-              aria-current={postType === "bisa" ? "page" : undefined}
+              className={`tab-btn tab-btn-bisa${postType === "bisa" ? " active" : ""}`}
+              onClick={() => handleTypeSelect(postType === "bisa" ? "all" : "bisa")}
+              aria-pressed={postType === "bisa"}
             >
-              Saya Bisa
+              <SvgIcon name="wave" size={16} strokeWidth={2} /> Saya Bisa
             </button>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "12px",
-              color: "var(--color-text-muted)",
-            }}
-          >
-            <label htmlFor="catalog-sort">Urutkan:</label>
-
+          <div className="catalog-sort">
+            <label htmlFor="catalog-sort">Urutkan</label>
             <select
               id="catalog-sort"
               data-catalog-sort
@@ -230,209 +297,173 @@ function CatalogContent() {
             </select>
           </div>
         </div>
+
+        {/* Filter aktif (chip) */}
+        {activeFilters.length > 0 && (
+          <div className="active-filters" aria-label="Filter aktif">
+            {activeFilters.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                className="filter-chip active"
+                onClick={() => removeFilter(f.clear)}
+                aria-label={`Hapus filter ${f.label}`}
+              >
+                {f.label}
+                <SvgIcon name="cross" size={12} strokeWidth={2.5} />
+              </button>
+            ))}
+            <button
+              type="button"
+              className="active-filters-clear"
+              onClick={handleReset}
+            >
+              Bersihkan semua
+            </button>
+          </div>
+        )}
       </header>
 
-      {/* Panel filter */}
-      <aside aria-label="Penyaring Pencarian">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: "15px" }}>Filter</h2>
-
+      {/* ===== Panel filter (sidebar desktop + drawer mobile) ===== */}
+      <aside
+        id="catalog-filter-panel"
+        aria-label="Penyaring Pencarian"
+        className="catalog-filter-panel"
+        data-open={String(filtersOpen)}
+      >
+        <div className="catalog-filter-head">
+          <h2>Filter</h2>
           <button
             type="button"
-            data-filter-reset
-            onClick={handleReset}
-            style={{
-              fontSize: "12px",
-              color: "var(--color-action-primary)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
+            className="catalog-filter-close"
+            onClick={() => setFiltersOpen(false)}
+            aria-label="Tutup filter"
           >
-            Bersihkan
+            <SvgIcon name="cross" size={18} strokeWidth={2} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} data-filter-form>
-          {/* Pencarian */}
-          <div>
-            <label htmlFor="catalog-search">Cari bantuan</label>
-
-            <input
-              type="search"
-              id="catalog-search"
-              name="q"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Cari judul atau deskripsi..."
-            />
-          </div>
-
-          {/* Jenis postingan */}
-          <fieldset>
-            <legend>Jenis Postingan</legend>
-
-            <p>
-              <input
-                type="radio"
-                id="type-all"
-                name="post_type"
-                value="all"
-                checked={postType === "all"}
-                onChange={() => handleTypeSelect("all")}
-              />
-              <label htmlFor="type-all">Semua</label>
-            </p>
-
-            <p>
-              <input
-                type="radio"
-                id="type-butuh"
-                name="post_type"
-                value="butuh"
-                checked={postType === "butuh"}
-                onChange={() => handleTypeSelect("butuh")}
-              />
-              <label htmlFor="type-butuh">Saya Butuh</label>
-            </p>
-
-            <p>
-              <input
-                type="radio"
-                id="type-bisa"
-                name="post_type"
-                value="bisa"
-                checked={postType === "bisa"}
-                onChange={() => handleTypeSelect("bisa")}
-              />
-              <label htmlFor="type-bisa">Saya Bisa</label>
-            </p>
-          </fieldset>
-
-          {/* Kategori */}
-          <fieldset>
+          {/* Kategori — chip yang bisa dipilih */}
+          <fieldset className="filter-group">
             <legend>Kategori</legend>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-ditemani"
-                name="category"
-                value="ditemani"
-                checked={categories.includes("ditemani")}
-                onChange={() => handleCategoryToggle("ditemani")}
-              />
-              <label htmlFor="cat-ditemani">Ditemani</label>
-            </p>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-bantuan"
-                name="category"
-                value="bantuan"
-                checked={categories.includes("bantuan")}
-                onChange={() => handleCategoryToggle("bantuan")}
-              />
-              <label htmlFor="cat-bantuan">Bantuan Fisik</label>
-            </p>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-pendampingan"
-                name="category"
-                value="pendampingan"
-                checked={categories.includes("pendampingan")}
-                onChange={() => handleCategoryToggle("pendampingan")}
-              />
-              <label htmlFor="cat-pendampingan">Pendampingan</label>
-            </p>
-
-            <p>
-              <input
-                type="checkbox"
-                id="cat-explore"
-                name="category"
-                value="explore"
-                checked={categories.includes("explore")}
-                onChange={() => handleCategoryToggle("explore")}
-              />
-              <label htmlFor="cat-explore">Explore</label>
-            </p>
+            <div className="category-chip-grid">
+              {CATEGORY_KEYS.map((key) => (
+                <label
+                  key={key}
+                  className={`category-chip${categories.includes(key) ? " active" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    name="category"
+                    value={key}
+                    checked={categories.includes(key)}
+                    onChange={() => handleCategoryToggle(key)}
+                  />
+                  <SvgIcon name="tag" size={14} strokeWidth={2} />
+                  {CATEGORY_LABELS[key]}
+                </label>
+              ))}
+            </div>
           </fieldset>
 
           {/* Lokasi */}
-          <div>
+          <div className="filter-group">
             <label htmlFor="catalog-location">Lokasi</label>
-
-            <select
-              id="catalog-location"
-              name="location"
-              value={location}
-              onChange={(e) => {
-                setLocation(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Semua lokasi</option>
-              <option value="sleman">Sleman</option>
-              <option value="kota">Kota Yogyakarta</option>
-              <option value="bantul">Bantul</option>
-              <option value="kulonprogo">Kulon Progo</option>
-              <option value="gunungkidul">Gunungkidul</option>
-            </select>
+            <div className="filter-select-wrap">
+              <SvgIcon name="pin" size={16} strokeWidth={2} />
+              <select
+                id="catalog-location"
+                name="location"
+                value={location}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua lokasi</option>
+                {REGION_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {REGION_LABELS[key]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Kompensasi */}
-          <div>
+          <div className="filter-group">
             <label htmlFor="catalog-compensation">Sistem Kompensasi</label>
-
-            <select
-              id="catalog-compensation"
-              name="compensation"
-              value={compensation}
-              onChange={(e) => {
-                setCompensation(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Semua kompensasi</option>
-              <option value="tarif">Tarif Pasti</option>
-              <option value="nego">Bisa Negosiasi</option>
-              <option value="patungan">Patungan</option>
-              <option value="traktir">Traktir</option>
-              <option value="sukarela">Sukarela</option>
-            </select>
+            <div className="filter-select-wrap">
+              <SvgIcon name="wallet" size={16} strokeWidth={2} />
+              <select
+                id="catalog-compensation"
+                name="compensation"
+                value={compensation}
+                onChange={(e) => {
+                  setCompensation(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua kompensasi</option>
+                {COMPENSATION_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {COMPENSATION_LABELS[key]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+
+          <button type="submit" className="button button-primary filter-apply">
+            Terapkan Filter
+          </button>
+          <button
+            type="button"
+            data-filter-reset
+            onClick={handleReset}
+            className="filter-reset-link"
+          >
+            Bersihkan semua filter
+          </button>
         </form>
       </aside>
 
-      {/* Daftar postingan */}
-      <section>
-        <h2>Daftar Permintaan &amp; Penawaran Aktif</h2>
-
-        <p data-catalog-count aria-live="polite">
-          {loading
-            ? "Memuat postingan dari sumber data..."
-            : error
-              ? "Gagal memuat data postingan"
-              : `${filteredAndSortedPosts.length} postingan ditemukan`}
-        </p>
+      {/* ===== Daftar postingan ===== */}
+      <section className="catalog-results">
+        <div className="catalog-results-bar">
+          <h2 className="catalog-results-title">
+            {postType === "butuh"
+              ? "Orang yang butuh bantuan"
+              : postType === "bisa"
+                ? "Keahlian yang ditawarkan"
+                : "Permintaan & penawaran terbaru"}
+          </h2>
+          <button
+            type="button"
+            className="catalog-filter-toggle"
+            onClick={() => setFiltersOpen((prev) => !prev)}
+            aria-expanded={filtersOpen}
+            aria-controls="catalog-filter-panel"
+          >
+            <SvgIcon name="filter" size={16} strokeWidth={2} />
+            Filter
+            {activeFilters.length > 0 && (
+              <span className="catalog-filter-count">{activeFilters.length}</span>
+            )}
+          </button>
+          <p data-catalog-count aria-live="polite">
+            {loading
+              ? "Memuat postingan..."
+              : error
+                ? "Gagal memuat data"
+                : `${filteredAndSortedPosts.length} postingan ditemukan`}
+          </p>
+        </div>
 
         <div data-catalog-list>
           {loading ? (
-            <SkeletonList count={3} />
+            <SkeletonList count={4} />
           ) : error ? (
             <ErrorState
               title="Gagal Memuat Data Postingan"
@@ -447,9 +478,13 @@ function CatalogContent() {
             <EmptyState
               icon="🔍"
               title="Tidak ada postingan yang cocok"
-              description="Coba ubah kata kunci pencarian atau bersihkan filter di samping."
-              actionText="Bersihkan Filter"
-              onAction={handleReset}
+              description={
+                activeFilters.length > 0
+                  ? "Tidak ada hasil untuk kombinasi filter ini. Coba longgarkan kata kunci atau hapus beberapa filter."
+                  : "Belum ada postingan aktif saat ini. Jadilah yang pertama membagikan kebutuhan atau tawaran bantuanmu."
+              }
+              actionText={activeFilters.length > 0 ? "Bersihkan Filter" : undefined}
+              onAction={activeFilters.length > 0 ? handleReset : undefined}
             />
           )}
         </div>
@@ -489,6 +524,16 @@ function CatalogContent() {
           </nav>
         )}
       </section>
+
+      {/* Overlay untuk drawer mobile */}
+      {filtersOpen && (
+        <button
+          type="button"
+          className="catalog-filter-scrim"
+          aria-label="Tutup filter"
+          onClick={() => setFiltersOpen(false)}
+        />
+      )}
     </main>
   );
 }
@@ -498,9 +543,9 @@ export default function CatalogPage() {
     <Suspense
       fallback={
         <main className="catalog-loading" aria-busy="true">
-          <h1>Feed Bantuan</h1>
+          <h1>Katalog Bantuan</h1>
           <p className="sr-only">Memuat katalog...</p>
-          <SkeletonList count={3} />
+          <SkeletonList count={4} />
         </main>
       }
     >

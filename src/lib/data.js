@@ -171,6 +171,9 @@ export function mapSupabasePostToApp(row, currentUserId) {
     authorBio: profile.bio || "Pengguna komunitas NeedHelp",
     authorAvatar: profile.avatar_url || "/assets/images/avatar-user.svg",
     authorInitial: profile.initial || (profile.name ? profile.name.charAt(0).toUpperCase() : "N"),
+    // Identifier avatar ilustrasi pilihan penulis (mode Supabase). null bila
+    // belum memilih → pemanggil mem-fallback ke inisial/aset lama.
+    authorAvatarKey: profile.avatar_key || null,
     avatarClass: profile.avatar_class || "avatar-blue",
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
     timeLabel: computeTimeLabel(row.created_at),
@@ -200,10 +203,17 @@ async function fetchProfilesForAuthors(supabase, authorIds) {
   const uniqueIds = [...new Set(authorIds.filter(Boolean))];
   if (uniqueIds.length === 0) return new Map();
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("profiles")
-    .select("id, name, bio, avatar_url, initial, avatar_class")
+    .select(PROFILE_SELECT_COLUMNS_WITH_AVATAR)
     .in("id", uniqueIds);
+
+  if (error && isMissingAvatarKeyColumn(error)) {
+    ({ data, error } = await supabase
+      .from("profiles")
+      .select(PROFILE_SELECT_COLUMNS)
+      .in("id", uniqueIds));
+  }
 
   if (error || !data) return new Map();
 
@@ -349,6 +359,7 @@ export function getPostAuthor(post) {
     avatar: post.authorAvatar || person.avatar,
     initial: post.authorInitial || person.initial,
     avatarClass: post.avatarClass || person.avatarClass,
+    avatarKey: post.authorAvatarKey || person.avatarKey || null,
   };
 }
 
@@ -492,7 +503,7 @@ export function attachDemoActivityStatus(posts, activities = getActivities()) {
 }
 
 export function getPostWithStatus(id) {
-  const post = getPost(id) || getPublicPost(id);
+  const post = getPost(id);
   if (!post) return null;
   return attachDemoActivityStatus([post])[0];
 }
@@ -538,9 +549,39 @@ export async function fetchPublicPosts(options) {
 // Profile CRUD (Supabase)
 // ---------------------------------------------------------------------------
 
+/** Kolom profil dasar (selalu ada sejak schema.sql). */
+export const PROFILE_SELECT_COLUMNS = "id, name, bio, avatar_url, initial, avatar_class";
+
+/**
+ * Kolom profil + avatar_key (migration 015). Dipakai lebih dulu; bila kolom
+ * belum ada (migration belum dijalankan) query otomatis diulang tanpa kolom
+ * ini agar halaman tetap berjalan — lihat isMissingAvatarKeyColumn().
+ */
+export const PROFILE_SELECT_COLUMNS_WITH_AVATAR =
+  "id, name, bio, avatar_url, initial, avatar_class, avatar_key";
+
+/**
+ * Menilai apakah error Supabase disebabkan kolom `avatar_key` yang belum ada
+ * (migration 015 belum diterapkan). Dipakai untuk fallback select/update yang
+ * aman, supaya fitur lama tetap hidup meski migration belum dijalankan.
+ * @param {{code?: string, message?: string}|null|undefined} error
+ * @returns {boolean}
+ */
+export function isMissingAvatarKeyColumn(error) {
+  if (!error) return false;
+  const message = String(error.message || "");
+  // Postgres undefined_column = 42703; PostgREST schema-cache = PGRST204/205.
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    error.code === "PGRST205" ||
+    /avatar_key/i.test(message)
+  );
+}
+
 /**
  * Mengambil profil user yang sedang login dari Supabase.
- * @returns {Promise<Object|null>} Objek profil {id, name, bio, avatar_url, initial, avatar_class} atau null
+ * @returns {Promise<Object|null>} Objek profil {id, name, bio, avatar_url, initial, avatar_class, avatar_key} atau null
  */
 export async function fetchCurrentProfile() {
   if (!isSupabaseConfigured()) return null;
@@ -550,14 +591,24 @@ export async function fetchCurrentProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("profiles")
-      .select("id, name, bio, avatar_url, initial, avatar_class")
+      .select(PROFILE_SELECT_COLUMNS_WITH_AVATAR)
       .eq("id", user.id)
       .maybeSingle();
 
+    // Fallback: kolom avatar_key belum ada (migration 015 belum dijalankan).
+    if (error && isMissingAvatarKeyColumn(error)) {
+      ({ data, error } = await supabase
+        .from("profiles")
+        .select(PROFILE_SELECT_COLUMNS)
+        .eq("id", user.id)
+        .maybeSingle());
+    }
+
     if (error || !data) return null;
-    return data;
+    // avatar_key boleh tidak ada di skema lama → normalkan ke null.
+    return { avatar_key: null, ...data };
   } catch {
     return null;
   }
@@ -565,8 +616,9 @@ export async function fetchCurrentProfile() {
 
 /**
  * Memperbarui profil user yang sedang login di Supabase.
- * Hanya kolom name, bio, avatar_url, initial, avatar_class yang bisa diubah.
- * RLS profiles_update_own memastikan user hanya bisa update profil sendiri.
+ * Hanya kolom name, bio, avatar_url, initial, avatar_class, avatar_key yang
+ * bisa diubah. RLS profiles_update_own memastikan user hanya bisa update
+ * profil sendiri (termasuk avatar — tidak bisa mengubah avatar pengguna lain).
  *
  * @param {Object} updates - Objek berisi kolom yang ingin diubah
  * @returns {Promise<{data: Object|null, error: string|null}>}
@@ -584,7 +636,7 @@ export async function updateProfile(updates) {
     }
 
     // Hanya izinkan kolom yang aman untuk diupdate
-    const allowedFields = ["name", "bio", "avatar_url", "initial", "avatar_class"];
+    const allowedFields = ["name", "bio", "avatar_url", "initial", "avatar_class", "avatar_key"];
     const safeUpdates = {};
     for (const key of allowedFields) {
       if (updates[key] !== undefined) {
@@ -596,18 +648,38 @@ export async function updateProfile(updates) {
       return { data: null, error: "Tidak ada data yang diperbarui." };
     }
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .update(safeUpdates)
-      .eq("id", user.id)
-      .select("id, name, bio, avatar_url, initial, avatar_class")
-      .single();
+    const runUpdate = (payload) =>
+      supabase
+        .from("profiles")
+        .update(payload)
+        .eq("id", user.id)
+        .select(PROFILE_SELECT_COLUMNS_WITH_AVATAR)
+        .single();
+
+    let { data, error } = await runUpdate(safeUpdates);
+
+    // Fallback: DB belum punya kolom avatar_key (migration 015 belum jalan).
+    // Buang avatar_key dari payload agar perubahan nama/bio tetap tersimpan,
+    // dan laporkan keterbatasannya, bukan mengklaim sukses menyimpan avatar.
+    let avatarKeySkipped = false;
+    if (error && isMissingAvatarKeyColumn(error) && safeUpdates.avatar_key !== undefined) {
+      const { avatar_key: _omit, ...rest } = safeUpdates;
+      avatarKeySkipped = true;
+      if (Object.keys(rest).length === 0) {
+        return {
+          data: null,
+          error:
+            "Kolom avatar belum tersedia di database. Jalankan migration 015 terlebih dahulu.",
+        };
+      }
+      ({ data, error } = await runUpdate(rest));
+    }
 
     if (error) {
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    return { data: data ? { avatar_key: null, ...data } : data, error: null, avatarKeySkipped };
   } catch (err) {
     return { data: null, error: err.message || "Gagal memperbarui profil." };
   }
@@ -903,10 +975,24 @@ export function getPost(id) {
   return getPosts().find((post) => post.id === id) || null;
 }
 
+/**
+ * Mengambil satu postingan yang **masih aktif**, ditempelkan status aktivitas.
+ *
+ * Penting: memanggil getPost(id) langsung, BUKAN getPostWithStatus(id). Kedua
+ * fungsi itu sebelumnya saling memanggil sehingga id yang tidak ditemukan
+ * berakhir sebagai RangeError: Maximum call stack size exceeded, alih-alih
+ * not-found biasa (null). Alur sekarang satu arah:
+ *   getPosts / getPublicPosts -> getPost -> getPostWithStatus -> getPublicPost
+ *
+ * @param {string} id
+ * @returns {Object|null} postingan aktif, atau null bila tidak ada / tidak aktif
+ */
 export function getPublicPost(id) {
-  const post = getPostWithStatus(id);
-  if (!post || !isPostActive(post)) return null;
-  return post;
+  const post = getPost(id);
+  if (!post) return null;
+  const [withStatus] = attachDemoActivityStatus([post]);
+  if (!withStatus || !isPostActive(withStatus)) return null;
+  return withStatus;
 }
 
 export function savePost(post) {
@@ -1120,6 +1206,8 @@ export function filterPosts(posts, filters = {}) {
       CATEGORY_LABELS[post.category],
       REGION_LABELS[post.region],
       COMPENSATION_LABELS[post.compensation],
+      post.address,
+      post.destination,
     ]
       .join(" ")
       .toLowerCase();

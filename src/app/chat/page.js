@@ -19,6 +19,7 @@ import { subscribeToPostChanges } from "../../lib/notification-realtime.js";
 import { readSession } from "../../lib/auth.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { useToast } from "../../components/Toast";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 const LIFECYCLE_LABEL = {
   aktif: "Masih aktif",
@@ -59,6 +60,25 @@ function formatRelative(iso) {
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} mnt`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} jam`;
   return new Date(time).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+// Label pemisah tanggal antar pesan. Hanya diturunkan dari `created_at` nyata.
+function formatDayLabel(iso) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.round((startOfToday - startOfDay) / 86_400_000);
+  if (diffDays === 0) return "Hari ini";
+  if (diffDays === 1) return "Kemarin";
+  return date.toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function ChatContent() {
@@ -464,9 +484,7 @@ function ChatContent() {
   if (!ready || (loadingList && supabaseMode)) {
     return (
       <main className="chat-main-container">
-        <p style={{ padding: "40px", textAlign: "center", gridColumn: "1 / -1" }}>
-          Memuat percakapan...
-        </p>
+        <p className="chat-page-status" role="status">Memuat percakapan...</p>
       </main>
     );
   }
@@ -474,7 +492,7 @@ function ChatContent() {
   if (!supabaseMode) {
     return (
       <main className="chat-main-container">
-        <p style={{ padding: "40px", textAlign: "center", gridColumn: "1 / -1" }}>
+        <p className="chat-page-status" role="status">
           Fitur pesan membutuhkan koneksi Supabase. Periksa konfigurasi aplikasi.
         </p>
       </main>
@@ -493,30 +511,25 @@ function ChatContent() {
         </div>
 
         <div className="sidebar-search-box">
-          <img
-            src="/assets/images/icon-search.svg"
-            alt=""
-            className="search-sm-icon"
-            width={14}
-            height={14}
-          />
+          <span className="search-sm-icon" aria-hidden="true">
+            <SvgIcon name="search" size={15} strokeWidth={2} />
+          </span>
           <input
             type="text"
             value={searchContact}
             onChange={(e) => setSearchContact(e.target.value)}
             placeholder="Cari percakapan..."
+            aria-label="Cari percakapan"
           />
         </div>
 
         {listError && (
-          <p className="empty-state" style={{ padding: "12px 16px" }}>
-            {listError}
-          </p>
+          <p className="chat-list-error" role="alert">{listError}</p>
         )}
 
         <ul className="contacts-list">
           {!listError && filteredConversations.length === 0 && (
-            <li style={{ padding: "16px", color: "#5e7a80" }}>
+            <li className="chat-list-empty">
               Belum ada percakapan. Mulai dari detail postingan yang aktif.
             </li>
           )}
@@ -528,11 +541,20 @@ function ChatContent() {
                 key={item.id}
                 className={`contact-item${isActive ? " active" : ""}`}
                 onClick={() => handleSelectConversation(item.id)}
-                style={{ cursor: "pointer" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSelectConversation(item.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-current={isActive ? "true" : undefined}
+                aria-label={`Percakapan dengan ${item.otherName}`}
               >
-                {item.otherAvatar && item.otherAvatar.startsWith("/") ? (
+                {item.otherAvatarSrc ? (
                   <img
-                    src={item.otherAvatar}
+                    src={item.otherAvatarSrc}
                     alt=""
                     className="contact-avatar"
                     style={{ objectFit: "cover" }}
@@ -566,25 +588,22 @@ function ChatContent() {
       {/* Kolom Kanan: Ruang Obrolan Aktif */}
       <section className="chat-room-pane">
         {pendingPartner && !activeConversation ? (
-          <div style={{ padding: "32px" }}>
-            <h2 style={{ marginBottom: "8px" }}>Mulai percakapan</h2>
+          <div className="chat-room-start">
+            <span className="chat-start-icon" aria-hidden="true">
+              <SvgIcon name="chat" size={22} strokeWidth={1.7} />
+            </span>
+            <h2>Mulai percakapan</h2>
             {queryPostId ? (
               <>
-                <p style={{ color: "#5e7a80", marginBottom: "16px" }}>
+                <p className="chat-start-hint">
                   {startingChat
                     ? "Membuka percakapan..."
                     : "Percakapan ini terkait postingan yang kamu buka. Server memeriksa hubungan kamu dengan postingan tersebut."}
                 </p>
                 {startError && (
                   <>
-                    <p
-                      role="alert"
-                      style={{
-                        color: "var(--color-error, #e53e3e)",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      {startError}
+                    <p className="chat-start-error" role="alert">
+                      <SvgIcon name="warning" size={15} strokeWidth={2} /> {startError}
                     </p>
                     <button
                       type="button"
@@ -611,7 +630,7 @@ function ChatContent() {
               </>
             ) : (
               <>
-                <p style={{ color: "#5e7a80", marginBottom: "16px" }}>
+                <p className="chat-start-hint">
                   Tautan ini tidak menyertakan postingan, sehingga percakapan tidak
                   dapat dimulai dari sini. Buka detail postingan yang aktif lalu
                   pilih &ldquo;Mulai Chat&rdquo;.
@@ -623,8 +642,11 @@ function ChatContent() {
             )}
           </div>
         ) : !activeConversation ? (
-          <div style={{ padding: "32px" }}>
-            <p className="empty-state">
+          <div className="chat-room-empty">
+            <span className="chat-start-icon" aria-hidden="true">
+              <SvgIcon name="chat" size={22} strokeWidth={1.7} />
+            </span>
+            <p>
               Pilih percakapan di sebelah kiri. Belum punya percakapan? Mulai dari
               detail postingan yang masih aktif.
             </p>
@@ -634,10 +656,9 @@ function ChatContent() {
             {/* Header Partner Chat */}
             <div className="room-top-header">
               <div className="partner-profile">
-                {activeConversation.otherAvatar &&
-                activeConversation.otherAvatar.startsWith("/") ? (
+                {activeConversation.otherAvatarSrc ? (
                   <img
-                    src={activeConversation.otherAvatar}
+                    src={activeConversation.otherAvatarSrc}
                     alt=""
                     className="contact-avatar lg"
                     style={{ objectFit: "cover" }}
@@ -667,7 +688,7 @@ function ChatContent() {
             {/* Banner Terkait Permintaan */}
             <div className="request-info-banner">
               <div className="banner-left-content">
-                <span className="banner-icon-box">📦</span>
+                <span className="banner-icon-box"><SvgIcon name="package" size={18} strokeWidth={1.75} /></span>
                 <div className="banner-text">
                   <span className="banner-label-sm">Topik Percakapan</span>
                   <p>
@@ -676,11 +697,11 @@ function ChatContent() {
                     </strong>
                   </p>
                   {activeConversation.postTitle ? (
-                    <span className="banner-label-sm" style={{ display: "block", marginTop: "2px" }}>
+                    <span className="banner-label-sm banner-status-line">
                       Status: {LIFECYCLE_LABEL[lifecycle || "tidakDikenal"]}
                     </span>
                   ) : (
-                    <span className="banner-label-sm" style={{ display: "block", marginTop: "2px" }}>
+                    <span className="banner-label-sm banner-status-line">
                       Postingan sudah dihapus; riwayat pesan tetap dapat dibaca.
                     </span>
                   )}
@@ -694,7 +715,7 @@ function ChatContent() {
                   Lihat Postingan
                 </Link>
               ) : (
-                <span className="btn-lihat-detail" style={{ opacity: 0.6, cursor: "not-allowed" }}>
+                <span className="btn-lihat-detail btn-lihat-detail-disabled">
                   Postingan tidak tersedia
                 </span>
               )}
@@ -705,8 +726,7 @@ function ChatContent() {
               {hasMore && (
                 <button
                   type="button"
-                  className="btn-detail-outline"
-                  style={{ display: "block", margin: "0 auto 12px" }}
+                  className="btn-detail-outline chat-load-previous"
                   onClick={async () => {
                     const first = messages[0];
                     if (!first) return;
@@ -726,38 +746,52 @@ function ChatContent() {
               )}
 
               {loadingThread ? (
-                <p style={{ textAlign: "center" }}>Memuat pesan...</p>
+                <p className="chat-thread-loading" role="status">Memuat pesan...</p>
               ) : threadError ? (
-                <p className="empty-state" style={{ textAlign: "center", margin: "40px 0" }}>
-                  {threadError}
-                </p>
+                <p className="chat-thread-error" role="alert">{threadError}</p>
               ) : messages.length > 0 ? (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`msg-row ${msg.isMine ? "outgoing" : "incoming"}`}
-                  >
-                    {!msg.isMine && (
+                messages.map((msg, idx) => {
+                  const todayLabel = formatDayLabel(msg.createdAt);
+                  const prevLabel = idx > 0 ? formatDayLabel(messages[idx - 1].createdAt) : null;
+                  const showSeparator = !prevLabel || prevLabel !== todayLabel;
+                  return (
+                    <React.Fragment key={msg.id}>
+                      {showSeparator && (
+                        <div className="date-separator">
+                          <span>{todayLabel}</span>
+                        </div>
+                      )}
                       <div
-                        className={`msg-avatar-sm ${activeConversation.otherAvatarClass || "tosca-bg"}`}
+                        className={`msg-row ${msg.isMine ? "outgoing" : "incoming"}`}
                       >
-                        {activeConversation.otherInitial}
+                        {!msg.isMine && (
+                          activeConversation.otherAvatarSrc ? (
+                            <img
+                              src={activeConversation.otherAvatarSrc}
+                              alt=""
+                              className="msg-avatar-sm"
+                              style={{ objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div
+                              className={`msg-avatar-sm ${activeConversation.otherAvatarClass || "tosca-bg"}`}
+                            >
+                              {activeConversation.otherInitial}
+                            </div>
+                          )
+                        )}
+                        <div className="msg-bubble">
+                          <p>{msg.body}</p>
+                          <div className="msg-meta">
+                            <span className="msg-time">{formatTime(msg.createdAt)}</span>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                    <div className="msg-bubble">
-                      <p>{msg.body}</p>
-                      <div className="msg-meta">
-                        <span className="msg-time">{formatTime(msg.createdAt)}</span>
-                        {msg.isMine && <span className="msg-ticks">✓✓</span>}
-                      </div>
-                    </div>
-                  </div>
-                ))
+                    </React.Fragment>
+                  );
+                })
               ) : (
-                <p
-                  className="empty-state"
-                  style={{ textAlign: "center", margin: "40px 0" }}
-                >
+                <p className="chat-thread-empty">
                   Belum ada pesan. Mulai obrolan dengan {activeConversation.otherName}!
                 </p>
               )}
@@ -771,11 +805,8 @@ function ChatContent() {
                 // terbaca, tetapi tidak ada topik yang bisa dibalas. Postingan
                 // selesai/dibatalkan TIDAK menutup obrolan — peserta masih perlu
                 // berkoordinasi (mis. setelah aktivitas selesai).
-                <p
-                  className="empty-state"
-                  style={{ margin: 0, textAlign: "center", padding: "12px 16px" }}
-                  data-chat-closed
-                >
+                <p className="chat-closed-notice" data-chat-closed>
+                  <SvgIcon name="lock" size={15} strokeWidth={2} />
                   {postClosedNotice}
                 </p>
               ) : (
@@ -788,6 +819,7 @@ function ChatContent() {
                     placeholder={`Tulis pesan untuk ${activeConversation.otherName}...`}
                     autoComplete="off"
                     disabled={sending}
+                    aria-label={`Tulis pesan untuk ${activeConversation.otherName}`}
                   />
                   <button
                     type="submit"
@@ -795,7 +827,11 @@ function ChatContent() {
                     aria-label="Kirim pesan"
                     disabled={sending || !inputText.trim()}
                   >
-                    ➤
+                    {sending ? (
+                      <SvgIcon name="hourglass" size={18} strokeWidth={2} />
+                    ) : (
+                      <SvgIcon name="arrowRight" size={18} strokeWidth={2.2} />
+                    )}
                   </button>
                 </form>
               )}
@@ -809,7 +845,7 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={<div className="chat-main-container"><p>Memuat percakapan...</p></div>}>
+    <Suspense fallback={<div className="chat-main-container"><p className="chat-page-status">Memuat percakapan...</p></div>}>
       <ChatContent />
     </Suspense>
   );

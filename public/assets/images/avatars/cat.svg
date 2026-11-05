@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Avatar kucing">
+  <circle cx="48" cy="48" r="48" fill="#f3e8db"/>
+  <circle cx="48" cy="48" r="46.5" fill="none" stroke="#d2bfae" stroke-width="3"/>
+  <path d="M30 32 L26 18 L42 26 Z" fill="#a6472b"/>
+  <path d="M66 32 L70 18 L54 26 Z" fill="#a6472b"/>
+  <path d="M31.5 32 L29 23 L38 28 Z" fill="#f4ded3"/>
+  <path d="M64.5 32 L67 23 L58 28 Z" fill="#f4ded3"/>
+  <circle cx="48" cy="52" r="24" fill="#a6472b"/>
+  <path d="M32 44c-5 0-9 3-9 8s4 8 9 8" fill="none" stroke="#6f2c19" stroke-width="3" stroke-linecap="round"/>
+  <path d="M64 44c5 0 9 3 9 8s-4 8-9 8" fill="none" stroke="#6f2c19" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="39" cy="48" r="3.2" fill="#faf0ea"/>
+  <circle cx="57" cy="48" r="3.2" fill="#faf0ea"/>
+  <path d="M48 60c-3 0-5 1.5-5 3.5S45 67 48 67s5-1.5 5-3.5S51 60 48 60z" fill="#f4ded3"/>
+</svg>

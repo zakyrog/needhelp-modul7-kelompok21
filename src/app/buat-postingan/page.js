@@ -8,6 +8,7 @@ import { readSession, getSupabaseUser } from "../../lib/auth.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { validatePost, sanitizeString } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
+import { SvgIcon } from "../../components/Icons.jsx";
 
 export default function BuatPostinganPage() {
   const router = useRouter();
@@ -151,7 +152,9 @@ export default function BuatPostinganPage() {
             fontWeight: "500",
           }}
         >
-          ⚠ {errors.general}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <SvgIcon name="warning" size={16} strokeWidth={2} /> {errors.general}
+          </span>
         </div>
       )}
 

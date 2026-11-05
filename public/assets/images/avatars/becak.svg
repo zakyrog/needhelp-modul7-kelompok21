@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Avatar becak">
+  <circle cx="48" cy="48" r="48" fill="#f3e8db"/>
+  <circle cx="48" cy="48" r="46.5" fill="none" stroke="#d2bfae" stroke-width="3"/>
+  <path d="M20 44h30v18H20z" fill="#a6472b"/>
+  <path d="M50 36h10a8 8 0 0 1 8 8v18H50z" fill="#cf7f27"/>
+  <path d="M30 44v18M40 44v18" stroke="#f7ead2" stroke-width="2" opacity="0.6"/>
+  <path d="M18 62h54" stroke="#6f2c19" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="30" cy="72" r="8" fill="#241c17"/>
+  <circle cx="30" cy="72" r="3" fill="#faf0ea"/>
+  <circle cx="60" cy="72" r="8" fill="#241c17"/>
+  <circle cx="60" cy="72" r="3" fill="#faf0ea"/>
+  <path d="M68 62V40" stroke="#6f2c19" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -20,9 +20,16 @@ export function BodyClassManager() {
       "/rating": "rating-page",
       "/formbantuan": "form-page",
       "/formeror": "form-page",
+      "/profil": "profile-page",
     };
 
-    const targetClass = classMap[pathname] || "";
+    // Rute bersarang (mis. /aktivitas/<id>) mewarisi kelas rute induknya,
+    // supaya CSS halaman (body.activity-page ...) tetap berlaku di detail.
+    const nestedMatch = Object.keys(classMap).find(
+      (route) => route !== "/" && pathname.startsWith(`${route}/`),
+    );
+
+    const targetClass = classMap[pathname] || (nestedMatch ? classMap[nestedMatch] : "");
     document.body.className = targetClass;
 
     return () => {

@@ -1,4 +1,10 @@
 import { getSupabase, isSupabaseConfigured, freshChannelTopic } from "./supabase.js";
+import {
+  PROFILE_SELECT_COLUMNS,
+  PROFILE_SELECT_COLUMNS_WITH_AVATAR,
+  isMissingAvatarKeyColumn,
+} from "./data.js";
+import { resolveAvatarSrc } from "./avatars.js";
 
 /**
  * Data layer chat nyata (tabel public.conversations + public.messages).
@@ -168,6 +174,27 @@ const CONVERSATION_SELECT = "id, post_id, owner_id, partner_id, updated_at, crea
  * Status aktivitas post TIDAK diambil di sini; pemanggil memakai
  * fetchActivityStatusMap lewat data.js bila perlu, atau kolom activityStatus.
  */
+/**
+ * Mengambil baris profiles (termasuk avatar_key) dengan fallback aman bila
+ * kolom avatar_key belum ada di database (migration 015 belum dijalankan).
+ * Hanya membaca; tidak mengubah struktur atau policy apa pun.
+ *
+ * @param {import("@supabase/supabase-js").SupabaseClient} supabase
+ * @param {(q: any) => any} applyFilter - menerapkan .in()/.eq() pada query
+ * @returns {Promise<{data: Object[]|null, error: any}>}
+ */
+async function fetchProfilesWithAvatar(supabase, applyFilter) {
+  let { data, error } = await applyFilter(
+    supabase.from("profiles").select(PROFILE_SELECT_COLUMNS_WITH_AVATAR),
+  );
+  if (error && isMissingAvatarKeyColumn(error)) {
+    ({ data, error } = await applyFilter(
+      supabase.from("profiles").select(PROFILE_SELECT_COLUMNS),
+    ));
+  }
+  return { data: data || null, error };
+}
+
 function mapConversationRows(supabase, rows, me, profileById, postById) {
   return rows.map((row) => {
     const otherId = String(row.owner_id) === me ? String(row.partner_id) : String(row.owner_id);
@@ -182,6 +209,10 @@ function mapConversationRows(supabase, rows, me, profileById, postById) {
       otherName: profile.name || "Pengguna NeedHelp",
       otherBio: profile.bio || "",
       otherAvatar: profile.avatar_url || "/assets/images/avatar-user.svg",
+      otherAvatarKey: profile.avatar_key || null,
+      // Avatar tampilan: ilustrasi pilihan (avatar_key) → foto asli → null.
+      // null berarti pemanggil menampilkan inisial; tidak ada placeholder teal.
+      otherAvatarSrc: resolveAvatarSrc({ key: profile.avatar_key, url: profile.avatar_url }),
       otherInitial: profile.initial || (profile.name || "N").charAt(0).toUpperCase(),
       otherAvatarClass: profile.avatar_class || "avatar-blue",
       postTitle: post ? post.title : null,
@@ -224,10 +255,7 @@ export async function fetchConversations() {
   const postIds = [...new Set(conversations.map((row) => String(row.post_id)))];
 
   const [{ data: profiles }, { data: posts }, { data: latest }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, name, bio, avatar_url, initial, avatar_class")
-      .in("id", otherIds),
+    fetchProfilesWithAvatar(supabase, (q) => q.in("id", otherIds)),
     supabase
       .from("posts")
       .select("id, title, author_id")
@@ -315,10 +343,7 @@ export async function fetchConversation({ conversationId, postId, partnerId } = 
 
   const otherId = String(data.owner_id) === me ? String(data.partner_id) : String(data.owner_id);
   const [{ data: profiles }, { data: posts }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, name, bio, avatar_url, initial, avatar_class")
-      .eq("id", otherId),
+    fetchProfilesWithAvatar(supabase, (q) => q.eq("id", otherId)),
     supabase
       .from("posts")
       .select("id, title, author_id")

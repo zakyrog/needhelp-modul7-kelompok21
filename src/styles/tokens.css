@@ -1,16 +1,53 @@
+/* ============================================================
+   NeedHelp — Design Tokens
+   Sumber kebenaran tunggal untuk warna, spacing, radius, elevasi,
+   dan tipografi. Seluruh lapisan skin (theme.css) merujuk token ini.
+
+   Arah desain: "NeedHelp — Human Connection Platform".
+   Hangat (warm clay/terracotta), manusiawi, editorial, terasa
+   "dipegang oleh desainer produk senior" — bukan template dashboard.
+   ============================================================ */
 :root {
-  --color-bg-default: #f6fbfb;
-  --color-bg-subtle: #e3fdfd;
-  --color-bg-surface: #fff;
-  --color-action-primary: #4a9ba0;
-  --color-text-primary: #0f2e33;
-  --color-text-secondary: #284950;
-  --color-text-muted: #5e7a80;
-  --color-text-inverse: #fff;
-  --color-border-default: #cfdadc;
-  /* Token error sementara: anggota 1 wajib memeriksa 02_LoginError/08_FormError. */
-  --color-error: #a52626;
-  --color-error-bg: #fff1f1;
+  /* ===== Brand — clay / terracotta hangat ===== */
+  --color-action-primary: #a6472b;
+  --color-action-primary-hover: #8c3a22;
+  --color-action-primary-strong: #6f2c19;
+  --color-primary-soft: #f3ddd3;
+  --color-primary-softest: #faf0ea;
+
+  /* ===== Teks — hitam hangat ===== */
+  --color-text-primary: #241c17;
+  --color-text-secondary: #54473f;
+  --color-text-muted: #7c6b60;
+  --color-text-inverse: #fffaf4;
+
+  /* ===== Permukaan — gading hangat ===== */
+  --color-bg-default: #faf4ec; /* canvas halaman */
+  --color-bg-subtle: #f3e8db;  /* pasir hangat */
+  --color-bg-surface: #ffffff; /* kartu */
+  --color-bg-secondary: #f0e6d9;
+
+  /* ===== Garis ===== */
+  --color-border-default: #e8ddd2;
+  --color-border-strong: #d2bfae;
+
+  /* ===== Semantik ===== */
+  --color-error: #b3392f;
+  --color-error-bg: #f8e6e3;
+  --color-danger: #b3392f;
+  --color-danger-soft: #f8e6e3;
+  --color-success: #3f7a45;
+  --color-success-soft: #e6f0e4;
+  --color-warning: #a96b16;
+  --color-warning-soft: #f7eed8;
+  --color-info: #3c6474;
+  --color-info-soft: #e4eef2;
+
+  /* ===== Aksen madu (kehangatan komunitas) ===== */
+  --color-accent: #cf7f27;
+  --color-accent-soft: #f7ead2;
+
+  /* ===== Spacing ===== */
   --spacing-4: 4px;
   --spacing-xs: 8px;
   --spacing-sm: 12px;
@@ -19,8 +56,28 @@
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
   --spacing-3xl: 64px;
-  --radius-sm: 6px;
-  --radius-lg: 12px;
+
+  /* ===== Radius ===== */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
   --radius-pill: 999px;
-  --font-family: var(--font-inter), "Inter", Arial, sans-serif;
+
+  /* ===== Elevasi (bayangan hangat) ===== */
+  --shadow-xs: 0 1px 2px rgba(52, 39, 31, 0.05);
+  --shadow-sm: 0 1px 2px rgba(52, 39, 31, 0.06),
+    0 2px 8px rgba(52, 39, 31, 0.05);
+  --shadow-md: 0 2px 6px rgba(52, 39, 31, 0.06),
+    0 12px 24px rgba(52, 39, 31, 0.08);
+  --shadow-lg: 0 6px 16px rgba(52, 39, 31, 0.08),
+    0 24px 48px rgba(52, 39, 31, 0.12);
+
+  /* ===== Tipografi ===== */
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, "Times New Roman",
+    serif;
+  --font-ui: var(--font-jakarta), "Plus Jakarta Sans", "Inter", system-ui,
+    -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-family: var(--font-inter), "Inter", system-ui, -apple-system,
+    "Segoe UI", Arial, sans-serif;
 }

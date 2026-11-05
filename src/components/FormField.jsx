@@ -1,5 +1,6 @@
 
 import React from "react";
+import { SvgIcon } from "./Icons.jsx";
 
 export function FormField({
   id,
@@ -65,7 +66,7 @@ export function FormField({
           className="field-error error-message-inline"
           role="alert"
         >
-          <span aria-hidden="true">⚠ </span>
+          <SvgIcon name="warning" size={14} strokeWidth={2} />
           {error}
         </small>
       )}

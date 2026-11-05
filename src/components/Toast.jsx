@@ -9,6 +9,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+import { SvgIcon } from "./Icons.jsx";
 
 const ToastContext = createContext({
   showToast: () => {},
@@ -81,10 +82,10 @@ export function ToastProvider({ children }) {
             className={`toast-item toast-${toast.type}`}
             role={toast.type === "error" ? "alert" : "status"}
           >
-            <span>
-              {toast.type === "success" && "✓ "}
-              {toast.type === "error" && "⚠ "}
-              {toast.type === "info" && "ℹ "}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+              {toast.type === "success" && <SvgIcon name="check" size={15} strokeWidth={3} />}
+              {toast.type === "error" && <SvgIcon name="warning" size={15} strokeWidth={2.5} />}
+              {toast.type === "info" && <SvgIcon name="bell" size={15} strokeWidth={2} />}
               {toast.message}
             </span>
 

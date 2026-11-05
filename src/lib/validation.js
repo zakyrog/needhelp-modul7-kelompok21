@@ -5,6 +5,7 @@ import {
   CURRENT_USER,
 } from "./data.js";
 import { isSupabaseConfigured } from "./supabase.js";
+import { isValidAvatarKey } from "./avatars.js";
 
 /**
  * Sanitasi string sederhana untuk mencegah injeksi tag/skrip (XSS)
@@ -146,9 +147,14 @@ export function validateLogin(email, password) {
 
 /**
  * Validasi form Edit Profil.
- * Memvalidasi nama dan bio.
+ * Memvalidasi nama, bio, dan pilihan avatar (opsional — null = pakai inisial).
+ *
+ * @param {string} name
+ * @param {string} bio
+ * @param {string|null} [avatarKey] - identifier avatar ilustrasi, atau null
+ * @returns {Object} peta error per field (kosong bila valid)
  */
-export function validateProfile(name, bio) {
+export function validateProfile(name, bio, avatarKey = null) {
   const errors = {};
   const nameValue = (name || "").trim();
   const bioValue = (bio || "").trim();
@@ -163,6 +169,11 @@ export function validateProfile(name, bio) {
 
   if (bioValue && bioValue.length > 200) {
     errors.bio = "Bio maksimal 200 karakter.";
+  }
+
+  // avatar_key opsional: hanya divalidasi bila diisi (null = inisial default).
+  if (avatarKey !== null && avatarKey !== undefined && !isValidAvatarKey(avatarKey)) {
+    errors.avatarKey = "Pilihan avatar tidak dikenali.";
   }
 
   return errors;

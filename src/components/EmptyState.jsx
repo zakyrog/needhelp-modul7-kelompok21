@@ -1,7 +1,5 @@
-
-"use client";
-
 import React from "react";
+import { EmojiIcon } from "./Icons.jsx";
 
 export function EmptyState({
   icon = "🔍",
@@ -17,7 +15,7 @@ export function EmptyState({
       aria-label={title}
     >
       <span className="empty-state-icon" aria-hidden="true">
-        {icon}
+        <EmojiIcon emoji={icon} size={40} strokeWidth={1.5} />
       </span>
 
       <h3 className="empty-state-title">{title}</h3>

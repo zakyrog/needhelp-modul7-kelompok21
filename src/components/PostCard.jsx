@@ -6,26 +6,37 @@ import {
   REGION_LABELS,
   COMPENSATION_LABELS,
 } from "../lib/data.js";
+import { resolveAvatarSrc } from "../lib/avatars.js";
 
 export function PostCard({ post, index }) {
   const author = getPostAuthor(post);
   const isHighlight = index === 1;
+  const authorAvatar = resolveAvatarSrc({ key: author.avatarKey, url: author.avatar });
+  const authorInitial = (author.initial || author.name || "N").charAt(0).toUpperCase();
 
   return (
     <article className={`request-card${isHighlight ? " highlight-card" : ""}`}>
       <header className="card-user">
-        <img
-          src={author.avatar || "/assets/images/avatar-user.svg"}
-          alt={`Foto profil ${author.name}`}
-          width={36}
-          height={36}
-          className="avatar-img"
-        />
+        {authorAvatar ? (
+          <img
+            src={authorAvatar}
+            alt=""
+            width={36}
+            height={36}
+            className="avatar-img"
+          />
+        ) : (
+          <span className="avatar-img card-user-initial" aria-hidden="true">
+            {authorInitial}
+          </span>
+        )}
         <div className="user-info">
           <h3>{author.name}</h3>
-          <p>
+          <p title={post.address || undefined}>
             {post.timeLabel || "Baru saja"} &bull;{" "}
-            {REGION_LABELS[post.region] || post.region}
+            {[REGION_LABELS[post.region] || post.region, post.address]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
       </header>
