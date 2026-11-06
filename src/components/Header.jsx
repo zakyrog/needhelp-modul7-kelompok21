@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { readSession, clearSession } from "../lib/auth";
-import { getNotifications } from "../lib/data";
+import { getNotifications, STORAGE_SYNC_EVENT } from "../lib/data";
 import { useToast } from "./Toast";
 
 export function Header() {
@@ -32,8 +32,10 @@ export function Header() {
     };
 
     window.addEventListener("storage", handleStorageChange);
+    window.addEventListener(STORAGE_SYNC_EVENT, handleStorageChange);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(STORAGE_SYNC_EVENT, handleStorageChange);
     };
   }, [pathname]);
 

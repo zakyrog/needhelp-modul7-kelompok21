@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { writeSession, CURRENT_USER } from "../../lib/auth.js";
 import { validateLogin } from "../../lib/validation.js";
 import { Modal } from "../../components/Modal";
 import { useToast } from "../../components/Toast";
+import { getSafeInternalPath } from "../../lib/navigation";
 
 function LoginForm() {
   const router = useRouter();
@@ -61,10 +62,7 @@ function LoginForm() {
         at: new Date().toISOString(),
       });
       showToast("Berhasil masuk ke akun demo!", "success");
-      const destination =
-        nextParam.startsWith("/") && !nextParam.startsWith("//")
-          ? nextParam
-          : "/";
+      const destination = getSafeInternalPath(nextParam);
       router.push(destination);
     } catch {
       setErrors({

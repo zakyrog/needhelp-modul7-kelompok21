@@ -188,6 +188,7 @@ export const POSTS_KEY = "needhelp.demo-posts.v1";
 export const CHATS_KEY = "needhelp.demo-chats.v1";
 export const NOTIFICATIONS_KEY = "needhelp.demo-read-notifications.v1";
 export const ACTIVITY_STATE_KEY = "needhelp.demo-activity-state.v1";
+export const STORAGE_SYNC_EVENT = "needhelp:storage-sync";
 
 export function readJson(key, fallback) {
   try {
@@ -204,6 +205,11 @@ export function writeJson(key, value) {
     throw new Error("Penyimpanan browser tidak tersedia.");
   }
   window.localStorage.setItem(key, JSON.stringify(value));
+  window.dispatchEvent(
+    new CustomEvent(STORAGE_SYNC_EVENT, {
+      detail: { key },
+    }),
+  );
 }
 
 export function escapeHtml(value) {

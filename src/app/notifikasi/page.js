@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   getNotifications,
@@ -117,6 +117,15 @@ export default function NotifikasiPage() {
                 key={item.id}
                 className={`notification-card${item.read ? "" : " unread"}`}
                 onClick={() => handleClickItem(item)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleClickItem(item);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`${item.read ? "" : "Belum dibaca: "}${item.title}`}
                 style={{ cursor: "pointer" }}
               >
                 <div className="notif-card-left">

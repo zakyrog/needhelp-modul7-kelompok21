@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getPublicPosts, fetchPublicPosts } from "../lib/data.js";
 import { PostCard } from "../components/PostCard";

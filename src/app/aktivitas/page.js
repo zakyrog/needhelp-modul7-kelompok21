@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -9,7 +9,6 @@ import {
   getPost,
   cancelActivity,
 } from "../../lib/data.js";
-import { readSession } from "../../lib/auth.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";
 
@@ -18,7 +17,6 @@ function ActivityContent() {
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [session, setSession] = useState(null);
   const [activities, setActivities] = useState(() => getActivities());
   const [filter, setFilter] = useState("all");
 
@@ -27,8 +25,6 @@ function ActivityContent() {
   };
 
   useEffect(() => {
-    const currentSession = readSession();
-    setSession(currentSession);
     loadActivities();
 
     if (searchParams.get("rated") === "1") {

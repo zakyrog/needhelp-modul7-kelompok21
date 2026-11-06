@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getPost, getPublicPost, getPostAuthor, saveMessage } from "../../lib/data";
 import { validateHelpProposal } from "../../lib/validation";
 import { FormField } from "../../components/FormField";
 import { useToast } from "../../components/Toast";
-import { SimulationBanner } from "../../components/SimulationBanner";
+import { EmptyState } from "../../components/EmptyState";
 
 function FormBantuanContent() {
   const router = useRouter();
@@ -20,10 +20,10 @@ function FormBantuanContent() {
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    helper_name: "Patungin Hadi",
-    helper_whatsapp: "0812-3456-7890",
-    helper_message: `Halo ${author.name}, aku siap membantu. Punya kendaraan dan waktu luang.`,
-    helper_time: "Sabtu, 10.00 – 13.00",
+    helper_name: "",
+    helper_whatsapp: "",
+    helper_message: "",
+    helper_time: "",
     helper_note: "",
   });
 
@@ -51,19 +51,16 @@ function FormBantuanContent() {
     setStep(2);
   };
 
-  const handleFinalSubmit = async () => {
+  const handleFinalSubmit = () => {
     if (submitting) return;
     setSubmitting(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (post && post.authorId) {
-        saveMessage(
-          post.authorId,
-          `[Penawaran Bantuan Baru] ${formData.helper_message.trim()} (Kontak: ${formData.helper_whatsapp.trim()}, Waktu: ${formData.helper_time.trim()})`,
-          post.title,
-        );
-      }
+      saveMessage(
+        post.authorId,
+        `[Penawaran Bantuan Baru] ${formData.helper_message.trim()} (Kontak: ${formData.helper_whatsapp.trim()}, Waktu: ${formData.helper_time.trim()})`,
+        post.title,
+      );
       setSubmitting(false);
       setStep(3);
       showToast("Tawaran bantuan berhasil dikirimkan!", "success");
@@ -72,6 +69,22 @@ function FormBantuanContent() {
       showToast("Gagal menyimpan tawaran bantuan.", "error");
     }
   };
+
+  if (!post?.authorId) {
+    return (
+      <main className="form-page-wrapper">
+        <div style={{ maxWidth: "600px", margin: "40px auto" }}>
+          <EmptyState
+            icon="🔎"
+            title="Postingan tidak ditemukan"
+            description="Permintaan bantuan ini tidak tersedia atau sudah dibatalkan."
+            actionText="Kembali ke Katalog"
+            onAction={() => router.push("/katalog")}
+          />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="form-page-wrapper">

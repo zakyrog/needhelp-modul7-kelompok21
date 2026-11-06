@@ -1,16 +1,26 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function Modal({ isOpen, onClose, title, children }) {
+  const closeButtonRef = useRef(null);
+
   useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const previouslyFocused = document.activeElement;
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape") {
         onClose();
       }
     };
+
+    closeButtonRef.current?.focus();
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -59,6 +69,7 @@ export function Modal({ isOpen, onClose, title, children }) {
             {title}
           </h2>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label="Tutup modal"

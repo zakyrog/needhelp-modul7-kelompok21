@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -9,7 +9,6 @@ import {
   saveRating,
   formatDate,
 } from "../../lib/data.js";
-import { readSession } from "../../lib/auth.js";
 import { validateRating } from "../../lib/validation.js";
 import { useToast } from "../../components/Toast";
 import { EmptyState } from "../../components/EmptyState";

@@ -1,6 +1,4 @@
 
-import React from "react";
-
 export function SkeletonText({ className = "medium" }) {
   return (
     <div

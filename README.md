@@ -101,6 +101,7 @@ Buka http://localhost:3000. Pemeriksaan dan server produksi lokal:
 
 ```bash
 npm run lint
+npm test
 npm run build
 npm run start
 ```

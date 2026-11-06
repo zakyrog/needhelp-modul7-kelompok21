@@ -1,8 +1,6 @@
 
 "use client";
 
-import React from "react";
-
 export function EmptyState({
   icon = "🔍",
   title = "Tidak ada postingan yang cocok",
