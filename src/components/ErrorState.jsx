@@ -1,8 +1,6 @@
 
 "use client";
 
-import React from "react";
-
 export function ErrorState({
   title = "Terjadi Kesalahan",
   message = "Gagal memuat data. Periksa koneksi atau coba lagi.",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -15,13 +15,14 @@ import {
   formatDateTime,
 } from "../../lib/data.js";
 import { EmptyState } from "../../components/EmptyState";
+import { getSafeInternalPath } from "../../lib/navigation";
 
 function DetailPostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const id = searchParams.get("id");
-  const backUrl = searchParams.get("back") || "/katalog";
+  const backUrl = getSafeInternalPath(searchParams.get("back"), "/katalog");
 
   const [post, setPost] = useState(() => (id ? getPost(id) || getPublicPost(id) : null));
 

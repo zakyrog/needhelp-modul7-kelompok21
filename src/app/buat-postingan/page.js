@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPost } from "../../lib/data.js";
@@ -94,9 +94,6 @@ export default function BuatPostinganPage() {
     setErrors({});
 
     try {
-      // Simulasi delay pengiriman network/penyimpanan terstruktur (500ms)
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
       const newPost = createPost(sanitizedData, session);
       if (!newPost || !newPost.id) {
         throw new Error("Gagal menyimpan postingan ke penyimpanan lokal.");
